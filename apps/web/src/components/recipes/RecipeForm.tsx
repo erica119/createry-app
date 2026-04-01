@@ -9,80 +9,59 @@ interface Props {
   onCancel: () => void
 }
 
-interface Ingredient {
-  name: string
-  quantity: string
-  unit: string
-}
+const CUISINES = ['italian', 'mexican', 'asian', 'american', 'mediterranean', 'indian', 'thai', 'greek', 'french', 'japanese', 'southern', 'middle_eastern']
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert']
+const DIETARY_TAGS = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'keto', 'paleo', 'nut-free']
 
 export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', quantity: '', unit: '' }])
+  const [ingredients, setIngredients] = useState('')
   const [instructions, setInstructions] = useState('')
   const [prepTime, setPrepTime] = useState('')
   const [cookTime, setCookTime] = useState('')
-  const [servings, setServings] = useState('')
-  const [cuisineTags, setCuisineTags] = useState('')
-  const [mealType, setMealType] = useState<string[]>([])
-  const [dietaryTags, setDietaryTags] = useState('')
-  const [complexity, setComplexity] = useState('moderate')
+  const [servings, setServings] = useState('4')
+  const [complexity, setComplexity] = useState('simple')
+  const [cuisineTags, setCuisineTags] = useState<string[]>([])
+  const [mealType, setMealType] = useState<string[]>(['dinner'])
+  const [dietaryTags, setDietaryTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert']
-  const COMPLEXITY_OPTIONS = ['simple', 'moderate', 'complex']
-
-  const addIngredient = () => setIngredients([...ingredients, { name: '', quantity: '', unit: '' }])
-
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
-    const updated = [...ingredients]
-    updated[index] = { ...updated[index], [field]: value }
-    setIngredients(updated)
-  }
-
-  const removeIngredient = (index: number) => {
-    setIngredients(ingredients.filter((_, i) => i !== index))
-  }
-
-  const toggleMealType = (type: string) => {
-    if (mealType.includes(type)) setMealType(mealType.filter(t => t !== type))
-    else setMealType([...mealType, type])
+  const toggleTag = (list: string[], setList: (v: string[]) => void, id: string) => {
+    setList(list.includes(id) ? list.filter(x => x !== id) : [...list, id])
   }
 
   const handleSave = async () => {
-    if (!title.trim()) { setError('Recipe title is required'); return }
-    if (!instructions.trim()) { setError('Instructions are required'); return }
-    if (ingredients.filter(i => i.name.trim()).length === 0) { setError('At least one ingredient is required'); return }
+    if (!title.trim()) { setError('Recipe title is required.'); return }
+    if (!ingredients.trim()) { setError('Ingredients are required.'); return }
+    if (!instructions.trim()) { setError('Instructions are required.'); return }
 
     setSaving(true)
     setError(null)
 
-    try {
-      const cleanIngredients = ingredients.filter(i => i.name.trim()).map(i => ({
-        name: i.name.trim(),
-        quantity: i.quantity.trim(),
-        unit: i.unit.trim(),
-      }))
+    const parsedIngredients = ingredients.split('\n')
+      .filter(line => line.trim())
+      .map(line => ({ name: line.trim(), quantity: '', unit: '' }))
 
+    try {
       const { error } = await supabase.from('recipes').insert({
         tenant_id: tenantId,
         created_by: user.id,
         title: title.trim(),
         description: description.trim() || null,
-        ingredients: cleanIngredients,
+        ingredients: parsedIngredients,
         instructions: instructions.trim(),
         prep_time_minutes: prepTime ? parseInt(prepTime) : null,
         cook_time_minutes: cookTime ? parseInt(cookTime) : null,
         servings: servings ? parseInt(servings) : null,
-        cuisine_tags: cuisineTags ? cuisineTags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
-        meal_type: mealType,
-        dietary_tags: dietaryTags ? dietaryTags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
         complexity,
+        cuisine_tags: cuisineTags,
+        meal_type: mealType,
+        dietary_tags: dietaryTags,
         is_premium: false,
         is_active: true,
       })
-
       if (error) throw error
       onSaved()
     } catch (err: any) {
@@ -92,102 +71,165 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
     }
   }
 
-  const inputStyle = { width: '100%', padding: '0.5rem', fontSize: '1rem', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' as const }
-  const labelStyle = { display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', fontSize: '0.9rem' }
-  const sectionStyle = { marginBottom: '1.5rem' }
+  const inputStyle = {
+    width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem',
+    borderRadius: '10px', border: '2px solid #E8D5B7',
+    background: '#FDF6EE', color: '#2C1810',
+    fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const,
+  }
+
+  const labelStyle = {
+    display: 'block', fontWeight: '600', color: '#2C1810',
+    marginBottom: '0.5rem', fontSize: '0.875rem',
+  }
+
+  const ChipGroup = ({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (id: string) => void }) => (
+    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0.4rem' }}>
+      {options.map(opt => {
+        const active = selected.includes(opt)
+        return (
+          <button
+            key={opt}
+            onClick={() => onToggle(opt)}
+            className={active ? 'chip-active' : 'chip-inactive'}
+            style={{
+              padding: '0.35rem 0.85rem', borderRadius: '20px',
+              border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+              fontSize: '0.8rem', cursor: 'pointer', fontWeight: '500',
+              transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
+              textTransform: 'capitalize' as const,
+            }}
+          >
+            {opt.replace('_', ' ')}
+          </button>
+        )
+      })}
+    </div>
+  )
 
   return (
-    <div style={{ maxWidth: '700px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h2>Add a Recipe</h2>
-
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Recipe Title *</label>
-        <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Grandma's Chicken Soup" style={inputStyle} />
+    <div style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: '0 0 0.25rem' }}>
+          Add a Recipe
+        </h2>
+        <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.95rem' }}>
+          Fill in the details and we'll include it in your weekly meal plans.
+        </p>
       </div>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description of the recipe..." style={{ ...inputStyle, height: '80px', resize: 'vertical' }} />
-      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Ingredients *</label>
-        {ingredients.map((ing, i) => (
-          <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-            <input type="text" value={ing.quantity} onChange={e => updateIngredient(i, 'quantity', e.target.value)} placeholder="Qty" style={{ ...inputStyle, width: '80px' }} />
-            <input type="text" value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)} placeholder="Unit" style={{ ...inputStyle, width: '100px' }} />
-            <input type="text" value={ing.name} onChange={e => updateIngredient(i, 'name', e.target.value)} placeholder="Ingredient name" style={{ ...inputStyle, flex: 1 }} />
-            {ingredients.length > 1 && (
-              <button onClick={() => removeIngredient(i)} style={{ background: 'none', border: 'none', color: '#999', fontSize: '1.2rem', cursor: 'pointer', padding: '0 0.5rem' }}>x</button>
-            )}
+        {/* Title */}
+        <div>
+          <label style={labelStyle}>Recipe name *</label>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Grandma's Chicken Soup" style={inputStyle} />
+        </div>
+
+        {/* Description */}
+        <div>
+          <label style={labelStyle}>Short description</label>
+          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="A quick description of the dish" style={inputStyle} />
+        </div>
+
+        {/* Time + Servings */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+          <div>
+            <label style={labelStyle}>Prep time (min)</label>
+            <input type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="15" style={inputStyle} />
           </div>
-        ))}
-        <button onClick={addIngredient} style={{ background: 'none', border: '1px dashed #ddd', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer', color: '#666', fontSize: '0.9rem' }}>
-          + Add ingredient
-        </button>
-      </div>
-
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Instructions *</label>
-        <textarea value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="Step-by-step instructions..." style={{ ...inputStyle, height: '150px', resize: 'vertical' }} />
-      </div>
-
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>Prep Time (min)</label>
-          <input type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="15" style={inputStyle} />
+          <div>
+            <label style={labelStyle}>Cook time (min)</label>
+            <input type="number" value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="30" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Servings</label>
+            <input type="number" value={servings} onChange={e => setServings(e.target.value)} placeholder="4" style={inputStyle} />
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>Cook Time (min)</label>
-          <input type="number" value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="30" style={inputStyle} />
+
+        {/* Complexity */}
+        <div>
+          <label style={labelStyle}>Complexity</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {['simple', 'moderate', 'complex'].map(c => {
+              const active = complexity === c
+              return (
+                <button
+                  key={c}
+                  onClick={() => setComplexity(c)}
+                  className={active ? 'chip-active' : 'chip-inactive'}
+                  style={{
+                    flex: 1, padding: '0.6rem', borderRadius: '10px',
+                    border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+                    fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500',
+                    transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
+                    textTransform: 'capitalize' as const,
+                  }}
+                >
+                  {c === 'simple' ? '⚡ Simple' : c === 'moderate' ? '🕐 Moderate' : '👨‍🍳 Complex'}
+                </button>
+              )
+            })}
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>Servings</label>
-          <input type="number" value={servings} onChange={e => setServings(e.target.value)} placeholder="4" style={inputStyle} />
+
+        {/* Meal type */}
+        <div>
+          <label style={labelStyle}>Meal type</label>
+          <ChipGroup options={MEAL_TYPES} selected={mealType} onToggle={id => toggleTag(mealType, setMealType, id)} />
         </div>
-      </div>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Meal Type</label>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {MEAL_TYPES.map(type => (
-            <button key={type} onClick={() => toggleMealType(type)} style={{ padding: '0.4rem 0.9rem', borderRadius: '20px', border: '2px solid', borderColor: mealType.includes(type) ? '#4f46e5' : '#ddd', background: mealType.includes(type) ? '#4f46e5' : 'white', color: mealType.includes(type) ? 'white' : '#333', cursor: 'pointer', fontSize: '0.85rem', textTransform: 'capitalize' }}>
-              {type}
-            </button>
-          ))}
+        {/* Cuisine */}
+        <div>
+          <label style={labelStyle}>Cuisine</label>
+          <ChipGroup options={CUISINES} selected={cuisineTags} onToggle={id => toggleTag(cuisineTags, setCuisineTags, id)} />
         </div>
-      </div>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Complexity</label>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {COMPLEXITY_OPTIONS.map(c => (
-            <button key={c} onClick={() => setComplexity(c)} style={{ padding: '0.4rem 0.9rem', borderRadius: '8px', border: '2px solid', borderColor: complexity === c ? '#4f46e5' : '#ddd', background: complexity === c ? '#4f46e5' : 'white', color: complexity === c ? 'white' : '#333', cursor: 'pointer', fontSize: '0.85rem', textTransform: 'capitalize' }}>
-              {c}
-            </button>
-          ))}
+        {/* Dietary tags */}
+        <div>
+          <label style={labelStyle}>Dietary tags</label>
+          <ChipGroup options={DIETARY_TAGS} selected={dietaryTags} onToggle={id => toggleTag(dietaryTags, setDietaryTags, id)} />
         </div>
-      </div>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Cuisine Tags (comma separated)</label>
-        <input type="text" value={cuisineTags} onChange={e => setCuisineTags(e.target.value)} placeholder="e.g. italian, pasta, comfort food" style={inputStyle} />
-      </div>
+        {/* Ingredients */}
+        <div>
+          <label style={labelStyle}>Ingredients *</label>
+          <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>One ingredient per line</p>
+          <textarea
+            value={ingredients}
+            onChange={e => setIngredients(e.target.value)}
+            placeholder={"2 cups chicken broth\n1 lb chicken breast\n3 carrots, chopped"}
+            rows={6}
+            style={{ ...inputStyle, resize: 'vertical' as const }}
+          />
+        </div>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Dietary Tags (comma separated)</label>
-        <input type="text" value={dietaryTags} onChange={e => setDietaryTags(e.target.value)} placeholder="e.g. gluten-free, vegetarian, dairy-free" style={inputStyle} />
-      </div>
+        {/* Instructions */}
+        <div>
+          <label style={labelStyle}>Instructions *</label>
+          <textarea
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
+            placeholder="Step by step instructions..."
+            rows={6}
+            style={{ ...inputStyle, resize: 'vertical' as const }}
+          />
+        </div>
 
-      {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '0.875rem 1rem' }}>
+            <p style={{ color: '#dc2626', margin: 0, fontSize: '0.9rem' }}>{error}</p>
+          </div>
+        )}
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button onClick={onCancel} style={{ padding: '0.75rem 2rem', borderRadius: '6px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '1rem' }}>
-          Cancel
-        </button>
-        <button onClick={handleSave} disabled={saving} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '6px', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-          {saving ? 'Saving...' : 'Save Recipe'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
+          <button onClick={onCancel} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Saving...' : '+ Save Recipe'}
+          </button>
+        </div>
+
       </div>
     </div>
   )

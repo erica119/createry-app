@@ -7,6 +7,7 @@ import WeeklyMenuView from './components/menu/WeeklyMenuView'
 import ShoppingList from './components/shopping/ShoppingList'
 import LoginScreen from './components/auth/LoginScreen'
 import RecipeModal from './components/recipes/RecipeModal'
+import RecipeImport from './components/recipes/RecipeImport'
 
 const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
@@ -21,6 +22,7 @@ export default function App() {
   const [menuError, setMenuError] = useState<string | null>(null)
   const [view, setView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
+  const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [recipeSearch, setRecipeSearch] = useState('')
 
   useEffect(() => {
@@ -140,6 +142,19 @@ export default function App() {
     )
   }
 
+  if (showRecipeImport) {
+    return (
+      <div style={{ fontFamily: 'var(--font-sans)' }}>
+        <RecipeImport
+          user={user}
+          tenantId={TEST_TENANT_ID}
+          onComplete={() => { setShowRecipeImport(false); fetchRecipes() }}
+          onCancel={() => setShowRecipeImport(false)}
+        />
+      </div>
+    )
+  }
+
   if (showRecipeForm) {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
@@ -234,7 +249,10 @@ export default function App() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
-              <button onClick={() => setShowRecipeForm(true)} style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color: '#C4622D', border: '1.5px solid #C4622D', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>⬆ Import CSV</button>
+                <button onClick={() => setShowRecipeForm(true)} style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
+              </div>
             </div>
             <input
               type="text"

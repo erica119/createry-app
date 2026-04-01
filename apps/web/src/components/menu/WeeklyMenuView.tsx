@@ -64,14 +64,11 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
       if (day.lunch) ids.add(day.lunch)
       if (day.dinner) ids.add(day.dinner)
     })
-
     if (ids.size === 0) return
-
     const { data } = await supabase
       .from('recipes')
       .select('id, title, description, cook_time_minutes, prep_time_minutes, complexity, cuisine_tags, meal_type')
       .in('id', Array.from(ids))
-
     if (data) {
       const map: Record<string, Recipe> = {}
       data.forEach(r => { map[r.id] = r })
@@ -94,20 +91,15 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
       ...menu.menu_data,
       days: {
         ...menu.menu_data.days,
-        [day]: {
-          ...menu.menu_data.days[day],
-          [meal]: newRecipeId,
-        }
+        [day]: { ...menu.menu_data.days[day], [meal]: newRecipeId }
       }
     }
-
     const { data } = await supabase
       .from('weekly_menus')
       .update({ menu_data: updatedMenuData })
       .eq('id', menuId)
       .select()
       .maybeSingle()
-
     if (data) {
       setMenu(data)
       if (newRecipeId && !recipes[newRecipeId]) {
@@ -124,39 +116,34 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
 
   const approveMenu = async () => {
     setApproving(true)
-    await supabase
-      .from('weekly_menus')
-      .update({ status: 'approved' })
-      .eq('id', menuId)
+    await supabase.from('weekly_menus').update({ status: 'approved' }).eq('id', menuId)
+    setMenu((prev: any) => ({ ...prev, status: 'approved' }))
     setApproving(false)
     onApproved()
   }
 
-  if (loading) return <p>Loading menu...</p>
-  if (!menu) return <p>Menu not found</p>
+  if (loading) return <p className="loading">Loading your menu...</p>
+  if (!menu) return <p className="loading">Menu not found</p>
 
   const menuData: MenuData = menu.menu_data
+  const isApproved = menu.status === 'approved'
 
   return (
-    <div style={{ fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+    <div>
+      {/* Header */}
+      <div className="section-header" style={{ marginBottom: '1.5rem' }}>
         <div>
-          <h2 style={{ margin: 0 }}>This Week's Menu</h2>
-          <p style={{ color: '#666', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
+          <h2 style={{ marginBottom: '0.25rem' }}>This Week's Menu</h2>
+          <p className="text-small text-muted" style={{ margin: 0 }}>
             Week of {menu.week_start_date} · Status: <strong>{menu.status.replace('_', ' ')}</strong>
           </p>
         </div>
-        {menu.status === 'pending_approval' && (
-          <button
-            onClick={approveMenu}
-            disabled={approving}
-            style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.6rem 1.5rem', borderRadius: '6px', fontSize: '0.95rem', cursor: approving ? 'not-allowed' : 'pointer', opacity: approving ? 0.7 : 1 }}
-          >
+        {isApproved ? (
+          <span style={{ color: 'var(--color-success)', fontWeight: 700, fontSize: '1rem' }}>✓ Approved</span>
+        ) : (
+          <button onClick={approveMenu} disabled={approving} className="btn btn-success">
             {approving ? 'Approving...' : '✓ Approve Menu'}
           </button>
-        )}
-        {menu.status === 'approved' && (
-          <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓ Approved</span>
         )}
       </div>
 
@@ -167,35 +154,58 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
           const hasAnyMeal = dayData.breakfast || dayData.lunch || dayData.dinner
 
           return (
-            <div key={i} style={{ border: '1px solid #eee', borderRadius: '8px', overflow: 'hidden' }}>
-              <div style={{ background: '#4f46e5', color: 'white', padding: '0.5rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                {day.slice(0, 3)}
+            <div key={i} className="card" style={{ overflow: 'hidden', padding: 0 }}>
+              {/* Day header */}
+              <div style={{
+                background: 'var(--color-primary)',
+                color: 'white',
+                padding: '0.5rem',
+                textAlign: 'center',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                fontFamily: 'var(--font-body)',
+              }}>
+                {day.slice(0, 3).toUpperCase()}
               </div>
+
+              {/* Meals */}
               <div style={{ padding: '0.5rem' }}>
                 {!hasAnyMeal ? (
-                  <p style={{ color: '#999', fontSize: '0.75rem', textAlign: 'center', margin: '0.5rem 0' }}>No meals</p>
+                  <p style={{ color: 'var(--color-text-light)', fontSize: '0.7rem', textAlign: 'center', margin: '0.5rem 0' }}>Rest day</p>
                 ) : (
                   MEALS.map(meal => {
                     const recipeId = dayData[meal]
-                    const recipe = recipeId ? recipes[recipeId] : null
-                    if (!recipeId && !dayData[meal === 'breakfast' ? 'lunch' : meal === 'lunch' ? 'dinner' : 'breakfast']) return null
-                    if (recipeId === null && meal !== 'dinner') return null
+                    if (!recipeId) return null
+                    const recipe = recipes[recipeId]
 
-                    return recipeId ? (
-                      <div key={meal} style={{ marginBottom: '0.4rem' }}>
-                        <div style={{ fontSize: '0.65rem', color: '#999', textTransform: 'capitalize', marginBottom: '0.1rem' }}>{meal}</div>
+                    return (
+                      <div key={meal} style={{ marginBottom: '0.35rem' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.15rem', fontWeight: 700 }}>{meal}</div>
                         <div
-                          style={{ background: '#f5f3ff', borderRadius: '4px', padding: '0.3rem 0.4rem', fontSize: '0.75rem', cursor: menu.status === 'pending_approval' ? 'pointer' : 'default', lineHeight: '1.3' }}
-                          onClick={() => menu.status === 'pending_approval' && setSwapping({ day: String(i), meal })}
-                          title={menu.status === 'pending_approval' ? 'Click to swap' : ''}
+                          onClick={() => !isApproved && setSwapping({ day: String(i), meal })}
+                          style={{
+                            background: 'var(--color-primary-light)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '0.3rem 0.4rem',
+                            fontSize: '0.72rem',
+                            cursor: isApproved ? 'default' : 'pointer',
+                            lineHeight: '1.3',
+                            color: 'var(--color-primary-dark)',
+                            transition: 'background 0.15s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.25rem',
+                          }}
+                          onMouseEnter={e => { if (!isApproved) (e.currentTarget as HTMLElement).style.background = 'var(--color-border)' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light)' }}
                         >
-                          {recipe?.title || 'Loading...'}
-                          {menu.status === 'pending_approval' && (
-                            <span style={{ color: '#4f46e5', marginLeft: '0.25rem', fontSize: '0.65rem' }}>↺</span>
-                          )}
+                          <span>{recipe?.title || 'Loading...'}</span>
+                          {!isApproved && <span style={{ opacity: 0.5, fontSize: '0.65rem' }}>↺</span>}
                         </div>
                       </div>
-                    ) : null
+                    )
                   })
                 )}
               </div>
@@ -206,36 +216,60 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
 
       {/* Swap modal */}
       {swapping && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div
+          onClick={e => e.target === e.currentTarget && setSwapping(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
+        >
+          <div className="card" style={{ maxWidth: '480px', width: '100%', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <h3 style={{ margin: 0 }}>
-                Swap {swapping.meal} on {DAYS[parseInt(swapping.day)]}
+                Swap {swapping.meal} · {DAYS[parseInt(swapping.day)]}
               </h3>
-              <button onClick={() => setSwapping(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#666' }}>×</button>
+              <button onClick={() => setSwapping(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
             </div>
+
             <button
               onClick={() => swapMeal(swapping.day, swapping.meal, null)}
-              style={{ width: '100%', padding: '0.6rem', marginBottom: '0.5rem', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', color: '#dc2626', fontSize: '0.9rem' }}
+              className="btn btn-ghost"
+              style={{ width: '100%', marginBottom: '1rem', color: '#c0392b', borderColor: '#c0392b', justifyContent: 'center' }}
             >
               Remove this meal
             </button>
-            <p style={{ color: '#666', fontSize: '0.85rem', margin: '0.75rem 0 0.5rem' }}>Or choose a recipe:</p>
-            {allRecipes
-              .filter(r => r.meal_type?.includes(swapping.meal) || r.meal_type?.length === 0)
-              .map(recipe => (
-                <div
-                  key={recipe.id}
-                  onClick={() => swapMeal(swapping.day, swapping.meal, recipe.id)}
-                  style={{ padding: '0.75rem', marginBottom: '0.4rem', border: '1px solid #eee', borderRadius: '6px', cursor: 'pointer', background: recipes[recipe.id] ? '#f5f3ff' : 'white' }}
-                >
-                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{recipe.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.2rem' }}>
-                    {recipe.cook_time_minutes ? `${recipe.cook_time_minutes}min` : ''} · {recipe.complexity}
+
+            <p className="text-small text-muted" style={{ marginBottom: '0.75rem' }}>Choose a replacement:</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {allRecipes
+                .filter(r => !r.meal_type || r.meal_type.length === 0 || r.meal_type.includes(swapping.meal))
+                .map(recipe => (
+                  <div
+                    key={recipe.id}
+                    onClick={() => swapMeal(swapping.day, swapping.meal, recipe.id)}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      background: 'var(--color-bg-card)',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-primary)'
+                      ;(e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light)'
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'
+                      ;(e.currentTarget as HTMLElement).style.background = 'var(--color-bg-card)'
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{recipe.title}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
+                      {recipe.cook_time_minutes ? `🔥 ${recipe.cook_time_minutes}min` : ''} {recipe.complexity ? `· ${recipe.complexity}` : ''}
+                    </div>
                   </div>
-                </div>
-              ))
-            }
+                ))
+              }
+            </div>
           </div>
         </div>
       )}

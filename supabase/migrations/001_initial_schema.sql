@@ -585,7 +585,7 @@ create policy "recipes_select_free"
         where up.user_id = auth.uid()
           and up.tenant_id = public.current_tenant_id()
           and up.status = 'completed'
-          and id = any(pc.recipe_ids)
+          and recipes.id = any(pc.recipe_ids)
       )
       or
       -- Creator can always see all recipes in their tenant

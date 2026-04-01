@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Instacart affiliate ID - replace with real ID when IDP key arrives
+const INSTACART_AFFILIATE_ID = Deno.env.get("INSTACART_AFFILIATE_ID") || "placeholder_affiliate_id";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -26,7 +29,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Fetch the approved menu
+    // 1. Fetch the menu
     const { data: menu, error: menuError } = await supabase
       .from("weekly_menus")
       .select("*")
@@ -40,7 +43,7 @@ serve(async (req) => {
       );
     }
 
-    // 2. Collect all recipe IDs from the menu
+    // 2. Collect all recipe IDs
     const recipeIds = new Set<string>();
     const menuData = menu.menu_data as any;
     Object.values(menuData.days).forEach((day: any) => {
@@ -62,16 +65,12 @@ serve(async (req) => {
       .select("id, title, ingredients, servings")
       .in("id", Array.from(recipeIds));
 
-    if (recipesError || !recipes) {
-      throw new Error("Failed to fetch recipes");
-    }
+    if (recipesError || !recipes) throw new Error("Failed to fetch recipes");
 
-    // 4. Build recipe lookup map
     const recipeMap: Record<string, any> = {};
     recipes.forEach(r => { recipeMap[r.id] = r; });
 
-    // 5. Aggregate and deduplicate ingredients
-    // Key: ingredient name (normalized) → aggregated item
+    // 4. Aggregate ingredients
     const ingredientMap: Record<string, {
       name: string;
       quantity: number;
@@ -79,18 +78,12 @@ serve(async (req) => {
       recipe_sources: string[];
     }> = {};
 
-    Object.entries(menuData.days).forEach(([dayIndex, day]: [string, any]) => {
-      const mealSlots = ['breakfast', 'lunch', 'dinner'];
-      mealSlots.forEach(meal => {
+    Object.values(menuData.days).forEach((day: any) => {
+      ['breakfast', 'lunch', 'dinner'].forEach(meal => {
         const recipeId = day[meal];
         if (!recipeId || !recipeMap[recipeId]) return;
-
         const recipe = recipeMap[recipeId];
-        const ingredients = recipe.ingredients as Array<{
-          name: string;
-          quantity: string;
-          unit: string;
-        }>;
+        const ingredients = recipe.ingredients as Array<{ name: string; quantity: string; unit: string }>;
 
         ingredients.forEach(ing => {
           const key = `${ing.name.toLowerCase().trim()}__${ing.unit.toLowerCase().trim()}`;
@@ -113,58 +106,52 @@ serve(async (req) => {
       });
     });
 
-    // 6. Convert to array and sort by name
+    // 5. Build items array
     const items = Object.values(ingredientMap)
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(item => ({
         ...item,
-        quantity: item.quantity > 0
-          ? parseFloat(item.quantity.toFixed(2))
-          : item.quantity,
+        quantity: item.quantity > 0 ? parseFloat(item.quantity.toFixed(2)) : item.quantity,
         checked: false,
         aisle: guessAisle(item.name),
       }));
 
-    // 7. Fetch grocery schedule to determine shopping days
+    // 6. Build Instacart URL (placeholder format)
+    // When real IDP key arrives, replace with actual API call
+    const instacartUrl = buildInstacartUrl(items, INSTACART_AFFILIATE_ID);
+
+    // 7. Fetch grocery schedule
     const { data: grocerySchedule } = await supabase
       .from("grocery_schedule")
       .select("day_of_week, order_index")
       .eq("family_id", family_id)
       .order("order_index");
 
-    // Default to Sunday if no schedule set
     const shoppingDays = grocerySchedule && grocerySchedule.length > 0
-      ? grocerySchedule.map(s => s.day_of_week)
+      ? grocerySchedule.map((s: any) => s.day_of_week)
       : [0];
 
-    // 8. Calculate actual shopping dates for this week
     const weekStart = new Date(menu.week_start_date);
-    const shoppingDates = shoppingDays.map(dayOfWeek => {
-      const date = new Date(weekStart);
-      date.setDate(weekStart.getDate() + dayOfWeek);
-      return date.toISOString().split('T')[0];
-    });
+    const primaryShoppingDate = new Date(weekStart);
+    primaryShoppingDate.setDate(weekStart.getDate() + shoppingDays[0]);
+    const shoppingDateStr = primaryShoppingDate.toISOString().split('T')[0];
 
-    // 9. For now, put all items on the first shopping day
-    // Future: split items by shopping day based on when meals are served
-    const primaryShoppingDate = shoppingDates[0];
-
-    // 10. Delete any existing grocery list for this menu and shopping date
+    // 8. Delete existing list for this menu
     await supabase
       .from("grocery_lists")
       .delete()
-      .eq("weekly_menu_id", menu_id)
-      .eq("shopping_date", primaryShoppingDate);
+      .eq("weekly_menu_id", menu_id);
 
-    // 11. Save the grocery list
+    // 9. Save grocery list
     const { data: savedList, error: saveError } = await supabase
       .from("grocery_lists")
       .insert({
         tenant_id,
         family_id,
         weekly_menu_id: menu_id,
-        shopping_date: primaryShoppingDate,
+        shopping_date: shoppingDateStr,
         items,
+        instacart_cart_url: instacartUrl,
         status: "draft",
       })
       .select()
@@ -185,10 +172,22 @@ serve(async (req) => {
   }
 });
 
-// Simple aisle guesser based on ingredient name
+function buildInstacartUrl(items: any[], affiliateId: string): string {
+  // Instacart shoppable recipe URL format
+  // When IDP key arrives, this becomes a proper API call
+  // For now, we build a search URL with the main ingredients
+  const topItems = items
+    .filter(i => ['Meat & Seafood', 'Produce', 'Dairy & Eggs'].includes(i.aisle))
+    .slice(0, 10)
+    .map(i => encodeURIComponent(i.name))
+    .join(',');
+
+  // Placeholder URL - swap for real IDP endpoint when key arrives
+  return `https://www.instacart.com/store/account/create?affiliate_id=${affiliateId}&items=${topItems}`;
+}
+
 function guessAisle(name: string): string {
   const n = name.toLowerCase();
-
   if (/chicken|beef|pork|lamb|turkey|salmon|shrimp|fish|tuna|bacon|sausage/.test(n)) return 'Meat & Seafood';
   if (/milk|cheese|butter|cream|yogurt|egg|mozzarella|parmesan|feta/.test(n)) return 'Dairy & Eggs';
   if (/bread|tortilla|pita|bun|roll|bagel|wrap/.test(n)) return 'Bread & Bakery';
@@ -202,6 +201,5 @@ function guessAisle(name: string): string {
   if (/sugar|honey|maple syrup|vanilla/.test(n)) return 'Baking';
   if (/coconut milk|almond milk|oat milk/.test(n)) return 'Dairy & Eggs';
   if (/frozen/.test(n)) return 'Frozen';
-
   return 'Other';
 }

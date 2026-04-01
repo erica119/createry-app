@@ -79,22 +79,6 @@ export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
     await supabase.from('grocery_lists').update({ items: updatedItems }).eq('id', list.id)
   }
 
-  const buildMailtoLink = () => {
-    if (!list) return '#'
-    const subject = `Shopping List - ${new Date(list.shopping_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
-    const groupedItems: Record<string, GroceryItem[]> = {}
-    list.items.forEach(item => {
-      const aisle = item.aisle || 'Other'
-      if (!groupedItems[aisle]) groupedItems[aisle] = []
-      groupedItems[aisle].push(item)
-    })
-    const body = Object.entries(groupedItems)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([aisle, items]) => `${aisle}:\n${items.map(i => `  - ${i.name} ${i.quantity > 0 ? `(${i.quantity} ${i.unit})` : ''}`.trim()).join('\n')}`)
-      .join('\n\n')
-    const fullBody = `Shopping List\n\n${body}${list.instacart_cart_url ? `\n\nOrder on Instacart: ${list.instacart_cart_url}` : ''}`
-    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBody)}`
-  }
 
   const groupedItems = list?.items.reduce((acc, item, index) => {
     const aisle = item.aisle || 'Other'

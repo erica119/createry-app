@@ -4,6 +4,7 @@ import type { User } from '@supabase/supabase-js'
 import OnboardingWizard from './components/onboarding/OnboardingWizard'
 import RecipeForm from './components/recipes/RecipeForm'
 import WeeklyMenuView from './components/menu/WeeklyMenuView'
+import ShoppingList from './components/shopping/ShoppingList'
 
 const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 const TEST_FAMILY_ID = 'ba4aa7d6-b1ac-44b6-9706-15aadccd8aa3'
@@ -17,7 +18,7 @@ export default function App() {
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuError, setMenuError] = useState<string | null>(null)
-  const [view, setView] = useState<'dashboard' | 'menu'>('dashboard')
+  const [view, setView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -69,9 +70,9 @@ export default function App() {
     setMenuError(null)
     try {
       const weekStartDate = new Date()
-      weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay())
+      const day = weekStartDate.getDay()
+      weekStartDate.setDate(weekStartDate.getDate() - day)
       const weekStr = weekStartDate.toISOString().split('T')[0]
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-weekly-menu`,
         {
@@ -81,11 +82,7 @@ export default function App() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({
-            family_id: TEST_FAMILY_ID,
-            tenant_id: TEST_TENANT_ID,
-            week_start_date: weekStr,
-          }),
+          body: JSON.stringify({ family_id: TEST_FAMILY_ID, tenant_id: TEST_TENANT_ID, week_start_date: weekStr }),
         }
       )
       const result = await response.json()
@@ -147,16 +144,23 @@ export default function App() {
     )
   }
 
+  const navBtn = (label: string, viewName: typeof view, enabled = true) => (
+    <button
+      onClick={() => enabled && setView(viewName)}
+      style={{ background: 'none', border: 'none', cursor: enabled ? 'pointer' : 'not-allowed', fontWeight: view === viewName ? 'bold' : 'normal', color: view === viewName ? '#4f46e5' : enabled ? '#666' : '#ccc', fontSize: '0.95rem', padding: '0.25rem 0' }}
+    >
+      {label}
+    </button>
+  )
+
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
-      {/* Nav */}
       <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           <strong>Meal Plan App</strong>
-          <button onClick={() => setView('dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: view === 'dashboard' ? 'bold' : 'normal', color: view === 'dashboard' ? '#4f46e5' : '#666' }}>Recipes</button>
-          <button onClick={() => currentMenuId && setView('menu')} style={{ background: 'none', border: 'none', cursor: currentMenuId ? 'pointer' : 'not-allowed', fontWeight: view === 'menu' ? 'bold' : 'normal', color: view === 'menu' ? '#4f46e5' : currentMenuId ? '#666' : '#ccc' }}>
-            This Week {currentMenuId ? '' : '(not generated)'}
-          </button>
+          {navBtn('Recipes', 'dashboard')}
+          {navBtn('This Week', 'menu', !!currentMenuId)}
+          {navBtn('Shopping', 'shopping', !!currentMenuId)}
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <span style={{ color: '#666', fontSize: '0.9rem' }}>{user.email}</span>
@@ -165,15 +169,16 @@ export default function App() {
       </div>
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem' }}>
-        {view === 'menu' && currentMenuId ? (
-          <WeeklyMenuView
-            menuId={currentMenuId}
-            tenantId={TEST_TENANT_ID}
-            onApproved={() => fetchCurrentMenu()}
-          />
-        ) : (
+        {view === 'menu' && currentMenuId && (
+          <WeeklyMenuView menuId={currentMenuId} tenantId={TEST_TENANT_ID} onApproved={() => fetchCurrentMenu()} />
+        )}
+
+        {view === 'shopping' && currentMenuId && (
+          <ShoppingList menuId={currentMenuId} familyId={TEST_FAMILY_ID} tenantId={TEST_TENANT_ID} />
+        )}
+
+        {view === 'dashboard' && (
           <>
-            {/* Generate Menu */}
             <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f5f3ff', borderRadius: '8px', border: '1px solid #e0d9ff' }}>
               <h2 style={{ margin: '0 0 0.5rem' }}>Weekly Menu</h2>
               <p style={{ color: '#666', margin: '0 0 1rem', fontSize: '0.9rem' }}>
@@ -181,18 +186,22 @@ export default function App() {
               </p>
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button onClick={generateMenu} disabled={generatingMenu} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', opacity: generatingMenu ? 0.7 : 1 }}>
-                  {generatingMenu ? 'Generating...' : currentMenuId ? 'Regenerate Menu' : 'Generate This Week\'s Menu'}
+                  {generatingMenu ? 'Generating...' : currentMenuId ? 'Regenerate Menu' : "Generate This Week's Menu"}
                 </button>
                 {currentMenuId && (
-                  <button onClick={() => setView('menu')} style={{ background: 'white', color: '#4f46e5', border: '1px solid #4f46e5', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>
-                    View Menu →
-                  </button>
+                  <>
+                    <button onClick={() => setView('menu')} style={{ background: 'white', color: '#4f46e5', border: '1px solid #4f46e5', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>
+                      View Menu →
+                    </button>
+                    <button onClick={() => setView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1px solid #16a34a', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>
+                      Shopping List →
+                    </button>
+                  </>
                 )}
               </div>
               {menuError && <p style={{ color: 'red', marginTop: '1rem' }}>{menuError}</p>}
             </div>
 
-            {/* Recipes */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0 }}>My Recipes ({recipes.length})</h2>
               <button onClick={() => setShowRecipeForm(true)} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>+ Add Recipe</button>

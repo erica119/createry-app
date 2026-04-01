@@ -437,3 +437,111 @@ a.btn-link {
   text-decoration: none !important;
   display: inline-block;
 }
+
+/* ============================================
+   MOBILE RESPONSIVENESS
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* Nav */
+  .nav-bar {
+    padding: 0 1rem !important;
+    flex-wrap: wrap;
+  }
+  .nav-links {
+    gap: 1rem !important;
+  }
+  .nav-email {
+    display: none !important;
+  }
+
+  /* Main content padding */
+  .main-content {
+    padding: 1rem !important;
+  }
+
+  /* Recipe grid — single column on mobile */
+  .recipe-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Menu calendar — scrollable on mobile */
+  .menu-calendar {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .menu-calendar > div {
+    min-width: 120px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Dashboard header — stack on mobile */
+  .dashboard-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+  .dashboard-header-actions {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+  .dashboard-header-actions button,
+  .dashboard-header-actions a {
+    flex: 1 !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  /* Shopping list header */
+  .shopping-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .shopping-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 0.5rem !important;
+  }
+  .shopping-actions a,
+  .shopping-actions button {
+    flex: 1 !important;
+    text-align: center !important;
+  }
+
+  /* Onboarding card */
+  .onboarding-card {
+    padding: 1.25rem !important;
+  }
+
+  /* Recipe form grid — single column */
+  .recipe-time-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Weekly schedule meal buttons — smaller text */
+  .meal-btn-active,
+  .meal-btn-inactive {
+    font-size: 0.65rem !important;
+    padding: 0.25rem 0.4rem !important;
+  }
+
+  /* Login screen */
+  .login-card {
+    margin: 1rem !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller screens */
+  .menu-calendar > div {
+    min-width: 100px !important;
+  }
+  h1, h2 {
+    font-size: 1.4rem !important;
+  }
+}

@@ -210,8 +210,8 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
-      <div style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+      <div className="nav-bar" style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="nav-links">
           <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>🍽️ Plate</span>
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             {navBtn('Recipes', 'dashboard')}
@@ -220,12 +220,12 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
+          <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
       </div>
 
-      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
+      <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
         {view === 'menu' && currentMenuId && (
           <WeeklyMenuView menuId={currentMenuId} tenantId={TEST_TENANT_ID} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
         )}
@@ -236,7 +236,7 @@ export default function App() {
 
         {view === 'dashboard' && (
           <>
-            <div style={{ marginBottom: '2rem', padding: '1.5rem 2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="dashboard-header" style={{ marginBottom: '2rem', padding: '1.5rem 2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Menu</h2>
                 <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
@@ -269,7 +269,7 @@ export default function App() {
               <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
               <button onClick={() => setShowRecipeForm(true)} style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+            <div className="recipe-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
               {recipes.map(recipe => (
                 <div key={recipe.id} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>

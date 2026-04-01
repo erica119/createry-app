@@ -88,7 +88,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
         </div>
 
         {/* Card */}
-        <div className="card" style={{ padding: '2rem' }}>
+        <div className="card onboarding-card" style={{ padding: '2rem' }}>
           {currentStep === 0 && (
             <StepFamilySize user={user} tenantId={tenantId} familyId={familyId} onNext={(id: string) => handleNext(id)} />
           )}

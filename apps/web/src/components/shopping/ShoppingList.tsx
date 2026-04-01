@@ -131,14 +131,14 @@ export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="shopping-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: '0 0 0.25rem' }}>Shopping List</h2>
           <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
             {checkedCount} of {totalCount} items checked
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="shopping-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {list.instacart_cart_url && (
             <a
               href={list.instacart_cart_url}

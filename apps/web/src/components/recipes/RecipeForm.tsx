@@ -133,7 +133,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         </div>
 
         {/* Time + Servings */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+        <div className="recipe-time-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
           <div>
             <label style={labelStyle}>Prep time (min)</label>
             <input type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="15" style={inputStyle} />

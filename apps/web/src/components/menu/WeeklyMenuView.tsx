@@ -170,7 +170,7 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
       )}
 
       {/* Calendar grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '2rem' }}>
+      <div className="menu-calendar" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '2rem' }}>
         {Array.from({ length: 7 }, (_, i) => {
           const dayData = menu.menu_data.days[String(i)] || {}
           const meals = [

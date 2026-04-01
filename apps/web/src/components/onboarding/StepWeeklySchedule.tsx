@@ -9,6 +9,7 @@ interface Props {
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 interface DaySchedule {
   day_of_week: number
@@ -34,11 +35,14 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
     fetch()
   }, [familyId])
 
-  const updateDay = (index: number, field: keyof DaySchedule, value: boolean) => {
+  const toggleHome = (index: number) => {
     const updated = [...schedule]
-    updated[index] = { ...updated[index], [field]: value }
-    if (field === 'is_home' && !value) { updated[index].breakfast = false; updated[index].lunch = false; updated[index].dinner = false }
+    updated[index] = { ...updated[index], is_home: !updated[index].is_home, breakfast: false, lunch: false, dinner: false }
     setSchedule(updated)
+  }
+
+  const toggleMeal = (dayOfWeek: number, meal: 'breakfast' | 'lunch' | 'dinner') => {
+    setSchedule(schedule.map(d => d.day_of_week === dayOfWeek ? { ...d, [meal]: !d[meal] } : d))
   }
 
   const handleSave = async () => {
@@ -46,16 +50,13 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
     setError(null)
     try {
       await supabase.from('weekly_schedule').delete().eq('family_id', familyId)
-      const rows = schedule.map(day => ({
-        tenant_id: tenantId,
-        family_id: familyId,
-        day_of_week: day.day_of_week,
-        is_home: day.is_home,
-        breakfast: day.breakfast,
-        lunch: day.lunch,
-        dinner: day.dinner,
-      }))
-      const { error } = await supabase.from('weekly_schedule').insert(rows)
+      const { error } = await supabase.from('weekly_schedule').insert(
+        schedule.map(day => ({
+          tenant_id: tenantId, family_id: familyId,
+          day_of_week: day.day_of_week, is_home: day.is_home,
+          breakfast: day.breakfast, lunch: day.lunch, dinner: day.dinner,
+        }))
+      )
       if (error) throw error
       onNext()
     } catch (err: any) {
@@ -65,38 +66,78 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
     }
   }
 
+  const homeDays = schedule.filter(d => d.is_home).length
+
   return (
     <div>
-      <h2>Your weekly cooking schedule</h2>
-      <p style={{ color: '#666' }}>Which days do you cook at home and which meals?</p>
-      <div style={{ marginBottom: '2rem' }}>
+      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+        When do you cook at home?
+      </h2>
+      <p style={{ color: '#6B5C52', margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
+        Tap the days you're home, then choose which meals.
+      </p>
+      <p style={{ color: '#C4622D', margin: '0 0 1.25rem', fontSize: '0.85rem', fontWeight: '600' }}>
+        {homeDays} day{homeDays !== 1 ? 's' : ''} selected
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.35rem', marginBottom: '1.25rem' }}>
         {schedule.map((day, i) => (
-          <div key={i} style={{ padding: '1rem', marginBottom: '0.5rem', borderRadius: '8px', border: '1px solid #eee', background: day.is_home ? 'white' : '#f9f9f9' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 'bold', minWidth: '100px' }}>{DAYS[i]}</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={day.is_home} onChange={e => updateDay(i, 'is_home', e.target.checked)} />
-                Eating at home
-              </label>
+          <button
+            key={i}
+            onClick={() => toggleHome(i)}
+            className={day.is_home ? 'day-pill-active' : 'day-pill-inactive'}
+            style={{
+              padding: '0.6rem 0.1rem', borderRadius: '10px',
+              border: `2px solid ${day.is_home ? '#C4622D' : '#E8D5B7'}`,
+              fontSize: '0.7rem', fontWeight: '600', cursor: 'pointer',
+              transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', textAlign: 'center',
+            }}
+          >
+            {DAY_SHORT[i]}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {schedule.filter(d => d.is_home).map((day) => (
+          <div key={day.day_of_week} style={{
+            padding: '0.875rem 1rem', borderRadius: '12px',
+            background: '#FDF6EE', border: '1px solid #E8D5B7',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.875rem', minWidth: '80px' }}>
+              {DAYS[day.day_of_week]}
+            </span>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {([
+                { key: 'breakfast', emoji: '🌅', label: 'Breakfast' },
+                { key: 'lunch', emoji: '☀️', label: 'Lunch' },
+                { key: 'dinner', emoji: '🌙', label: 'Dinner' },
+              ] as const).map(({ key, emoji, label }) => (
+                <button
+                  key={key}
+                  onClick={() => toggleMeal(day.day_of_week, key)}
+                  className={day[key] ? 'meal-btn-active' : 'meal-btn-inactive'}
+                  style={{
+                    padding: '0.3rem 0.6rem', borderRadius: '20px',
+                    border: `1.5px solid ${day[key] ? '#C4622D' : '#E8D5B7'}`,
+                    fontSize: '0.72rem', fontWeight: '500', cursor: 'pointer',
+                    transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {emoji} {label}
+                </button>
+              ))}
             </div>
-            {day.is_home && (
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', paddingLeft: '0.5rem' }}>
-                {(['breakfast', 'lunch', 'dinner'] as const).map(meal => (
-                  <label key={meal} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', textTransform: 'capitalize' }}>
-                    <input type="checkbox" checked={day[meal]} onChange={e => updateDay(i, meal, e.target.checked)} />
-                    {meal}
-                  </label>
-                ))}
-              </div>
-            )}
           </div>
         ))}
       </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button onClick={onBack} style={{ padding: '0.75rem 2rem', borderRadius: '6px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '1rem' }}>Back</button>
-        <button onClick={handleSave} disabled={saving} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '6px', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-          {saving ? 'Saving...' : 'Next'}
+
+      {error && <p style={{ color: '#dc2626', fontSize: '0.9rem', marginTop: '1rem' }}>{error}</p>}
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <button onClick={onBack} className="btn-secondary" style={{ flex: 1 }}>← Back</button>
+        <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, opacity: saving ? 0.7 : 1 }}>
+          {saving ? 'Saving...' : 'Continue →'}
         </button>
       </div>
     </div>

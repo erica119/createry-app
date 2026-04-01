@@ -7,12 +7,11 @@ import WeeklyMenuView from './components/menu/WeeklyMenuView'
 import ShoppingList from './components/shopping/ShoppingList'
 
 const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-const TEST_FAMILY_ID = 'ba4aa7d6-b1ac-44b6-9706-15aadccd8aa3'
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [onboardingComplete, setOnboardingComplete] = useState(false)
+  const [familyId, setFamilyId] = useState<string | null>(null)
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [recipes, setRecipes] = useState<any[]>([])
   const [generatingMenu, setGeneratingMenu] = useState(false)
@@ -43,22 +42,26 @@ export default function App() {
       .eq('user_id', user!.id)
       .maybeSingle()
     if (data?.id) {
-      setOnboardingComplete(true)
+      setFamilyId(data.id)
       fetchRecipes()
-      fetchCurrentMenu()
+      fetchCurrentMenu(data.id)
     }
   }
 
   const fetchRecipes = async () => {
-    const { data } = await supabase.from('recipes').select('*').eq('tenant_id', TEST_TENANT_ID).order('created_at', { ascending: false })
+    const { data } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('tenant_id', TEST_TENANT_ID)
+      .order('created_at', { ascending: false })
     if (data) setRecipes(data)
   }
 
-  const fetchCurrentMenu = async () => {
+  const fetchCurrentMenu = async (fid: string) => {
     const { data } = await supabase
       .from('weekly_menus')
       .select('id')
-      .eq('family_id', TEST_FAMILY_ID)
+      .eq('family_id', fid)
       .order('week_start_date', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -66,6 +69,7 @@ export default function App() {
   }
 
   const generateMenu = async () => {
+    if (!familyId) return
     setGeneratingMenu(true)
     setMenuError(null)
     try {
@@ -82,7 +86,7 @@ export default function App() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ family_id: TEST_FAMILY_ID, tenant_id: TEST_TENANT_ID, week_start_date: weekStr }),
+          body: JSON.stringify({ family_id: familyId, tenant_id: TEST_TENANT_ID, week_start_date: weekStr }),
         }
       )
       const result = await response.json()
@@ -97,175 +101,197 @@ export default function App() {
   }
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    })
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    setOnboardingComplete(false)
+    setFamilyId(null)
     setRecipes([])
+    setCurrentMenuId(null)
   }
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--color-bg)' }}>
-      <p className="text-muted">Loading...</p>
-    </div>
-  )
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
 
-  // Login screen
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }}>
-          <div style={{ marginBottom: '2rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-              Your Kitchen,<br /><em>Planned.</em>
-            </h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '1.05rem', lineHeight: '1.7' }}>
-              Personalized weekly meal plans built from recipes you love. Shopping lists ready to go.
-            </p>
-          </div>
-          <div className="card" style={{ padding: '2rem' }}>
-            <button onClick={signInWithGoogle} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', fontSize: '1rem' }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" style={{ marginRight: '0.5rem' }}>
-                <path fill="#fff" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/>
-                <path fill="#fff" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/>
-                <path fill="#fff" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/>
-                <path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.97 13.04C2.45 15.98 5.48 18 9 18z"/>
-              </svg>
-              Continue with Google
-            </button>
-            <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
-              Free to get started. No credit card required.
-            </p>
-          </div>
+      <div style={{
+        minHeight: '100vh', background: '#FDF6EE',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'var(--font-sans)', padding: '2rem', textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+          Your Kitchen,<br /><em>Planned.</em>
+        </h1>
+        <p style={{ color: '#6B5C52', margin: '0 0 2.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
+          Personalized weekly meal plans built from recipes you love. Shopping lists ready to go.
+        </p>
+        <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 24px rgba(44,24,16,0.08)', maxWidth: '380px', width: '100%' }}>
+          <button
+            onClick={signInWithGoogle}
+            style={{
+              width: '100%', padding: '0.875rem 1.5rem',
+              background: '#C4622D', color: 'white', border: 'none',
+              borderRadius: '10px', fontSize: '1rem', fontWeight: '600',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="white"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="white"/>
+              <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="white"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="white"/>
+            </svg>
+            Continue with Google
+          </button>
+          <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '1rem 0 0' }}>
+            Free to get started. No credit card required.
+          </p>
         </div>
       </div>
     )
   }
 
-  // Onboarding
-  if (!onboardingComplete) {
+  if (!familyId) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-        <nav className="nav">
-          <span className="nav-brand">🍽️ Plate</span>
-          <button onClick={signOut} className="btn btn-ghost btn-sm" style={{ color: 'rgba(253,246,238,0.7)', borderColor: 'rgba(253,246,238,0.2)' }}>Sign out</button>
-        </nav>
-        <OnboardingWizard user={user} tenantId={TEST_TENANT_ID} onComplete={() => { setOnboardingComplete(true); fetchRecipes(); fetchCurrentMenu() }} />
+      <div style={{ fontFamily: 'var(--font-sans)' }}>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2C1810' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Plate</span>
+          <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
+        </div>
+        <OnboardingWizard
+          user={user}
+          tenantId={TEST_TENANT_ID}
+          onComplete={() => checkOnboarding()}
+        />
       </div>
     )
   }
 
-  // Recipe form
   if (showRecipeForm) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-        <nav className="nav">
-          <span className="nav-brand">🍽️ Plate</span>
-          <button onClick={() => setShowRecipeForm(false)} className="btn btn-ghost btn-sm" style={{ color: 'rgba(253,246,238,0.7)', borderColor: 'rgba(253,246,238,0.2)' }}>← Back</button>
-        </nav>
-        <RecipeForm user={user} tenantId={TEST_TENANT_ID} onSaved={() => { setShowRecipeForm(false); fetchRecipes() }} onCancel={() => setShowRecipeForm(false)} />
+      <div style={{ fontFamily: 'var(--font-sans)' }}>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2C1810' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Plate</span>
+          <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
+        </div>
+        <RecipeForm
+          user={user}
+          tenantId={TEST_TENANT_ID}
+          onSaved={() => { setShowRecipeForm(false); fetchRecipes() }}
+          onCancel={() => setShowRecipeForm(false)}
+        />
       </div>
     )
   }
 
+  const navBtn = (label: string, viewName: typeof view, enabled = true) => (
+    <button
+      onClick={() => enabled && setView(viewName)}
+      style={{
+        background: 'none', border: 'none',
+        cursor: enabled ? 'pointer' : 'not-allowed',
+        fontWeight: view === viewName ? '700' : '400',
+        color: view === viewName ? 'white' : enabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
+        fontSize: '0.95rem', padding: '0.25rem 0',
+        fontFamily: 'var(--font-sans)',
+        borderBottom: view === viewName ? '2px solid #C4622D' : '2px solid transparent',
+        transition: 'all 0.15s ease',
+      }}
+    >
+      {label}
+    </button>
+  )
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* Nav */}
-      <nav className="nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <span className="nav-brand">🍽️ Plate</span>
-          <div className="nav-links">
-            <button className={`nav-link ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>Recipes</button>
-            <button className={`nav-link ${view === 'menu' ? 'active' : ''} ${!currentMenuId ? 'disabled' : ''}`} onClick={() => currentMenuId && setView('menu')} disabled={!currentMenuId}>This Week</button>
-            <button className={`nav-link ${view === 'shopping' ? 'active' : ''} ${!currentMenuId ? 'disabled' : ''}`} onClick={() => currentMenuId && setView('shopping')} disabled={!currentMenuId}>Shopping</button>
+    <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
+      <div style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>🍽️ Plate</span>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            {navBtn('Recipes', 'dashboard')}
+            {navBtn('This Week', 'menu', !!currentMenuId)}
+            {navBtn('Shopping', 'shopping', !!currentMenuId)}
           </div>
         </div>
-        <div className="nav-right">
-          <span className="nav-email">{user.email}</span>
-          <button onClick={signOut} className="btn btn-ghost btn-sm" style={{ color: 'rgba(253,246,238,0.7)', borderColor: 'rgba(253,246,238,0.2)' }}>Sign out</button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
+          <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
-      </nav>
+      </div>
 
-      <div className="page">
-        {/* Menu View */}
+      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
         {view === 'menu' && currentMenuId && (
-          <WeeklyMenuView menuId={currentMenuId} tenantId={TEST_TENANT_ID} onApproved={() => fetchCurrentMenu()} />
+          <WeeklyMenuView menuId={currentMenuId} tenantId={TEST_TENANT_ID} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
         )}
 
-        {/* Shopping View */}
-        {view === 'shopping' && currentMenuId && (
-          <ShoppingList menuId={currentMenuId} familyId={TEST_FAMILY_ID} tenantId={TEST_TENANT_ID} />
+        {view === 'shopping' && currentMenuId && familyId && (
+          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={TEST_TENANT_ID} />
         )}
 
-        {/* Dashboard */}
         {view === 'dashboard' && (
           <>
-            {/* Menu Generation Card */}
-            <div className="card-warm" style={{ padding: '1.75rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ marginBottom: '2rem', padding: '1.5rem 2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ marginBottom: '0.25rem' }}>This Week's Menu</h2>
-                <p className="text-small text-muted" style={{ margin: 0 }}>
+                <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Menu</h2>
+                <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
                   {currentMenuId ? "Your meal plan is ready." : "Generate a personalized weekly meal plan."}
                 </p>
+                {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button onClick={generateMenu} disabled={generatingMenu} className="btn btn-primary">
-                  {generatingMenu ? '⏳ Generating...' : currentMenuId ? '↺ Regenerate' : '✨ Generate Menu'}
-                </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
                 {currentMenuId && (
                   <>
-                    <button onClick={() => setView('menu')} className="btn btn-secondary">View Menu →</button>
-                    <button onClick={() => setView('shopping')} className="btn btn-success">🛒 Shopping List</button>
+                    <button onClick={() => setView('menu')} style={{ background: 'white', color: '#C4622D', border: '1.5px solid #C4622D', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
+                      View Menu
+                    </button>
+                    <button onClick={() => setView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
+                      Shopping List
+                    </button>
                   </>
                 )}
+                <button
+                  onClick={generateMenu}
+                  disabled={generatingMenu}
+                  style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap' }}
+                >
+                  {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
+                </button>
               </div>
-              {menuError && <p className="text-error text-small" style={{ width: '100%', margin: 0 }}>{menuError}</p>}
             </div>
 
-            {/* Recipes */}
-            <div className="section-header">
-              <h2>My Recipes <span className="text-muted text-small" style={{ fontFamily: 'var(--font-body)', fontWeight: 400 }}>({recipes.length})</span></h2>
-              <button onClick={() => setShowRecipeForm(true)} className="btn btn-primary btn-sm">+ Add Recipe</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
+              <button onClick={() => setShowRecipeForm(true)} style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
             </div>
-
-            {recipes.length === 0 ? (
-              <div className="empty-state">
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🥘</div>
-                <h3>No recipes yet</h3>
-                <p>Add your first recipe to get started with meal planning.</p>
-                <button onClick={() => setShowRecipeForm(true)} className="btn btn-primary mt-2">Add Your First Recipe</button>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                {recipes.map(recipe => (
-                  <div key={recipe.id} className="card" style={{ padding: '1.25rem', transition: 'box-shadow 0.15s, transform 0.15s', cursor: 'default' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                      <h3 style={{ fontSize: '1rem', flex: 1, paddingRight: '0.5rem' }}>{recipe.title}</h3>
-                      <span className="tag tag-muted" style={{ flexShrink: 0 }}>{recipe.complexity}</span>
-                    </div>
-                    {recipe.description && <p style={{ fontSize: '0.85rem', margin: '0 0 0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>{recipe.description}</p>}
-                    <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
-                      {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}
-                      {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
-                      {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
-                    </div>
-                    {recipe.cuisine_tags?.length > 0 && (
-                      <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                        {recipe.cuisine_tags.slice(0, 3).map((tag: string) => (
-                          <span key={tag} className="tag tag-primary">{tag}</span>
-                        ))}
-                      </div>
-                    )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+              {recipes.map(recipe => (
+                <div key={recipe.id} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
+                    <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color: '#C4622D', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, marginLeft: '0.5rem' }}>{recipe.complexity}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  {recipe.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
+                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#9B8B82', flexWrap: 'wrap' }}>
+                    {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}
+                    {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
+                    {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
+                  </div>
+                  {recipe.cuisine_tags?.length > 0 && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      {recipe.cuisine_tags.slice(0, 2).map((tag: string) => (
+                        <span key={tag} style={{ fontSize: '0.7rem', background: '#FDF6EE', color: '#C4622D', padding: '0.2rem 0.6rem', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.04em' }}>{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </>
         )}
       </div>

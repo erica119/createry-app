@@ -61,33 +61,94 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
     }
   }
 
+  const btnBase: React.CSSProperties = {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    fontSize: '1.5rem',
+    lineHeight: '1',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    cursor: 'pointer',
+    fontFamily: 'var(--font-sans)',
+  }
+
   return (
     <div>
-      <h2>Tell us about your family</h2>
-      <p style={{ color: '#666' }}>This helps us generate the right amount of food each week.</p>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Family name</label>
-        <input type="text" value={familyName} onChange={e => setFamilyName(e.target.value)} style={{ width: '100%', padding: '0.5rem', fontSize: '1rem', borderRadius: '4px', border: '1px solid #ddd' }} />
+      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: 'var(--color-text)', margin: '0 0 0.5rem' }}>
+        Tell us about your family
+      </h2>
+      <p style={{ color: 'var(--color-text-muted)', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
+        This helps us generate the right amount of food each week.
+      </p>
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={{ display: 'block', fontWeight: '500', color: 'var(--color-text)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+          Family name
+        </label>
+        <input
+          type="text"
+          value={familyName}
+          onChange={e => setFamilyName(e.target.value)}
+          style={{
+            width: '100%', padding: '0.75rem 1rem', fontSize: '1rem',
+            borderRadius: '10px', border: '2px solid #E8D5B7',
+            background: '#FDF6EE', color: '#2C1810',
+            fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box'
+          }}
+        />
       </div>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Number of adults</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => setAdults(Math.max(1, adults - 1))} style={{ padding: '0.5rem 1rem', fontSize: '1.2rem' }}>-</button>
-          <span style={{ fontSize: '1.5rem', minWidth: '2rem', textAlign: 'center' }}>{adults}</span>
-          <button onClick={() => setAdults(adults + 1)} style={{ padding: '0.5rem 1rem', fontSize: '1.2rem' }}>+</button>
+
+      {[
+        { label: '👨‍👩‍👧 Adults', value: adults, min: 1, set: setAdults },
+        { label: '🧒 Children', value: children, min: 0, set: setChildren },
+      ].map(({ label, value, min, set }) => (
+        <div key={label} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '1rem 1.25rem', background: '#FDF6EE', borderRadius: '12px', marginBottom: '0.75rem'
+        }}>
+          <span style={{ fontWeight: '500', color: '#2C1810', fontSize: '1rem' }}>{label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button
+              onClick={() => set(Math.max(min, value - 1))}
+              disabled={value <= min}
+              style={{
+                ...btnBase,
+                border: '2px solid #E8D5B7',
+                background: 'white',
+                color: '#2C1810',
+                opacity: value <= min ? 0.35 : 1,
+                cursor: value <= min ? 'not-allowed' : 'pointer',
+              }}
+            >−</button>
+            <span style={{
+              fontSize: '1.6rem', fontWeight: '700', color: '#C4622D',
+              minWidth: '2rem', textAlign: 'center', fontFamily: 'var(--font-serif)'
+            }}>{value}</span>
+            <button
+              onClick={() => set(value + 1)}
+              style={{
+                ...btnBase,
+                border: '2px solid #C4622D',
+                background: '#C4622D',
+                color: 'white',
+              }}
+            >+</button>
+          </div>
         </div>
-      </div>
-      <div style={{ marginBottom: '2rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Number of children</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => setChildren(Math.max(0, children - 1))} style={{ padding: '0.5rem 1rem', fontSize: '1.2rem' }}>-</button>
-          <span style={{ fontSize: '1.5rem', minWidth: '2rem', textAlign: 'center' }}>{children}</span>
-          <button onClick={() => setChildren(children + 1)} style={{ padding: '0.5rem 1rem', fontSize: '1.2rem' }}>+</button>
-        </div>
-      </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button onClick={handleSave} disabled={saving} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '6px', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-        {saving ? 'Saving...' : 'Next'}
+      ))}
+
+      {error && <p style={{ color: '#dc2626', fontSize: '0.9rem', marginTop: '1rem' }}>{error}</p>}
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="btn-primary"
+        style={{ width: '100%', marginTop: '1.5rem', opacity: saving ? 0.7 : 1 }}
+      >
+        {saving ? 'Saving...' : 'Continue →'}
       </button>
     </div>
   )

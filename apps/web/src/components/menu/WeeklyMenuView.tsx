@@ -5,39 +5,39 @@ interface Props {
   menuId: string
   tenantId: string
   onApproved: () => void
+  onGoShopping?: () => void
 }
 
 interface Recipe {
   id: string
   title: string
-  description: string
-  cook_time_minutes: number
-  prep_time_minutes: number
   complexity: string
-  cuisine_tags: string[]
-  meal_type: string[]
-}
-
-interface DayMenu {
-  breakfast: string | null
-  lunch: string | null
-  dinner: string | null
+  prep_time_minutes: number
+  cook_time_minutes: number
 }
 
 interface MenuData {
-  days: Record<string, DayMenu>
+  days: Record<string, { breakfast: string | null; lunch: string | null; dinner: string | null }>
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const MEALS = ['breakfast', 'lunch', 'dinner'] as const
+interface WeeklyMenu {
+  id: string
+  week_start_date: string
+  status: string
+  menu_data: MenuData
+}
 
-export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) {
-  const [menu, setMenu] = useState<any>(null)
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopping }: Props) {
+  const [menu, setMenu] = useState<WeeklyMenu | null>(null)
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({})
-  const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState(false)
-  const [swapping, setSwapping] = useState<{ day: string; meal: string } | null>(null)
+  const [swapDay, setSwapDay] = useState<{ day: string; meal: string } | null>(null)
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
+  const [justApproved, setJustApproved] = useState(false)
 
   useEffect(() => {
     fetchMenu()
@@ -45,6 +45,7 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
   }, [menuId])
 
   const fetchMenu = async () => {
+    setLoading(true)
     const { data } = await supabase
       .from('weekly_menus')
       .select('*')
@@ -58,17 +59,11 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
   }
 
   const fetchRecipesForMenu = async (menuData: MenuData) => {
-    const ids = new Set<string>()
-    Object.values(menuData.days).forEach((day: DayMenu) => {
-      if (day.breakfast) ids.add(day.breakfast)
-      if (day.lunch) ids.add(day.lunch)
-      if (day.dinner) ids.add(day.dinner)
-    })
-    if (ids.size === 0) return
-    const { data } = await supabase
-      .from('recipes')
-      .select('id, title, description, cook_time_minutes, prep_time_minutes, complexity, cuisine_tags, meal_type')
-      .in('id', Array.from(ids))
+    const ids = Object.values(menuData.days)
+      .flatMap(d => [d.breakfast, d.lunch, d.dinner])
+      .filter((id): id is string => !!id)
+    if (ids.length === 0) return
+    const { data } = await supabase.from('recipes').select('id, title, complexity, prep_time_minutes, cook_time_minutes').in('id', ids)
     if (data) {
       const map: Record<string, Recipe> = {}
       data.forEach(r => { map[r.id] = r })
@@ -77,132 +72,142 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
   }
 
   const fetchAllRecipes = async () => {
-    const { data } = await supabase
-      .from('recipes')
-      .select('id, title, description, cook_time_minutes, prep_time_minutes, complexity, cuisine_tags, meal_type')
-      .eq('tenant_id', tenantId)
-      .eq('is_active', true)
-      .order('title')
+    const { data } = await supabase.from('recipes').select('id, title, complexity, prep_time_minutes, cook_time_minutes').eq('tenant_id', tenantId)
     if (data) setAllRecipes(data)
   }
 
-  const swapMeal = async (day: string, meal: string, newRecipeId: string | null) => {
-    const updatedMenuData = {
-      ...menu.menu_data,
-      days: {
-        ...menu.menu_data.days,
-        [day]: { ...menu.menu_data.days[day], [meal]: newRecipeId }
-      }
-    }
-    const { data } = await supabase
-      .from('weekly_menus')
-      .update({ menu_data: updatedMenuData })
-      .eq('id', menuId)
-      .select()
-      .maybeSingle()
-    if (data) {
-      setMenu(data)
-      if (newRecipeId && !recipes[newRecipeId]) {
-        const { data: recipe } = await supabase
-          .from('recipes')
-          .select('id, title, description, cook_time_minutes, prep_time_minutes, complexity, cuisine_tags, meal_type')
-          .eq('id', newRecipeId)
-          .maybeSingle()
-        if (recipe) setRecipes(prev => ({ ...prev, [recipe.id]: recipe }))
-      }
-    }
-    setSwapping(null)
-  }
-
-  const approveMenu = async () => {
+  const handleApprove = async () => {
+    if (!menu) return
     setApproving(true)
-    await supabase.from('weekly_menus').update({ status: 'approved' }).eq('id', menuId)
-    setMenu((prev: any) => ({ ...prev, status: 'approved' }))
+    const { error } = await supabase
+      .from('weekly_menus')
+      .update({ status: 'approved' })
+      .eq('id', menu.id)
+    if (!error) {
+      setMenu({ ...menu, status: 'approved' })
+      setJustApproved(true)
+      onApproved()
+    }
     setApproving(false)
-    onApproved()
   }
 
-  if (loading) return <p className="loading">Loading your menu...</p>
-  if (!menu) return <p className="loading">Menu not found</p>
+  const handleSwap = async (recipeId: string) => {
+    if (!swapDay || !menu) return
+    const updatedDays = {
+      ...menu.menu_data.days,
+      [swapDay.day]: {
+        ...menu.menu_data.days[swapDay.day],
+        [swapDay.meal]: recipeId,
+      }
+    }
+    const updatedMenuData = { ...menu.menu_data, days: updatedDays }
+    const { error } = await supabase
+      .from('weekly_menus')
+      .update({ menu_data: updatedMenuData, status: 'pending_approval' })
+      .eq('id', menu.id)
+    if (!error) {
+      setMenu({ ...menu, menu_data: updatedMenuData, status: 'pending_approval' })
+      await fetchRecipesForMenu(updatedMenuData)
+      setJustApproved(false)
+    }
+    setSwapDay(null)
+  }
 
-  const menuData: MenuData = menu.menu_data
+  if (loading) return <p style={{ color: '#6B5C52' }}>Loading menu...</p>
+  if (!menu) return <p style={{ color: '#6B5C52' }}>Menu not found.</p>
+
   const isApproved = menu.status === 'approved'
+  const weekDate = new Date(menu.week_start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
     <div>
       {/* Header */}
-      <div className="section-header" style={{ marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ marginBottom: '0.25rem' }}>This Week's Menu</h2>
-          <p className="text-small text-muted" style={{ margin: 0 }}>
-            Week of {menu.week_start_date} · Status: <strong>{menu.status.replace('_', ' ')}</strong>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: '0 0 0.25rem' }}>
+            This Week's Menu
+          </h2>
+          <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
+            Week of {weekDate} · Status: <strong>{menu.status.replace('_', ' ')}</strong>
           </p>
         </div>
-        {isApproved ? (
-          <span style={{ color: 'var(--color-success)', fontWeight: 700, fontSize: '1rem' }}>✓ Approved</span>
-        ) : (
-          <button onClick={approveMenu} disabled={approving} className="btn btn-success">
-            {approving ? 'Approving...' : '✓ Approve Menu'}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {isApproved ? (
+            <>
+              <span style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>✓ Approved</span>
+              {onGoShopping && (
+                <button
+                  onClick={onGoShopping}
+                  style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}
+                >
+                  → Build Shopping List
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={handleApprove}
+              disabled={approving}
+              style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: approving ? 0.7 : 1 }}
+            >
+              {approving ? 'Approving...' : '✓ Approve Menu'}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Weekly grid */}
+      {/* Just approved banner */}
+      {justApproved && onGoShopping && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ margin: 0, color: '#16a34a', fontWeight: '500' }}>🎉 Menu approved! Ready to build your shopping list?</p>
+          <button
+            onClick={onGoShopping}
+            style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '1rem' }}
+          >
+            Build Shopping List →
+          </button>
+        </div>
+      )}
+
+      {/* Calendar grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '2rem' }}>
-        {DAYS.map((day, i) => {
-          const dayData = menuData.days[String(i)] || { breakfast: null, lunch: null, dinner: null }
-          const hasAnyMeal = dayData.breakfast || dayData.lunch || dayData.dinner
+        {Array.from({ length: 7 }, (_, i) => {
+          const dayData = menu.menu_data.days[String(i)] || {}
+          const meals = [
+            { key: 'breakfast', label: 'BREAKFAST' },
+            { key: 'lunch', label: 'LUNCH' },
+            { key: 'dinner', label: 'DINNER' },
+          ] as const
+          const hasMeals = meals.some(m => dayData[m.key])
 
           return (
-            <div key={i} className="card" style={{ overflow: 'hidden', padding: 0 }}>
-              {/* Day header */}
-              <div style={{
-                background: 'var(--color-primary)',
-                color: 'white',
-                padding: '0.5rem',
-                textAlign: 'center',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                fontFamily: 'var(--font-body)',
-              }}>
-                {day.slice(0, 3).toUpperCase()}
+            <div key={i} style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', background: 'white' }}>
+              <div style={{ background: '#C4622D', padding: '0.5rem 0.25rem', textAlign: 'center' }}>
+                <span style={{ color: 'white', fontWeight: '700', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                  {DAY_NAMES[i]}
+                </span>
               </div>
-
-              {/* Meals */}
-              <div style={{ padding: '0.5rem' }}>
-                {!hasAnyMeal ? (
-                  <p style={{ color: 'var(--color-text-light)', fontSize: '0.7rem', textAlign: 'center', margin: '0.5rem 0' }}>Rest day</p>
+              <div style={{ padding: '0.5rem 0.4rem', minHeight: '80px' }}>
+                {!hasMeals ? (
+                  <p style={{ color: '#C8BAB2', fontSize: '0.7rem', textAlign: 'center', margin: '0.75rem 0', fontStyle: 'italic' }}>Rest day</p>
                 ) : (
-                  MEALS.map(meal => {
-                    const recipeId = dayData[meal]
+                  meals.map(({ key, label }) => {
+                    const recipeId = dayData[key]
                     if (!recipeId) return null
                     const recipe = recipes[recipeId]
-
                     return (
-                      <div key={meal} style={{ marginBottom: '0.35rem' }}>
-                        <div style={{ fontSize: '0.6rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.15rem', fontWeight: 700 }}>{meal}</div>
+                      <div key={key} style={{ marginBottom: '0.4rem' }}>
+                        <p style={{ margin: '0 0 0.2rem', fontSize: '0.6rem', fontWeight: '700', color: '#9B8B82', letterSpacing: '0.05em' }}>{label}</p>
                         <div
-                          onClick={() => !isApproved && setSwapping({ day: String(i), meal })}
-                          style={{
-                            background: 'var(--color-primary-light)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '0.3rem 0.4rem',
-                            fontSize: '0.72rem',
-                            cursor: isApproved ? 'default' : 'pointer',
-                            lineHeight: '1.3',
-                            color: 'var(--color-primary-dark)',
-                            transition: 'background 0.15s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '0.25rem',
-                          }}
-                          onMouseEnter={e => { if (!isApproved) (e.currentTarget as HTMLElement).style.background = 'var(--color-border)' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light)' }}
+                          style={{ background: '#F5EFE6', borderRadius: '6px', padding: '0.3rem 0.4rem', cursor: isApproved ? 'default' : 'pointer', position: 'relative' }}
+                          onClick={() => !isApproved && setSwapDay({ day: String(i), meal: key })}
                         >
-                          <span>{recipe?.title || 'Loading...'}</span>
-                          {!isApproved && <span style={{ opacity: 0.5, fontSize: '0.65rem' }}>↺</span>}
+                          <p style={{ margin: 0, fontSize: '0.72rem', color: '#2C1810', fontWeight: '500', lineHeight: 1.3 }}>
+                            {recipe?.title || 'Loading...'}
+                          </p>
+                          {!isApproved && (
+                            <span style={{ fontSize: '0.6rem', color: '#C4622D', display: 'block', marginTop: '0.15rem' }}>tap to swap</span>
+                          )}
                         </div>
                       </div>
                     )
@@ -215,60 +220,28 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved }: Props) 
       </div>
 
       {/* Swap modal */}
-      {swapping && (
-        <div
-          onClick={e => e.target === e.currentTarget && setSwapping(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
-        >
-          <div className="card" style={{ maxWidth: '480px', width: '100%', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0 }}>
-                Swap {swapping.meal} · {DAYS[parseInt(swapping.day)]}
+      {swapDay && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', width: '100%', maxHeight: '80vh', overflow: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-serif)', color: '#2C1810' }}>
+                Swap {swapDay.meal} on {FULL_DAY_NAMES[parseInt(swapDay.day)]}
               </h3>
-              <button onClick={() => setSwapping(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
+              <button onClick={() => setSwapDay(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6B5C52' }}>✕</button>
             </div>
-
-            <button
-              onClick={() => swapMeal(swapping.day, swapping.meal, null)}
-              className="btn btn-ghost"
-              style={{ width: '100%', marginBottom: '1rem', color: '#c0392b', borderColor: '#c0392b', justifyContent: 'center' }}
-            >
-              Remove this meal
-            </button>
-
-            <p className="text-small text-muted" style={{ marginBottom: '0.75rem' }}>Choose a replacement:</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              {allRecipes
-                .filter(r => !r.meal_type || r.meal_type.length === 0 || r.meal_type.includes(swapping.meal))
-                .map(recipe => (
-                  <div
-                    key={recipe.id}
-                    onClick={() => swapMeal(swapping.day, swapping.meal, recipe.id)}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      border: '1.5px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      cursor: 'pointer',
-                      background: 'var(--color-bg-card)',
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-primary)'
-                      ;(e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light)'
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'
-                      ;(e.currentTarget as HTMLElement).style.background = 'var(--color-bg-card)'
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{recipe.title}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
-                      {recipe.cook_time_minutes ? `🔥 ${recipe.cook_time_minutes}min` : ''} {recipe.complexity ? `· ${recipe.complexity}` : ''}
-                    </div>
-                  </div>
-                ))
-              }
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {allRecipes.map(recipe => (
+                <button
+                  key={recipe.id}
+                  onClick={() => handleSwap(recipe.id)}
+                  style={{ padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #E8D5B7', background: 'white', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                >
+                  <p style={{ margin: '0 0 0.2rem', fontWeight: '600', color: '#2C1810', fontSize: '0.9rem' }}>{recipe.title}</p>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#9B8B82' }}>
+                    {recipe.prep_time_minutes && `${recipe.prep_time_minutes}m prep · `}{recipe.complexity}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
         </div>

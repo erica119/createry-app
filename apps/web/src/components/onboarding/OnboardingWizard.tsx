@@ -46,34 +46,67 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
     if (currentStep > 0) setCurrentStep(currentStep - 1)
   }
 
-  if (loading) return <p>Loading...</p>
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><div className="spinner" /></div>
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <p style={{ color: '#666', marginBottom: '0.5rem' }}>
-          Step {currentStep + 1} of {STEPS.length}: <strong>{STEPS[currentStep]}</strong>
-        </p>
-        <div style={{ background: '#eee', borderRadius: '4px', height: '8px' }}>
-          <div style={{ background: '#4f46e5', borderRadius: '4px', height: '8px', width: `${((currentStep + 1) / STEPS.length) * 100}%`, transition: 'width 0.3s ease' }} />
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ width: '100%', maxWidth: '560px' }}>
 
-      {currentStep === 0 && (
-        <StepFamilySize user={user} tenantId={tenantId} familyId={familyId} onNext={(id: string) => handleNext(id)} />
-      )}
-      {currentStep === 1 && familyId && (
-        <StepDietaryConstraints familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
-      )}
-      {currentStep === 2 && familyId && (
-        <StepWeeklySchedule familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
-      )}
-      {currentStep === 3 && familyId && (
-        <StepGrocerySchedule familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
-      )}
-      {currentStep === 4 && familyId && (
-        <StepMealPreferences familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
-      )}
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🍽️</div>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.25rem' }}>
+            Let's set up your kitchen
+          </h1>
+          <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.95rem' }}>
+            Step {currentStep + 1} of {STEPS.length} — {STEPS[currentStep]}
+          </p>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ background: 'var(--sand)', borderRadius: '4px', height: '6px', marginBottom: '2rem', overflow: 'hidden' }}>
+          <div style={{
+            background: 'var(--terracotta)',
+            height: '6px',
+            width: `${((currentStep + 1) / STEPS.length) * 100}%`,
+            transition: 'width 0.4s ease',
+            borderRadius: '4px'
+          }} />
+        </div>
+
+        {/* Step dots */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
+          {STEPS.map((_, i) => (
+            <div key={i} style={{
+              width: i === currentStep ? '24px' : '8px',
+              height: '8px',
+              borderRadius: '4px',
+              background: i <= currentStep ? 'var(--terracotta)' : 'var(--sand)',
+              transition: 'all 0.3s ease'
+            }} />
+          ))}
+        </div>
+
+        {/* Card */}
+        <div className="card" style={{ padding: '2rem' }}>
+          {currentStep === 0 && (
+            <StepFamilySize user={user} tenantId={tenantId} familyId={familyId} onNext={(id: string) => handleNext(id)} />
+          )}
+          {currentStep === 1 && familyId && (
+            <StepDietaryConstraints familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
+          )}
+          {currentStep === 2 && familyId && (
+            <StepWeeklySchedule familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
+          )}
+          {currentStep === 3 && familyId && (
+            <StepGrocerySchedule familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
+          )}
+          {currentStep === 4 && familyId && (
+            <StepMealPreferences familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
+          )}
+        </div>
+
+      </div>
     </div>
   )
 }

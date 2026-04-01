@@ -9,35 +9,45 @@ interface Props {
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function StepGrocerySchedule({ familyId, tenantId, onNext, onBack }: Props) {
-  const [selectedDays, setSelectedDays] = useState<number[]>([])
+  const [shoppingDays, setShoppingDays] = useState<number[]>([0])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from('grocery_schedule').select('day_of_week').eq('family_id', familyId).order('order_index')
-      if (data) setSelectedDays(data.map(d => d.day_of_week))
+      const { data } = await supabase
+        .from('grocery_schedule')
+        .select('day_of_week')
+        .eq('family_id', familyId)
+      if (data && data.length > 0) setShoppingDays(data.map((d: any) => d.day_of_week))
     }
     fetch()
   }, [familyId])
 
   const toggleDay = (day: number) => {
-    if (selectedDays.includes(day)) setSelectedDays(selectedDays.filter(d => d !== day))
-    else setSelectedDays([...selectedDays, day].sort())
+    setShoppingDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+    )
   }
 
   const handleSave = async () => {
+    if (shoppingDays.length === 0) {
+      setError('Please select at least one shopping day.')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
       await supabase.from('grocery_schedule').delete().eq('family_id', familyId)
-      if (selectedDays.length > 0) {
-        const rows = selectedDays.map((day, index) => ({ tenant_id: tenantId, family_id: familyId, day_of_week: day, order_index: index }))
-        const { error } = await supabase.from('grocery_schedule').insert(rows)
-        if (error) throw error
-      }
+      const { error } = await supabase.from('grocery_schedule').insert(
+        shoppingDays.map((day, i) => ({
+          tenant_id: tenantId, family_id: familyId, day_of_week: day, order_index: i,
+        }))
+      )
+      if (error) throw error
       onNext()
     } catch (err: any) {
       setError(err.message)
@@ -48,22 +58,52 @@ export default function StepGrocerySchedule({ familyId, tenantId, onNext, onBack
 
   return (
     <div>
-      <h2>When do you grocery shop?</h2>
-      <p style={{ color: '#666' }}>Select the days you typically shop.</p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem' }}>
-        {DAYS.map((day, i) => (
-          <button key={i} onClick={() => toggleDay(i)} style={{ padding: '0.75rem 1.25rem', borderRadius: '8px', border: '2px solid', borderColor: selectedDays.includes(i) ? '#4f46e5' : '#ddd', background: selectedDays.includes(i) ? '#4f46e5' : 'white', color: selectedDays.includes(i) ? 'white' : '#333', cursor: 'pointer', fontSize: '0.95rem', fontWeight: selectedDays.includes(i) ? 'bold' : 'normal' }}>
-            {day}
-          </button>
-        ))}
+      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+        When do you grocery shop?
+      </h2>
+      <p style={{ color: '#6B5C52', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
+        We'll make sure your list is ready before your usual shopping day.
+      </p>
+
+      <p style={{ fontWeight: '600', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Shopping days
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.35rem', marginBottom: '2rem' }}>
+        {DAY_SHORT.map((day, i) => {
+          const active = shoppingDays.includes(i)
+          return (
+            <button
+              key={i}
+              onClick={() => toggleDay(i)}
+              className={active ? 'day-pill-active' : 'day-pill-inactive'}
+              style={{
+                padding: '0.75rem 0.1rem', borderRadius: '10px',
+                border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+                fontSize: '0.7rem', fontWeight: '600', cursor: 'pointer',
+                transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', textAlign: 'center',
+              }}
+            >
+              {day}
+            </button>
+          )
+        })}
       </div>
-      {selectedDays.length > 0 && <p style={{ color: '#4f46e5', marginBottom: '1.5rem' }}>Shopping on: {selectedDays.map(d => DAYS[d]).join(', ')}</p>}
-      {selectedDays.length === 0 && <p style={{ color: '#999', marginBottom: '1.5rem' }}>Select at least one shopping day.</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button onClick={onBack} style={{ padding: '0.75rem 2rem', borderRadius: '6px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '1rem' }}>Back</button>
-        <button onClick={handleSave} disabled={saving || selectedDays.length === 0} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '6px', fontSize: '1rem', cursor: saving || selectedDays.length === 0 ? 'not-allowed' : 'pointer', opacity: saving || selectedDays.length === 0 ? 0.7 : 1 }}>
-          {saving ? 'Saving...' : 'Next'}
+
+      {shoppingDays.length > 0 && (
+        <div style={{ padding: '1rem', background: '#FDF6EE', borderRadius: '12px', marginBottom: '1.5rem' }}>
+          <p style={{ margin: 0, color: '#2C1810', fontSize: '0.9rem' }}>
+            🛒 Shopping on <strong>{shoppingDays.map(d => DAYS[d]).join(', ')}</strong>
+          </p>
+        </div>
+      )}
+
+      {error && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{error}</p>}
+
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <button onClick={onBack} className="btn-secondary" style={{ flex: 1 }}>← Back</button>
+        <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, opacity: saving ? 0.7 : 1 }}>
+          {saving ? 'Saving...' : 'Continue →'}
         </button>
       </div>
     </div>

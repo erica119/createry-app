@@ -8,41 +8,58 @@ interface Props {
   onBack: () => void
 }
 
-const CUISINES = ['Italian', 'Mexican', 'Asian', 'American', 'Mediterranean', 'Indian', 'Thai', 'Japanese', 'Greek', 'French']
-const COOK_TIMES = [{ label: 'Under 30 min', value: '30' }, { label: 'Under 45 min', value: '45' }, { label: 'Under 60 min', value: '60' }, { label: 'No limit', value: '999' }]
-const COMPLEXITY = [{ label: 'Simple', value: 'simple', description: 'Few ingredients, easy steps' }, { label: 'Moderate', value: 'moderate', description: 'Some prep work involved' }, { label: 'Complex', value: 'complex', description: 'Multi-step, more skilled cooking' }]
+const CUISINES = [
+  { id: 'italian', label: '🍝 Italian' },
+  { id: 'mexican', label: '🌮 Mexican' },
+  { id: 'asian', label: '🥢 Asian' },
+  { id: 'american', label: '🍔 American' },
+  { id: 'mediterranean', label: '🫒 Mediterranean' },
+  { id: 'indian', label: '🍛 Indian' },
+  { id: 'thai', label: '🍜 Thai' },
+  { id: 'greek', label: '🥙 Greek' },
+  { id: 'french', label: '🥐 French' },
+  { id: 'japanese', label: '🍱 Japanese' },
+]
+
+const COOK_TIMES = [
+  { id: '15', label: '⚡ 15 min or less' },
+  { id: '30', label: '🕐 30 minutes' },
+  { id: '45', label: '🕑 45 minutes' },
+  { id: '60', label: '🕒 1 hour' },
+  { id: '90', label: '🍲 1.5+ hours (weekends)' },
+]
 
 export default function StepMealPreferences({ familyId, tenantId, onNext, onBack }: Props) {
-  const [likedCuisines, setLikedCuisines] = useState<string[]>([])
+  const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([])
   const [dislikedCuisines, setDislikedCuisines] = useState<string[]>([])
-  const [maxCookTime, setMaxCookTime] = useState('60')
-  const [complexity, setComplexity] = useState('moderate')
+  const [maxCookTime, setMaxCookTime] = useState('30')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<'favorites' | 'dislikes'>('favorites')
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from('meal_preferences').select('*').eq('family_id', familyId)
+      const { data } = await supabase
+        .from('meal_preferences')
+        .select('preference_type, value')
+        .eq('family_id', familyId)
       if (data) {
-        setLikedCuisines(data.filter((p: any) => p.preference_type === 'cuisine_like').map((p: any) => p.value))
-        setDislikedCuisines(data.filter((p: any) => p.preference_type === 'cuisine_dislike').map((p: any) => p.value))
-        const time = data.find((p: any) => p.preference_type === 'cook_time_max_minutes')
-        if (time) setMaxCookTime(time.value)
-        const comp = data.find((p: any) => p.preference_type === 'complexity')
-        if (comp) setComplexity(comp.value)
+        setFavoriteCuisines(data.filter(d => d.preference_type === 'cuisine_like').map(d => d.value))
+        setDislikedCuisines(data.filter(d => d.preference_type === 'cuisine_dislike').map(d => d.value))
+        const cookTime = data.find(d => d.preference_type === 'cook_time_max_minutes')
+        if (cookTime) setMaxCookTime(cookTime.value)
       }
     }
     fetch()
   }, [familyId])
 
-  const toggleCuisine = (cuisine: string, type: 'like' | 'dislike') => {
-    const lower = cuisine.toLowerCase()
-    if (type === 'like') {
-      if (likedCuisines.includes(lower)) setLikedCuisines(likedCuisines.filter(c => c !== lower))
-      else { setLikedCuisines([...likedCuisines, lower]); setDislikedCuisines(dislikedCuisines.filter(c => c !== lower)) }
+  const toggleCuisine = (id: string) => {
+    if (mode === 'favorites') {
+      setFavoriteCuisines(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+      setDislikedCuisines(prev => prev.filter(x => x !== id))
     } else {
-      if (dislikedCuisines.includes(lower)) setDislikedCuisines(dislikedCuisines.filter(c => c !== lower))
-      else { setDislikedCuisines([...dislikedCuisines, lower]); setLikedCuisines(likedCuisines.filter(c => c !== lower)) }
+      setDislikedCuisines(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+      setFavoriteCuisines(prev => prev.filter(x => x !== id))
     }
   }
 
@@ -52,10 +69,9 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
     try {
       await supabase.from('meal_preferences').delete().eq('family_id', familyId)
       const rows = [
-        ...likedCuisines.map(value => ({ tenant_id: tenantId, family_id: familyId, preference_type: 'cuisine_like', value })),
-        ...dislikedCuisines.map(value => ({ tenant_id: tenantId, family_id: familyId, preference_type: 'cuisine_dislike', value })),
+        ...favoriteCuisines.map(c => ({ tenant_id: tenantId, family_id: familyId, preference_type: 'cuisine_like', value: c })),
+        ...dislikedCuisines.map(c => ({ tenant_id: tenantId, family_id: familyId, preference_type: 'cuisine_dislike', value: c })),
         { tenant_id: tenantId, family_id: familyId, preference_type: 'cook_time_max_minutes', value: maxCookTime },
-        { tenant_id: tenantId, family_id: familyId, preference_type: 'complexity', value: complexity },
       ]
       const { error } = await supabase.from('meal_preferences').insert(rows)
       if (error) throw error
@@ -69,49 +85,95 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
 
   return (
     <div>
-      <h2>Meal preferences</h2>
-      <p style={{ color: '#666' }}>Help us understand what your family loves to eat.</p>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 'bold' }}>Cuisines (click to like, click again to dislike, click again to clear)</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {CUISINES.map(cuisine => {
-            const lower = cuisine.toLowerCase()
-            const liked = likedCuisines.includes(lower)
-            const disliked = dislikedCuisines.includes(lower)
-            return (
-              <button key={cuisine} onClick={() => { if (!liked && !disliked) toggleCuisine(cuisine, 'like'); else if (liked) toggleCuisine(cuisine, 'dislike'); else toggleCuisine(cuisine, 'dislike') }} style={{ padding: '0.5rem 1rem', borderRadius: '20px', border: '2px solid', borderColor: liked ? '#16a34a' : disliked ? '#dc2626' : '#ddd', background: liked ? '#dcfce7' : disliked ? '#fee2e2' : 'white', color: liked ? '#16a34a' : disliked ? '#dc2626' : '#333', cursor: 'pointer', fontSize: '0.9rem' }}>
-                {liked ? 'Like ' : disliked ? 'Dislike ' : ''}{cuisine}
-              </button>
-            )
-          })}
-        </div>
+      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+        What does your family love to eat?
+      </h2>
+      <p style={{ color: '#6B5C52', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
+        We'll use this to personalize every menu we generate.
+      </p>
+
+      <div style={{ display: 'flex', background: '#FDF6EE', borderRadius: '10px', padding: '4px', marginBottom: '1.25rem' }}>
+        {(['favorites', 'dislikes'] as const).map(m => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            style={{
+              flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none',
+              background: mode === m ? 'white' : 'transparent',
+              color: mode === m ? '#2C1810' : '#6B5C52',
+              fontWeight: mode === m ? '600' : '400',
+              fontSize: '0.875rem', cursor: 'pointer',
+              transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
+              boxShadow: mode === m ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            }}
+          >
+            {m === 'favorites' ? '❤️ Favorites' : '👎 Dislikes'}
+          </button>
+        ))}
       </div>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 'bold' }}>Maximum cook time on weeknights</label>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {COOK_TIMES.map(ct => (
-            <button key={ct.value} onClick={() => setMaxCookTime(ct.value)} style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '2px solid', borderColor: maxCookTime === ct.value ? '#4f46e5' : '#ddd', background: maxCookTime === ct.value ? '#4f46e5' : 'white', color: maxCookTime === ct.value ? 'white' : '#333', cursor: 'pointer', fontSize: '0.9rem' }}>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.75rem' }}>
+        {CUISINES.map(cuisine => {
+          const isFav = favoriteCuisines.includes(cuisine.id)
+          const isDisliked = dislikedCuisines.includes(cuisine.id)
+          const isActive = mode === 'favorites' ? isFav : isDisliked
+          const isOther = mode === 'favorites' ? isDisliked : isFav
+          const chipClass = isActive
+            ? (mode === 'favorites' ? 'chip-active' : 'chip-dislike-active')
+            : 'chip-inactive'
+          return (
+            <button
+              key={cuisine.id}
+              onClick={() => toggleCuisine(cuisine.id)}
+              className={chipClass}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '20px',
+                border: `2px solid ${isActive ? (mode === 'favorites' ? '#C4622D' : '#dc2626') : '#E8D5B7'}`,
+                fontSize: '0.875rem', cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
+                opacity: isOther ? 0.4 : 1,
+              }}
+            >
+              {cuisine.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <p style={{ fontWeight: '600', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Max weeknight cook time
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.5rem' }}>
+        {COOK_TIMES.map(ct => {
+          const active = maxCookTime === ct.id
+          return (
+            <button
+              key={ct.id}
+              onClick={() => setMaxCookTime(ct.id)}
+              style={{
+                padding: '0.75rem 1rem', borderRadius: '10px',
+                border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+                background: active ? '#FDF6EE' : 'white',
+                color: active ? '#C4622D' : '#2C1810',
+                fontSize: '0.9rem', cursor: 'pointer',
+                fontWeight: active ? '600' : '400',
+                transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', textAlign: 'left',
+              }}
+            >
               {ct.label}
             </button>
-          ))}
-        </div>
+          )
+        })}
       </div>
-      <div style={{ marginBottom: '2rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 'bold' }}>Recipe complexity</label>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {COMPLEXITY.map(c => (
-            <button key={c.value} onClick={() => setComplexity(c.value)} style={{ padding: '0.75rem 1.25rem', borderRadius: '8px', border: '2px solid', borderColor: complexity === c.value ? '#4f46e5' : '#ddd', background: complexity === c.value ? '#4f46e5' : 'white', color: complexity === c.value ? 'white' : '#333', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold' }}>{c.label}</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{c.description}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button onClick={onBack} style={{ padding: '0.75rem 2rem', borderRadius: '6px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '1rem' }}>Back</button>
-        <button onClick={handleSave} disabled={saving} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '6px', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-          {saving ? 'Saving...' : 'Finish'}
+
+      {error && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{error}</p>}
+
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <button onClick={onBack} className="btn-secondary" style={{ flex: 1 }}>← Back</button>
+        <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, opacity: saving ? 0.7 : 1 }}>
+          {saving ? 'Saving...' : 'Finish setup →'}
         </button>
       </div>
     </div>

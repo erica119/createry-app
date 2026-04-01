@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 
 interface Props {
@@ -27,9 +28,33 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
   const [dietaryTags, setDietaryTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const toggleTag = (list: string[], setList: (v: string[]) => void, id: string) => {
     setList(list.includes(id) ? list.filter(x => x !== id) : [...list, id])
+  }
+
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null
+    setUploadingImage(true)
+    const ext = imageFile.name.split('.').pop()
+    const path = `${tenantId}/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('recipe-images').upload(path, imageFile)
+    setUploadingImage(false)
+    if (error) { console.error('Image upload error:', error); return null }
+    const { data } = supabase.storage.from('recipe-images').getPublicUrl(path)
+    return data.publicUrl
   }
 
   const handleSave = async () => {
@@ -39,6 +64,8 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
 
     setSaving(true)
     setError(null)
+
+    const imageUrl = await uploadImage()
 
     const parsedIngredients = ingredients.split('\n')
       .filter(line => line.trim())
@@ -61,6 +88,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         dietary_tags: dietaryTags,
         is_premium: false,
         is_active: true,
+        image_url: imageUrl || null,
       })
       if (error) throw error
       onSaved()
@@ -190,6 +218,29 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         <div>
           <label style={labelStyle}>Dietary tags</label>
           <ChipGroup options={DIETARY_TAGS} selected={dietaryTags} onToggle={id => toggleTag(dietaryTags, setDietaryTags, id)} />
+        </div>
+
+        {/* Image */}
+        <div>
+          <label style={labelStyle}>Recipe photo</label>
+          <div
+            onClick={() => imageInputRef.current?.click()}
+            style={{
+              border: '2px dashed #E8D5B7', borderRadius: '12px', padding: '1.5rem',
+              textAlign: 'center', cursor: 'pointer', background: '#FDF6EE',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {imagePreview ? (
+              <img src={imagePreview} alt="Preview" style={{ maxHeight: '200px', borderRadius: '8px', objectFit: 'cover', width: '100%' }} />
+            ) : (
+              <>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
+                <p style={{ margin: 0, color: '#9B8B82', fontSize: '0.875rem' }}>Click to upload a photo</p>
+              </>
+            )}
+            <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+          </div>
         </div>
 
         {/* Ingredients */}

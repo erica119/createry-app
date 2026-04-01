@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import OnboardingWizard from './components/onboarding/OnboardingWizard'
 import RecipeForm from './components/recipes/RecipeForm'
+import WeeklyMenuView from './components/menu/WeeklyMenuView'
 
 const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 const TEST_FAMILY_ID = 'ba4aa7d6-b1ac-44b6-9706-15aadccd8aa3'
@@ -14,8 +15,9 @@ export default function App() {
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [recipes, setRecipes] = useState<any[]>([])
   const [generatingMenu, setGeneratingMenu] = useState(false)
-  const [menuResult, setMenuResult] = useState<any>(null)
+  const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuError, setMenuError] = useState<string | null>(null)
+  const [view, setView] = useState<'dashboard' | 'menu'>('dashboard')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,6 +44,7 @@ export default function App() {
     if (data?.id) {
       setOnboardingComplete(true)
       fetchRecipes()
+      fetchCurrentMenu()
     }
   }
 
@@ -50,12 +53,21 @@ export default function App() {
     if (data) setRecipes(data)
   }
 
+  const fetchCurrentMenu = async () => {
+    const { data } = await supabase
+      .from('weekly_menus')
+      .select('id')
+      .eq('family_id', TEST_FAMILY_ID)
+      .order('week_start_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (data?.id) setCurrentMenuId(data.id)
+  }
+
   const generateMenu = async () => {
     setGeneratingMenu(true)
     setMenuError(null)
-    setMenuResult(null)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
       const weekStartDate = new Date()
       weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay())
       const weekStr = weekStartDate.toISOString().split('T')[0]
@@ -78,7 +90,8 @@ export default function App() {
       )
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Generation failed')
-      setMenuResult(result)
+      setCurrentMenuId(result.menu.id)
+      setView('menu')
     } catch (err: any) {
       setMenuError(err.message)
     } finally {
@@ -117,7 +130,7 @@ export default function App() {
           <strong>Meal Plan App</strong>
           <button onClick={signOut} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>Sign out</button>
         </div>
-        <OnboardingWizard user={user} tenantId={TEST_TENANT_ID} onComplete={() => { setOnboardingComplete(true); fetchRecipes() }} />
+        <OnboardingWizard user={user} tenantId={TEST_TENANT_ID} onComplete={() => { setOnboardingComplete(true); fetchRecipes(); fetchCurrentMenu() }} />
       </div>
     )
   }
@@ -136,60 +149,72 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
+      {/* Nav */}
       <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <strong>Meal Plan App</strong>
+        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          <strong>Meal Plan App</strong>
+          <button onClick={() => setView('dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: view === 'dashboard' ? 'bold' : 'normal', color: view === 'dashboard' ? '#4f46e5' : '#666' }}>Recipes</button>
+          <button onClick={() => currentMenuId && setView('menu')} style={{ background: 'none', border: 'none', cursor: currentMenuId ? 'pointer' : 'not-allowed', fontWeight: view === 'menu' ? 'bold' : 'normal', color: view === 'menu' ? '#4f46e5' : currentMenuId ? '#666' : '#ccc' }}>
+            This Week {currentMenuId ? '' : '(not generated)'}
+          </button>
+        </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <span style={{ color: '#666', fontSize: '0.9rem' }}>{user.email}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid #ddd', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem' }}>Sign out</button>
         </div>
       </div>
-      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '2rem' }}>
 
-        {/* Generate Menu Section */}
-        <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f5f3ff', borderRadius: '8px', border: '1px solid #e0d9ff' }}>
-          <h2 style={{ margin: '0 0 0.5rem' }}>Weekly Menu</h2>
-          <p style={{ color: '#666', margin: '0 0 1rem', fontSize: '0.9rem' }}>Generate a personalized weekly meal plan using your recipes.</p>
-          <button
-            onClick={generateMenu}
-            disabled={generatingMenu}
-            style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', opacity: generatingMenu ? 0.7 : 1 }}
-          >
-            {generatingMenu ? 'Generating... (this may take 10-15 seconds)' : 'Generate This Week\'s Menu'}
-          </button>
-          {menuError && <p style={{ color: 'red', marginTop: '1rem' }}>{menuError}</p>}
-          {menuResult && (
-            <div style={{ marginTop: '1rem' }}>
-              <p style={{ color: 'green', fontWeight: 'bold' }}>Menu generated successfully!</p>
-              <pre style={{ background: '#fff', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', overflow: 'auto' }}>
-                {JSON.stringify(menuResult.menu?.menu_data, null, 2)}
-              </pre>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem' }}>
+        {view === 'menu' && currentMenuId ? (
+          <WeeklyMenuView
+            menuId={currentMenuId}
+            tenantId={TEST_TENANT_ID}
+            onApproved={() => fetchCurrentMenu()}
+          />
+        ) : (
+          <>
+            {/* Generate Menu */}
+            <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f5f3ff', borderRadius: '8px', border: '1px solid #e0d9ff' }}>
+              <h2 style={{ margin: '0 0 0.5rem' }}>Weekly Menu</h2>
+              <p style={{ color: '#666', margin: '0 0 1rem', fontSize: '0.9rem' }}>
+                {currentMenuId ? "This week's menu has been generated." : "Generate a personalized weekly meal plan using your recipes."}
+              </p>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button onClick={generateMenu} disabled={generatingMenu} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', opacity: generatingMenu ? 0.7 : 1 }}>
+                  {generatingMenu ? 'Generating...' : currentMenuId ? 'Regenerate Menu' : 'Generate This Week\'s Menu'}
+                </button>
+                {currentMenuId && (
+                  <button onClick={() => setView('menu')} style={{ background: 'white', color: '#4f46e5', border: '1px solid #4f46e5', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>
+                    View Menu →
+                  </button>
+                )}
+              </div>
+              {menuError && <p style={{ color: 'red', marginTop: '1rem' }}>{menuError}</p>}
             </div>
-          )}
-        </div>
 
-        {/* Recipes Section */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0 }}>My Recipes ({recipes.length})</h2>
-          <button onClick={() => setShowRecipeForm(true)} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>
-            + Add Recipe
-          </button>
-        </div>
-        <div>
-          {recipes.map(recipe => (
-            <div key={recipe.id} style={{ padding: '1rem', marginBottom: '0.75rem', border: '1px solid #eee', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0 }}>{recipe.title}</h3>
-                <span style={{ fontSize: '0.8rem', color: '#666', textTransform: 'capitalize' }}>{recipe.complexity}</span>
-              </div>
-              {recipe.description && <p style={{ color: '#666', margin: '0.5rem 0 0', fontSize: '0.9rem' }}>{recipe.description}</p>}
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.85rem', color: '#888' }}>
-                {recipe.prep_time_minutes && <span>Prep: {recipe.prep_time_minutes}min</span>}
-                {recipe.cook_time_minutes && <span>Cook: {recipe.cook_time_minutes}min</span>}
-                {recipe.servings && <span>Serves: {recipe.servings}</span>}
-              </div>
+            {/* Recipes */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0 }}>My Recipes ({recipes.length})</h2>
+              <button onClick={() => setShowRecipeForm(true)} style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', fontSize: '0.95rem', cursor: 'pointer' }}>+ Add Recipe</button>
             </div>
-          ))}
-        </div>
+            <div>
+              {recipes.map(recipe => (
+                <div key={recipe.id} style={{ padding: '1rem', marginBottom: '0.75rem', border: '1px solid #eee', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0 }}>{recipe.title}</h3>
+                    <span style={{ fontSize: '0.8rem', color: '#666', textTransform: 'capitalize' }}>{recipe.complexity}</span>
+                  </div>
+                  {recipe.description && <p style={{ color: '#666', margin: '0.5rem 0 0', fontSize: '0.9rem' }}>{recipe.description}</p>}
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.85rem', color: '#888' }}>
+                    {recipe.prep_time_minutes && <span>Prep: {recipe.prep_time_minutes}min</span>}
+                    {recipe.cook_time_minutes && <span>Cook: {recipe.cook_time_minutes}min</span>}
+                    {recipe.servings && <span>Serves: {recipe.servings}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

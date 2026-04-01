@@ -545,3 +545,10 @@ a.btn-link {
     font-size: 1.4rem !important;
   }
 }
+
+/* Print styles for shopping list */
+@media print {
+  nav, .nav-bar, button, a { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .main-content { padding: 0 !important; }
+}

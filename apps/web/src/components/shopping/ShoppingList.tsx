@@ -149,7 +149,7 @@ export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
               🛒 Instacart
             </a>
           )}
-          <button onClick={() => window.open(buildMailtoLink(), "_self")} style={{ background: "#C4622D", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>📧 Email List</button>
+          <button onClick={() => window.print()} style={{ background: "#C4622D", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
 
           <button
             onClick={generateList}

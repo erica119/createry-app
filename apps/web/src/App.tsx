@@ -215,7 +215,10 @@ export default function App() {
   if (loading || tenantLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
 
   // Ensure we have real tenant data before rendering anything
-  const activeTenant = tenant?.id ? tenant : null
+  // Use tenant if it has a real ID (not the fallback)
+  const activeTenant = (tenant?.id && tenant.id !== FALLBACK_TENANT_ID) ? tenant : null
+  const displayTenantName = activeTenant?.brand_name || 'Plate'
+  const displayTenantColor = activeTenant?.primary_color || '#C4622D'
 
   if (!user) {
     return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} tenant={tenant} />

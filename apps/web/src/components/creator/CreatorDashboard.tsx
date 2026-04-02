@@ -22,6 +22,8 @@ interface Tenant {
   primary_color: string
   logo_url: string | null
   subscription_status: string
+  stripe_account_id: string | null
+  stripe_onboarded: boolean
 }
 
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
@@ -40,6 +42,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [editColor, setEditColor] = useState('#C4622D')
   const [savingBranding, setSavingBranding] = useState(false)
   const [brandingSaved, setBrandingSaved] = useState(false)
+  const [connectingStripe, setConnectingStripe] = useState(false)
+  const [stripeError, setStripeError] = useState<string | null>(null)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
@@ -429,6 +433,51 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 <button onClick={saveBranding} disabled={savingBranding} style={{ background: color, color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: savingBranding ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: savingBranding ? 0.7 : 1 }}>
                   {brandingSaved ? '✓ Saved!' : savingBranding ? 'Saving...' : 'Save branding'}
                 </button>
+
+                <div style={{ borderTop: '1px solid #E8D5B7', paddingTop: '1.25rem' }}>
+                  <h4 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1rem' }}>Stripe Payouts</h4>
+                  <p style={{ color: '#6B5C52', fontSize: '0.85rem', margin: '0 0 1rem', lineHeight: 1.5 }}>
+                    {tenant?.stripe_onboarded
+                      ? '✅ Your Stripe account is connected. You'll receive payouts automatically.'
+                      : 'Connect your Stripe account to receive payouts when users purchase your recipe packs.'}
+                  </p>
+                  {stripeError && <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>{stripeError}</p>}
+                  {!tenant?.stripe_onboarded && (
+                    <button
+                      onClick={async () => {
+                        setConnectingStripe(true)
+                        setStripeError(null)
+                        try {
+                          const response = await fetch(
+                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-connect-onboard`,
+                            {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                              },
+                              body: JSON.stringify({
+                                tenant_id: tenantId,
+                                return_url: window.location.href,
+                              }),
+                            }
+                          )
+                          const result = await response.json()
+                          if (!response.ok) throw new Error(result.error || 'Failed to start Stripe onboarding')
+                          window.location.href = result.url
+                        } catch (err: any) {
+                          setStripeError(err.message)
+                          setConnectingStripe(false)
+                        }
+                      }}
+                      disabled={connectingStripe}
+                      style={{ background: '#635BFF', color: 'white', border: 'none', padding: '0.875rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: connectingStripe ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: connectingStripe ? 0.7 : 1 }}
+                    >
+                      {connectingStripe ? 'Redirecting...' : '💳 Connect Stripe Account'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </>

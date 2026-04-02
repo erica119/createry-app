@@ -483,7 +483,7 @@ export default function App() {
                         onClick={e => { e.stopPropagation(); setUnlockModal({ pack, recipeTitle: recipe.title }) }}
                         style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
                       >
-                        Unlock for ${(pack.price_cents / 100).toFixed(2)}
+                        Unlock {pack.name}
                       </button>
                     </div>
                   )}

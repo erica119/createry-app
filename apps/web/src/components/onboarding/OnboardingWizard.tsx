@@ -66,9 +66,9 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
         </div>
 
         {/* Progress bar */}
-        <div style={{ background: 'var(--sand)', borderRadius: '4px', height: '6px', marginBottom: '2rem', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--color-border)', borderRadius: '4px', height: '6px', marginBottom: '2rem', overflow: 'hidden' }}>
           <div style={{
-            background: 'var(--terracotta)',
+            background: 'var(--color-primary)',
             height: '6px',
             width: `${((currentStep + 1) / STEPS.length) * 100}%`,
             transition: 'width 0.4s ease',
@@ -83,7 +83,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
               width: i === currentStep ? '24px' : '8px',
               height: '8px',
               borderRadius: '4px',
-              background: i <= currentStep ? 'var(--terracotta)' : 'var(--sand)',
+              background: i <= currentStep ? 'var(--color-primary)' : 'var(--color-border)',
               transition: 'all 0.3s ease'
             }} />
           ))}

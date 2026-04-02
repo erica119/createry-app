@@ -99,12 +99,30 @@ export default function App() {
     // Check family profile for regular user
     const { data } = await supabase
       .from('family_profiles')
-      .select('id')
+      .select('id, tenant_id')
       .eq('user_id', user!.id)
       .maybeSingle()
     if (data?.id) {
       setFamilyId(data.id)
       setAppMode('user')
+      // Use the tenant from their family profile, not the URL
+      if (data.tenant_id) {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('id, brand_name, primary_color, tagline, logo_url, subdomain')
+          .eq('id', data.tenant_id)
+          .maybeSingle()
+        if (tenantData) {
+          setTenant({
+            id: tenantData.id,
+            brand_name: tenantData.brand_name || 'Plate',
+            primary_color: tenantData.primary_color || '#C4622D',
+            tagline: tenantData.tagline,
+            logo_url: tenantData.logo_url,
+            subdomain: tenantData.subdomain,
+          })
+        }
+      }
       fetchRecipes()
       fetchCurrentMenu(data.id)
     }

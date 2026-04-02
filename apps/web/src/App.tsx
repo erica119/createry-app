@@ -42,6 +42,10 @@ export default function App() {
   })
   const [tenantLoading, setTenantLoading] = useState(true)
   const [recipeSearch, setRecipeSearch] = useState('')
+  const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
+  const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitle: string } | null>(null)
+  const [checkingOut, setCheckingOut] = useState(false)
+  const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
 
   useEffect(() => {
     const color = tenant?.primary_color || '#C4622D'
@@ -148,6 +152,7 @@ export default function App() {
         }
       }
       fetchRecipes(data.tenant_id)
+      fetchUnlockedPacks(user!.id, data.tenant_id)
       fetchCurrentMenu(data.id)
     }
     // If no family profile, stay 'unknown' so role select shows
@@ -165,7 +170,50 @@ export default function App() {
       .select('*')
       .eq('tenant_id', tid)
       .order('created_at', { ascending: false })
-    if (data) setRecipes(data)
+    if (data) {
+      setRecipes(data)
+      const packIds = [...new Set(data.map((r: any) => r.recipe_pack_id).filter(Boolean))]
+      if (packIds.length > 0) {
+        const { data: packs } = await supabase.from('recipe_packs').select('id, name, price_cents').in('id', packIds)
+        if (packs) {
+          const map: Record<string, { id: string; name: string; price_cents: number }> = {}
+          packs.forEach((p: any) => { map[p.id] = p })
+          setRecipePacks(map)
+        }
+      }
+    }
+  }
+
+  const handleCheckout = async (packId: string) => {
+    setCheckingOut(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ recipe_pack_id: packId, tenant_id: tenant?.id || FALLBACK_TENANT_ID }),
+      })
+      const { url, error } = await res.json()
+      if (error) throw new Error(error)
+      window.location.href = url
+    } catch (err) {
+      console.error('Checkout error:', err)
+      alert('Something went wrong. Please try again.')
+    } finally {
+      setCheckingOut(false)
+    }
+  }
+
+  const fetchUnlockedPacks = async (uid: string, tid: string) => {
+    const { data } = await supabase
+      .from('user_purchases')
+      .select('recipe_pack_id')
+      .eq('user_id', uid)
+      .eq('tenant_id', tid)
+    if (data) {
+      setUnlockedPackIds(new Set(data.map((p: any) => p.recipe_pack_id).filter(Boolean)))
+    }
   }
 
   const fetchCurrentMenu = async (fid: string) => {
@@ -399,8 +447,11 @@ export default function App() {
               style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
             />
             <div className="recipe-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
-              {recipes.filter(r => r.title.toLowerCase().includes(recipeSearch.toLowerCase()) || r.description?.toLowerCase().includes(recipeSearch.toLowerCase()) || r.cuisine_tags?.some((t: string) => t.toLowerCase().includes(recipeSearch.toLowerCase()))).map(recipe => (
-                <div key={recipe.id} onClick={() => setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)', cursor: 'pointer' }}>
+              {recipes.filter(r => r.title.toLowerCase().includes(recipeSearch.toLowerCase()) || r.description?.toLowerCase().includes(recipeSearch.toLowerCase()) || r.cuisine_tags?.some((t: string) => t.toLowerCase().includes(recipeSearch.toLowerCase()))).map(recipe => {
+                const isLocked = recipe.is_premium && recipe.recipe_pack_id && !unlockedPackIds.has(recipe.recipe_pack_id)
+                const pack = recipe.recipe_pack_id ? recipePacks[recipe.recipe_pack_id] : null
+                return (
+                <div key={recipe.id} onClick={() => !isLocked && setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: isLocked ? '1px dashed #D4B0B0' : '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)', cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.85 : 1, position: 'relative' }}>
                   {recipe.image_url && (
                     <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
                   )}
@@ -425,14 +476,58 @@ export default function App() {
                       ))}
                     </div>
                   )}
+                  {isLocked && pack && (
+                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F0E0E0' }}>
+                      <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#9B8B82' }}>🔒 {pack.name}</p>
+                      <button
+                        onClick={e => { e.stopPropagation(); setUnlockModal({ pack, recipeTitle: recipe.title }) }}
+                        style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        Unlock for ${(pack.price_cents / 100).toFixed(2)}
+                      </button>
+                    </div>
+                  )}
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}
       </div>
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
+
+      {unlockModal && (
+        <div onClick={() => setUnlockModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', maxWidth: '420px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(44,24,16,0.25)' }}>
+            <div style={{ background: 'var(--color-primary)', padding: '1.5rem 2rem' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>{unlockModal.pack.name}</h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.875rem' }}>Unlock this recipe pack to access all premium recipes</p>
+            </div>
+            <div style={{ padding: '1.5rem 2rem' }}>
+              <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
+                <p style={{ margin: 0, color: '#2C1810', fontWeight: '500', fontSize: '0.95rem' }}>{unlockModal.recipeTitle} + more recipes in this pack</p>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <span style={{ color: '#6B5C52', fontSize: '0.9rem' }}>One-time purchase</span>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#2C1810', fontWeight: '700' }}>${(unlockModal.pack.price_cents / 100).toFixed(2)}</span>
+              </div>
+              <button
+                onClick={() => handleCheckout(unlockModal.pack.id)}
+                disabled={checkingOut}
+                style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '700', cursor: checkingOut ? 'not-allowed' : 'pointer', opacity: checkingOut ? 0.7 : 1 }}
+              >
+                {checkingOut ? 'Redirecting...' : `Unlock for $${(unlockModal.pack.price_cents / 100).toFixed(2)}`}
+              </button>
+              <button onClick={() => setUnlockModal(null)} style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}>
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -75,7 +75,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
                 <ul style={{ margin: 0, padding: '0 0 0 1.25rem' }}>
                   {recipe.ingredients.map((ing, i) => (
                     <li key={i} style={{ color: '#2C1810', fontSize: '0.9rem', marginBottom: '0.4rem', lineHeight: 1.5 }}>
-                      {ing.quantity && ing.unit
+                      {typeof ing === 'string' ? ing : ing.quantity && ing.unit
                         ? `${ing.quantity} ${ing.unit} ${ing.name}`
                         : ing.quantity
                         ? `${ing.quantity} ${ing.name}`

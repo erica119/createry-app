@@ -1,9 +1,15 @@
 import Stripe from 'https://esm.sh/stripe@13.3.0?target=deno&no-check'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2023-08-16',
   httpClient: Stripe.createFetchHttpClient(),
 })
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,11 +22,6 @@ Deno.serve(async (req) => {
     const body = await req.json()
     console.log('Request body:', JSON.stringify(body))
     const { recipe_pack_id, user_id, tenant_id, success_url, cancel_url } = body
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
     console.log('Querying pack:', recipe_pack_id)
     const { data: pack, error: packError } = await supabase
       .from('recipe_packs')

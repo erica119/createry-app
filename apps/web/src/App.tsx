@@ -199,6 +199,7 @@ export default function App() {
       console.log('Checkout result:', JSON.stringify(result))
       const { url, error } = result
       if (error) throw new Error(error)
+      if (!url) throw new Error('No checkout URL returned')
       window.location.href = url
     } catch (err) {
       console.error('Checkout error:', err)

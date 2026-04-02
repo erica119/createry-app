@@ -142,6 +142,9 @@ export default function App() {
     setFamilyId(null)
     setRecipes([])
     setCurrentMenuId(null)
+    setCreatorTenantId(null)
+    setAppMode('unknown')
+    setTenant(null)
   }
 
   if (appMode === 'creator' && creatorTenantId) {

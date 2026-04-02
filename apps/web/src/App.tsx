@@ -13,6 +13,7 @@ import RecipeImport from './components/recipes/RecipeImport'
 import RoleSelect from './components/auth/RoleSelect'
 import CreatorOnboarding from './components/creator/CreatorOnboarding'
 import CreatorDashboard from './components/creator/CreatorDashboard'
+import OperatorDashboard from './components/creator/OperatorDashboard'
 
 const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
@@ -30,6 +31,7 @@ export default function App() {
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
   const [appMode, setAppMode] = useState<'unknown' | 'user' | 'creator'>('unknown')
+  const [isOperator, setIsOperator] = useState(false)
   const [tenant, setTenant] = useState<TenantConfig | null>(() => {
     // Synchronously initialize from localStorage so branding shows immediately
     const subdomain = new URLSearchParams(window.location.search).get('creator') 
@@ -100,6 +102,17 @@ export default function App() {
   }, [user, tenant])
 
   const checkOnboarding = async () => {
+    // Check if platform admin first
+    const { data: adminRow } = await supabase
+      .from('platform_admins')
+      .select('user_id')
+      .eq('user_id', user!.id)
+      .maybeSingle()
+    if (adminRow) {
+      setIsOperator(true)
+      return
+    }
+
     // Check if creator first
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -290,6 +303,10 @@ export default function App() {
     setCreatorTenantId(null)
     setAppMode('unknown')
     setTenant(null)
+  }
+
+  if (isOperator) {
+    return <OperatorDashboard user={user!} onSignOut={signOut} />
   }
 
   if (appMode === 'creator' && creatorTenantId) {

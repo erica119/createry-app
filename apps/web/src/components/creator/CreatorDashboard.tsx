@@ -92,7 +92,8 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings'>('overview')
+  const [earnings, setEarnings] = useState<any[]>([])
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
@@ -126,6 +127,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     fetchRecipes()
     fetchFamilyProfile()
     fetchPacks()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) fetchEarnings()
+    })
   }, [tenantId])
 
   useEffect(() => {
@@ -165,6 +169,29 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     if (data) setRecipes(data)
+  }
+
+  const fetchEarnings = async () => {
+    const { data } = await supabase
+      .from('user_purchases')
+      .select('amount_cents, recipe_pack_id, recipe_packs(name, price_cents)')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'paid')
+    if (!data) return
+    const byPack: Record<string, any> = {}
+    for (const p of data) {
+      const packId = p.recipe_pack_id
+      if (!byPack[packId]) {
+        byPack[packId] = {
+          pack_name: (p.recipe_packs as any)?.name || 'Unknown',
+          units_sold: 0,
+          gross_cents: 0,
+        }
+      }
+      byPack[packId].units_sold += 1
+      byPack[packId].gross_cents += p.amount_cents
+    }
+    setEarnings(Object.values(byPack))
   }
 
   const fetchPacks = async () => {
@@ -306,7 +333,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             🍽️ {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
           </span>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            {(['overview', 'recipes', 'packs', 'branding', 'mealplan'] as const).map(v => (
+            {(['overview', 'recipes', 'packs', 'earnings', 'branding', 'mealplan'] as const).map(v => (
               <button key={v} onClick={() => setView(v)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontWeight: view === v ? '700' : '400',
@@ -618,6 +645,56 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   </div>
                 ))}
               </div>
+            )}
+          </>
+        )}
+
+        {/* EARNINGS */}
+        {view === 'earnings' && (
+          <>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Earnings</h2>
+              <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your revenue breakdown by recipe pack.</p>
+            </div>
+
+            {earnings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>💰</div>
+                <p style={{ color: '#6B5C52', margin: 0 }}>No sales yet. Once users purchase your recipe packs, your earnings will appear here.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                  {[
+                    { label: 'Total Gross', value: `$${(earnings.reduce((s, e) => s + e.gross_cents, 0) / 100).toFixed(2)}`, icon: '💵' },
+                    { label: 'Your 80%', value: `$${(earnings.reduce((s, e) => s + e.gross_cents, 0) * 0.8 / 100).toFixed(2)}`, icon: '🏦' },
+                    { label: 'Total Units Sold', value: earnings.reduce((s, e) => s + e.units_sold, 0), icon: '🧾' },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
+                    {['Pack', 'Units Sold', 'Gross', 'Your 80%', 'Platform 20%'].map(h => (
+                      <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6B5C52', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+                    ))}
+                  </div>
+                  {earnings.map((e, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < earnings.length - 1 ? '1px solid #F5EFE6' : 'none', alignItems: 'center' }}>
+                      <div style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.95rem' }}>{e.pack_name}</div>
+                      <div style={{ color: '#2C1810', fontSize: '0.95rem' }}>{e.units_sold}</div>
+                      <div style={{ color: '#2C1810', fontSize: '0.95rem' }}>${(e.gross_cents / 100).toFixed(2)}</div>
+                      <div style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>${(e.gross_cents * 0.8 / 100).toFixed(2)}</div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.95rem' }}>${(e.gross_cents * 0.2 / 100).toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </>
         )}

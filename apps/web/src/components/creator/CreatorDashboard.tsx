@@ -487,6 +487,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                             result.push(current.trim())
                             return result
                           }
+                          const { data: { user: currentUser } } = await supabase.auth.getUser()
+                          const currentUserId = currentUser?.id
                           const lines = text.trim().split('\n')
                           const headers = parseCSVLine(lines[0])
                           const rows = lines.slice(1)
@@ -512,7 +514,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                               is_premium: true,
                               recipe_pack_id: pack.id,
                               is_active: true,
-                              created_by: (await supabase.auth.getUser()).data.user?.id,
+                              created_by: currentUserId,
                             }
                           }).filter(r => r.title)
                           if (recipesToInsert.length > 0) {

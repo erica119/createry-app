@@ -18,6 +18,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
   const handleGoogleSignIn = () => {
     if (tenant && isCreatorBranded) {
       localStorage.setItem('pending_tenant_id', tenant.id)
+      localStorage.setItem('creator_subdomain', tenant.subdomain)
     }
     onGoogleSignIn()
   }

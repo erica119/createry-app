@@ -44,6 +44,13 @@ export default function App() {
   const [recipeSearch, setRecipeSearch] = useState('')
 
   useEffect(() => {
+    const color = tenant?.primary_color || '#C4622D'
+    const name = tenant?.brand_name || 'Plate'
+    document.documentElement.style.setProperty('--brand-color', color)
+    document.documentElement.style.setProperty('--brand-name', name)
+  }, [tenant])
+
+  useEffect(() => {
     resolveTenant().then(t => { console.log('tenant resolved:', t); setTenant(t); setTenantLoading(false) })
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -244,7 +251,7 @@ export default function App() {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Plate</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <OnboardingWizard
@@ -275,7 +282,7 @@ export default function App() {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Plate</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <RecipeForm
@@ -298,7 +305,7 @@ export default function App() {
         color: view === viewName ? 'white' : enabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
         fontSize: '0.95rem', padding: '0.25rem 0',
         fontFamily: 'var(--font-sans)',
-        borderBottom: view === viewName ? '2px solid #C4622D' : '2px solid transparent',
+        borderBottom: view === viewName ? '2px solid var(--brand-color)' : '2px solid transparent',
         transition: 'all 0.15s ease',
       }}
     >
@@ -310,7 +317,7 @@ export default function App() {
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
       <div className="nav-bar" style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="nav-links">
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>🍽️ Plate</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             {navBtn('Recipes', 'dashboard')}
             {navBtn('This Week', 'menu', !!currentMenuId)}
@@ -345,7 +352,7 @@ export default function App() {
               <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
                 {currentMenuId && (
                   <>
-                    <button onClick={() => setView('menu')} style={{ background: 'white', color: '#C4622D', border: '1.5px solid #C4622D', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
+                    <button onClick={() => setView('menu')} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
                       View Menu
                     </button>
                     <button onClick={() => setView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
@@ -356,7 +363,7 @@ export default function App() {
                 <button
                   onClick={generateMenu}
                   disabled={generatingMenu}
-                  style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap' }}
+                  style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap' }}
                 >
                   {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
                 </button>
@@ -366,8 +373,8 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color: '#C4622D', border: '1.5px solid #C4622D', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>⬆ Import CSV</button>
-                <button onClick={() => setShowRecipeForm(true)} style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
+                <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>⬆ Import CSV</button>
+                <button onClick={() => setShowRecipeForm(true)} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
               </div>
             </div>
             <input
@@ -387,7 +394,7 @@ export default function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
-                      <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color: '#C4622D', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+                      <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color: 'var(--brand-color)', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
                       <button onClick={async () => { if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }} title="Delete recipe">✕</button>
                     </div>
                   </div>
@@ -400,7 +407,7 @@ export default function App() {
                   {recipe.cuisine_tags?.length > 0 && (
                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                       {recipe.cuisine_tags.slice(0, 2).map((tag: string) => (
-                        <span key={tag} style={{ fontSize: '0.7rem', background: '#FDF6EE', color: '#C4622D', padding: '0.2rem 0.6rem', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.04em' }}>{tag}</span>
+                        <span key={tag} style={{ fontSize: '0.7rem', background: '#FDF6EE', color: 'var(--brand-color)', padding: '0.2rem 0.6rem', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.04em' }}>{tag}</span>
                       ))}
                     </div>
                   )}

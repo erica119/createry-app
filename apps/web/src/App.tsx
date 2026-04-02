@@ -45,9 +45,23 @@ export default function App() {
 
   useEffect(() => {
     const color = tenant?.primary_color || '#C4622D'
-    const name = tenant?.brand_name || 'Plate'
-    document.documentElement.style.setProperty('--brand-color', color)
-    document.documentElement.style.setProperty('--brand-name', name)
+    // Parse hex to RGB for derived colors
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substring(0,2), 16)
+    const g = parseInt(hex.substring(2,4), 16)
+    const b = parseInt(hex.substring(4,6), 16)
+    // Darken by ~20% for hover states
+    const dr = Math.max(0, Math.round(r * 0.8))
+    const dg = Math.max(0, Math.round(g * 0.8))
+    const db = Math.max(0, Math.round(b * 0.8))
+    const darkColor = '#' + [dr,dg,db].map(x => x.toString(16).padStart(2,'0')).join('')
+    // Light tint at 20% opacity for backgrounds
+    const lightColor = `rgba(${r},${g},${b},0.15)`
+    const root = document.documentElement
+    root.style.setProperty('--brand-color', color)
+    root.style.setProperty('--color-primary', color)
+    root.style.setProperty('--color-primary-dark', darkColor)
+    root.style.setProperty('--color-primary-light', lightColor)
   }, [tenant])
 
   useEffect(() => {

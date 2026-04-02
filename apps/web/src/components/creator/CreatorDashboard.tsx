@@ -49,8 +49,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [newPackName, setNewPackName] = useState('')
   const [newPackDescription, setNewPackDescription] = useState('')
   const [newPackPrice, setNewPackPrice] = useState('')
-  const [newPackRecipeIds, setNewPackRecipeIds] = useState<string[]>([])
+  const [newPackCsvFile, setNewPackCsvFile] = useState<File | null>(null)
   const [savingPack, setSavingPack] = useState(false)
+  const [packSaveError, setPackSaveError] = useState<string | null>(null)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
@@ -441,38 +442,75 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                     <input type="number" value={newPackPrice} onChange={e => setNewPackPrice(e.target.value)} placeholder="9.99" min="0.99" step="0.01" style={{ width: '200px', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Select recipes to include ({newPackRecipeIds.length} selected)</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', padding: '0.5rem', border: '2px solid #E8D5B7', borderRadius: '10px', background: '#FDF6EE' }}>
-                      {recipes.map(r => (
-                        <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.4rem', borderRadius: '6px', background: newPackRecipeIds.includes(r.id) ? 'var(--color-primary-light)' : 'white', border: '1px solid #E8D5B7' }}>
-                          <input type="checkbox" checked={newPackRecipeIds.includes(r.id)} onChange={e => {
-                            if (e.target.checked) setNewPackRecipeIds(ids => [...ids, r.id])
-                            else setNewPackRecipeIds(ids => ids.filter(id => id !== r.id))
-                          }} />
-                          <span style={{ fontSize: '0.85rem', color: '#2C1810' }}>{r.title}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Upload premium recipes (CSV)</label>
+                    <p style={{ color: '#6B5C52', fontSize: '0.8rem', margin: '0 0 0.5rem', lineHeight: 1.5 }}>These recipes will be marked as premium and locked until users purchase this pack. Use the same CSV format as regular recipe imports.</p>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={e => setNewPackCsvFile(e.target.files?.[0] || null)}
+                      style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.875rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                    />
+                    {newPackCsvFile && <p style={{ color: '#16a34a', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>✓ {newPackCsvFile.name} selected</p>}
                   </div>
+                  {packSaveError && <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: '0' }}>{packSaveError}</p>}
                   <button
                     onClick={async () => {
                       if (!newPackName.trim() || !newPackPrice) return
                       setSavingPack(true)
-                      const priceCents = Math.round(parseFloat(newPackPrice) * 100)
-                      const { error } = await supabase.from('recipe_packs').insert({
-                        tenant_id: tenantId,
-                        name: newPackName.trim(),
-                        description: newPackDescription.trim() || null,
-                        price_cents: priceCents,
-                        recipe_ids: newPackRecipeIds,
-                      })
-                      if (!error) {
+                      setPackSaveError(null)
+                      try {
+                        const priceCents = Math.round(parseFloat(newPackPrice) * 100)
+                        const { data: pack, error: packError } = await supabase.from('recipe_packs').insert({
+                          tenant_id: tenantId,
+                          name: newPackName.trim(),
+                          description: newPackDescription.trim() || null,
+                          price_cents: priceCents,
+                        }).select().single()
+                        if (packError) throw new Error(packError.message)
+
+                        if (newPackCsvFile && pack) {
+                          const text = await newPackCsvFile.text()
+                          const lines = text.trim().split('
+')
+                          const headers = lines[0].split(',')
+                          const rows = lines.slice(1)
+                          const recipesToInsert = rows.map(row => {
+                            const vals = row.split(',')
+                            const get = (key: string) => {
+                              const i = headers.indexOf(key)
+                              return i >= 0 ? vals[i]?.trim().replace(/^"|"$/g, '') : ''
+                            }
+                            return {
+                              tenant_id: tenantId,
+                              title: get('title'),
+                              description: get('description') || null,
+                              ingredients: get('ingredients') ? get('ingredients').split('|') : [],
+                              instructions: get('instructions') || null,
+                              prep_time_minutes: get('prep_time_minutes') ? parseInt(get('prep_time_minutes')) : null,
+                              cook_time_minutes: get('cook_time_minutes') ? parseInt(get('cook_time_minutes')) : null,
+                              servings: get('servings') ? parseInt(get('servings')) : null,
+                              cuisine_tags: get('cuisine_tags') ? get('cuisine_tags').split('|') : [],
+                              meal_type: get('meal_type') || null,
+                              complexity: get('complexity') || 'moderate',
+                              is_premium: true,
+                              recipe_pack_id: pack.id,
+                              is_active: true,
+                            }
+                          }).filter(r => r.title)
+                          if (recipesToInsert.length > 0) {
+                            const { error: recipeError } = await supabase.from('recipes').insert(recipesToInsert)
+                            if (recipeError) throw new Error(recipeError.message)
+                          }
+                        }
                         setNewPackName('')
                         setNewPackDescription('')
                         setNewPackPrice('')
-                        setNewPackRecipeIds([])
+                        setNewPackCsvFile(null)
                         setShowPackForm(false)
                         fetchPacks()
+                        fetchRecipes()
+                      } catch (err: any) {
+                        setPackSaveError(err.message)
                       }
                       setSavingPack(false)
                     }}
@@ -500,7 +538,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                     </div>
                     {pack.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{pack.description}</p>}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#9B8B82' }}>{pack.recipe_ids?.length || 0} recipes</span>
+                      <span style={{ fontSize: '0.8rem', color: '#9B8B82' }}>👑 Premium pack</span>
                       <button onClick={async () => { if (confirm('Delete this pack?')) { await supabase.from('recipe_packs').delete().eq('id', pack.id); fetchPacks() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '0.85rem' }}>Delete</button>
                     </div>
                   </div>

@@ -8,6 +8,9 @@ import ShoppingList from './components/shopping/ShoppingList'
 import LoginScreen from './components/auth/LoginScreen'
 import RecipeModal from './components/recipes/RecipeModal'
 import RecipeImport from './components/recipes/RecipeImport'
+import RoleSelect from './components/auth/RoleSelect'
+import CreatorOnboarding from './components/creator/CreatorOnboarding'
+import CreatorDashboard from './components/creator/CreatorDashboard'
 
 const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
@@ -23,6 +26,8 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
+  const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
+  const [appMode, setAppMode] = useState<'unknown' | 'user' | 'creator'>('unknown')
   const [recipeSearch, setRecipeSearch] = useState('')
 
   useEffect(() => {
@@ -42,6 +47,20 @@ export default function App() {
   }, [user])
 
   const checkOnboarding = async () => {
+    // Check if creator first
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role, tenant_id')
+      .eq('user_id', user!.id)
+      .maybeSingle()
+
+    if (profile?.role === 'creator' && profile?.tenant_id) {
+      setCreatorTenantId(profile.tenant_id)
+      setAppMode('creator')
+      return
+    }
+
+    // Check family profile for regular user
     const { data } = await supabase
       .from('family_profiles')
       .select('id')
@@ -49,6 +68,7 @@ export default function App() {
       .maybeSingle()
     if (data?.id) {
       setFamilyId(data.id)
+      setAppMode('user')
       fetchRecipes()
       fetchCurrentMenu(data.id)
     }
@@ -120,10 +140,31 @@ export default function App() {
     setCurrentMenuId(null)
   }
 
+  if (appMode === 'creator' && creatorTenantId) {
+    return <CreatorDashboard user={user!} tenantId={creatorTenantId} onSignOut={signOut} />
+  }
+
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
 
   if (!user) {
     return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} />
+  }
+
+  if (appMode === 'unknown') {
+    return <RoleSelect
+      user={user}
+      onSelectUser={() => setAppMode('user')}
+      onSelectCreator={() => setAppMode('creator')}
+    />
+  }
+
+  if (appMode === 'creator' && !creatorTenantId) {
+    return <CreatorOnboarding
+      user={user}
+      onComplete={(tenantId) => {
+        setCreatorTenantId(tenantId)
+      }}
+    />
   }
 
   if (!familyId) {

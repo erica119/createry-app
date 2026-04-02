@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
+import { resolveTenant } from './lib/tenant'
+import type { TenantConfig } from './lib/tenant'
 import type { User } from '@supabase/supabase-js'
 import OnboardingWizard from './components/onboarding/OnboardingWizard'
 import RecipeForm from './components/recipes/RecipeForm'
@@ -12,7 +14,7 @@ import RoleSelect from './components/auth/RoleSelect'
 import CreatorOnboarding from './components/creator/CreatorOnboarding'
 import CreatorDashboard from './components/creator/CreatorDashboard'
 
-const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -28,9 +30,11 @@ export default function App() {
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
   const [appMode, setAppMode] = useState<'unknown' | 'user' | 'creator'>('unknown')
+  const [tenant, setTenant] = useState<TenantConfig | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
 
   useEffect(() => {
+    resolveTenant().then(t => setTenant(t))
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
@@ -78,7 +82,7 @@ export default function App() {
     const { data } = await supabase
       .from('recipes')
       .select('*')
-      .eq('tenant_id', TEST_TENANT_ID)
+      .eq('tenant_id', tenant?.id || FALLBACK_TENANT_ID)
       .order('created_at', { ascending: false })
     if (data) setRecipes(data)
   }
@@ -112,7 +116,7 @@ export default function App() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ family_id: familyId, tenant_id: TEST_TENANT_ID, week_start_date: weekStr }),
+          body: JSON.stringify({ family_id: familyId, tenant_id: tenant?.id || FALLBACK_TENANT_ID, week_start_date: weekStr }),
         }
       )
       const result = await response.json()
@@ -176,7 +180,7 @@ export default function App() {
         </div>
         <OnboardingWizard
           user={user}
-          tenantId={TEST_TENANT_ID}
+          tenantId={tenant?.id || FALLBACK_TENANT_ID}
           onComplete={() => checkOnboarding()}
         />
       </div>
@@ -188,7 +192,7 @@ export default function App() {
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <RecipeImport
           user={user}
-          tenantId={TEST_TENANT_ID}
+          tenantId={tenant?.id || FALLBACK_TENANT_ID}
           onComplete={() => { setShowRecipeImport(false); fetchRecipes() }}
           onCancel={() => setShowRecipeImport(false)}
         />
@@ -205,7 +209,7 @@ export default function App() {
         </div>
         <RecipeForm
           user={user}
-          tenantId={TEST_TENANT_ID}
+          tenantId={tenant?.id || FALLBACK_TENANT_ID}
           onSaved={() => { setShowRecipeForm(false); fetchRecipes() }}
           onCancel={() => setShowRecipeForm(false)}
         />
@@ -250,11 +254,11 @@ export default function App() {
 
       <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
         {view === 'menu' && currentMenuId && (
-          <WeeklyMenuView menuId={currentMenuId} tenantId={TEST_TENANT_ID} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
+          <WeeklyMenuView menuId={currentMenuId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
-          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={TEST_TENANT_ID} />
+          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} />
         )}
 
         {view === 'dashboard' && (

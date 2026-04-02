@@ -107,7 +107,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const fetchPacks = async () => {
     const { data } = await supabase
       .from('recipe_packs')
-      .select('*')
+      .select('*, recipes(count)')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     if (data) setPacks(data)
@@ -558,7 +558,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                     </div>
                     {pack.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{pack.description}</p>}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#9B8B82' }}>👑 Premium pack</span>
+                      <span style={{ fontSize: '0.8rem', color: '#9B8B82' }}>👑 {pack.recipes?.[0]?.count || 0} premium recipes</span>
                       <button onClick={async () => { if (confirm('Delete this pack?')) { await supabase.from('recipe_packs').delete().eq('id', pack.id); fetchPacks() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '0.85rem' }}>Delete</button>
                     </div>
                   </div>

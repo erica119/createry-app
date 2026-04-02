@@ -447,16 +447,16 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              {purchaseSuccess && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.5rem' }}>🎉</span>
-                  <div>
-                    <p style={{ margin: '0 0 0.2rem', color: '#16a34a', fontWeight: '700', fontSize: '0.95rem' }}>Purchase successful!</p>
-                    <p style={{ margin: 0, color: '#16a34a', fontSize: '0.85rem' }}>Your recipes have been unlocked and are ready to use.</p>
-                  </div>
+            {purchaseSuccess && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>🎉</span>
+                <div>
+                  <p style={{ margin: '0 0 0.2rem', color: '#16a34a', fontWeight: '700', fontSize: '0.95rem' }}>Purchase successful!</p>
+                  <p style={{ margin: 0, color: '#16a34a', fontSize: '0.85rem' }}>Your recipes have been unlocked and are ready to use.</p>
                 </div>
-              )}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>⬆ Import CSV</button>
@@ -477,7 +477,7 @@ export default function App() {
                 return (
                 <div key={recipe.id} onClick={() => !isLocked && setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: isLocked ? '1px dashed #D4B0B0' : '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)', cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.85 : 1, position: 'relative' }}>
                   {recipe.image_url && (
-                    <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                    <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   )}
                   <div style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>

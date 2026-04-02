@@ -113,14 +113,17 @@ export default function App() {
           .eq('id', data.tenant_id)
           .maybeSingle()
         if (tenantData) {
-          setTenant({
+          const resolvedTenant = {
             id: tenantData.id,
             brand_name: tenantData.brand_name || 'Plate',
             primary_color: tenantData.primary_color || '#C4622D',
             tagline: tenantData.tagline,
             logo_url: tenantData.logo_url,
             subdomain: tenantData.subdomain,
-          })
+          }
+          setTenant(resolvedTenant)
+          // Store in localStorage so it persists through refreshes
+          localStorage.setItem('creator_subdomain', tenantData.subdomain)
         }
       }
       fetchRecipes(data.tenant_id)

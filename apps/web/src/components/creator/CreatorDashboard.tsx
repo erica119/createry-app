@@ -512,6 +512,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                               is_premium: true,
                               recipe_pack_id: pack.id,
                               is_active: true,
+                              created_by: (await supabase.auth.getUser()).data.user?.id,
                             }
                           }).filter(r => r.title)
                           if (recipesToInsert.length > 0) {

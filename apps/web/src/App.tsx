@@ -346,7 +346,7 @@ export default function App() {
 
       <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
         {view === 'menu' && currentMenuId && (
-          <WeeklyMenuView menuId={currentMenuId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
+          <WeeklyMenuView menuId={currentMenuId} tenantId={tenant?.id || FALLBACK_TENANT_ID} userId={user?.id} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 interface Props {
   menuId: string
   tenantId: string
+  userId?: string
   onApproved: () => void
   onGoShopping?: () => void
 }
@@ -14,6 +15,14 @@ interface Recipe {
   complexity: string
   prep_time_minutes: number
   cook_time_minutes: number
+  is_premium: boolean
+  recipe_pack_id: string | null
+}
+
+interface RecipePack {
+  id: string
+  name: string
+  price_cents: number
 }
 
 interface MenuData {
@@ -30,18 +39,23 @@ interface WeeklyMenu {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopping }: Props) {
+export default function WeeklyMenuView({ menuId, tenantId, userId, onApproved, onGoShopping }: Props) {
   const [menu, setMenu] = useState<WeeklyMenu | null>(null)
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({})
+  const [packs, setPacks] = useState<Record<string, RecipePack>>({})
+  const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState(false)
   const [swapDay, setSwapDay] = useState<{ day: string; meal: string } | null>(null)
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
   const [justApproved, setJustApproved] = useState(false)
+  const [unlockModal, setUnlockModal] = useState<{ pack: RecipePack; recipeTitle: string } | null>(null)
+  const [checkingOut, setCheckingOut] = useState(false)
 
   useEffect(() => {
     fetchMenu()
     fetchAllRecipes()
+    if (userId) fetchUnlockedPacks()
   }, [menuId])
 
   const fetchMenu = async () => {
@@ -63,17 +77,50 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
       .flatMap(d => [d.breakfast, d.lunch, d.dinner])
       .filter((id): id is string => !!id)
     if (ids.length === 0) return
-    const { data } = await supabase.from('recipes').select('id, title, complexity, prep_time_minutes, cook_time_minutes').in('id', ids)
+    const { data } = await supabase
+      .from('recipes')
+      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, is_premium, recipe_pack_id')
+      .in('id', ids)
     if (data) {
       const map: Record<string, Recipe> = {}
       data.forEach(r => { map[r.id] = r })
       setRecipes(map)
+      await fetchPacksForRecipes(data)
+    }
+  }
+
+  const fetchPacksForRecipes = async (recipeList: Recipe[]) => {
+    const packIds = [...new Set(recipeList.map(r => r.recipe_pack_id).filter((id): id is string => !!id))]
+    if (packIds.length === 0) return
+    const { data } = await supabase
+      .from('recipe_packs')
+      .select('id, name, price_cents')
+      .in('id', packIds)
+    if (data) {
+      const map: Record<string, RecipePack> = {}
+      data.forEach(p => { map[p.id] = p })
+      setPacks(map)
     }
   }
 
   const fetchAllRecipes = async () => {
-    const { data } = await supabase.from('recipes').select('id, title, complexity, prep_time_minutes, cook_time_minutes').eq('tenant_id', tenantId)
+    const { data } = await supabase
+      .from('recipes')
+      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, is_premium, recipe_pack_id')
+      .eq('tenant_id', tenantId)
     if (data) setAllRecipes(data)
+  }
+
+  const fetchUnlockedPacks = async () => {
+    if (!userId) return
+    const { data } = await supabase
+      .from('user_purchases')
+      .select('recipe_pack_id')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId)
+    if (data) {
+      setUnlockedPackIds(new Set(data.map(p => p.recipe_pack_id).filter((id): id is string => !!id)))
+    }
   }
 
   const handleApprove = async () => {
@@ -113,6 +160,44 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
     setSwapDay(null)
   }
 
+  const handleUnlockClick = (pack: RecipePack, recipeTitle: string) => {
+    setUnlockModal({ pack, recipeTitle })
+  }
+
+  const handleCheckout = async () => {
+    if (!unlockModal || !userId) return
+    setCheckingOut(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          recipe_pack_id: unlockModal.pack.id,
+          tenant_id: tenantId,
+        }),
+      })
+      const { url, error } = await res.json()
+      if (error) throw new Error(error)
+      window.location.href = url
+    } catch (err) {
+      console.error('Checkout error:', err)
+      alert('Something went wrong. Please try again.')
+    } finally {
+      setCheckingOut(false)
+    }
+  }
+
+  const isLocked = (recipe: Recipe) => {
+    if (!recipe.is_premium) return false
+    if (!recipe.recipe_pack_id) return false
+    return !unlockedPackIds.has(recipe.recipe_pack_id)
+  }
+
   if (loading) return <p style={{ color: '#6B5C52' }}>Loading menu...</p>
   if (!menu) return <p style={{ color: '#6B5C52' }}>Menu not found.</p>
 
@@ -148,7 +233,7 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
             <button
               onClick={handleApprove}
               disabled={approving}
-              style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: approving ? 0.7 : 1 }}
+              style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: approving ? 0.7 : 1 }}
             >
               {approving ? 'Approving...' : '✓ Approve Menu'}
             </button>
@@ -182,7 +267,7 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
 
           return (
             <div key={i} style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', background: 'white' }}>
-              <div style={{ background: '#C4622D', padding: '0.5rem 0.25rem', textAlign: 'center' }}>
+              <div style={{ background: 'var(--color-primary)', padding: '0.5rem 0.25rem', textAlign: 'center' }}>
                 <span style={{ color: 'white', fontWeight: '700', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                   {DAY_NAMES[i]}
                 </span>
@@ -195,20 +280,35 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
                     const recipeId = dayData[key]
                     if (!recipeId) return null
                     const recipe = recipes[recipeId]
+                    const locked = recipe ? isLocked(recipe) : false
+                    const pack = recipe?.recipe_pack_id ? packs[recipe.recipe_pack_id] : null
+
                     return (
                       <div key={key} style={{ marginBottom: '0.4rem' }}>
                         <p style={{ margin: '0 0 0.2rem', fontSize: '0.6rem', fontWeight: '700', color: '#9B8B82', letterSpacing: '0.05em' }}>{label}</p>
-                        <div
-                          style={{ background: '#F5EFE6', borderRadius: '6px', padding: '0.3rem 0.4rem', cursor: isApproved ? 'default' : 'pointer', position: 'relative' }}
-                          onClick={() => !isApproved && setSwapDay({ day: String(i), meal: key })}
-                        >
-                          <p style={{ margin: 0, fontSize: '0.72rem', color: '#2C1810', fontWeight: '500', lineHeight: 1.3 }}>
-                            {recipe?.title || 'Loading...'}
-                          </p>
-                          {!isApproved && (
-                            <span style={{ fontSize: '0.6rem', color: '#C4622D', display: 'block', marginTop: '0.15rem' }}>tap to swap</span>
-                          )}
-                        </div>
+                        {locked && pack ? (
+                          <div
+                            style={{ background: '#F0EAEA', borderRadius: '6px', padding: '0.3rem 0.4rem', cursor: 'pointer', border: '1px dashed #D4B0B0', opacity: 0.85 }}
+                            onClick={() => handleUnlockClick(pack, recipe?.title || '')}
+                          >
+                            <p style={{ margin: '0 0 0.1rem', fontSize: '0.72rem', color: '#9B8B82', fontWeight: '500', lineHeight: 1.3, filter: 'blur(3px)', userSelect: 'none' }}>
+                              {recipe?.title || 'Premium Recipe'}
+                            </p>
+                            <span style={{ fontSize: '0.6rem', color: '#C4622D', display: 'block' }}>🔒 ${(pack.price_cents / 100).toFixed(0)} to unlock</span>
+                          </div>
+                        ) : (
+                          <div
+                            style={{ background: '#F5EFE6', borderRadius: '6px', padding: '0.3rem 0.4rem', cursor: isApproved ? 'default' : 'pointer', position: 'relative' }}
+                            onClick={() => !isApproved && !locked && setSwapDay({ day: String(i), meal: key })}
+                          >
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: '#2C1810', fontWeight: '500', lineHeight: 1.3 }}>
+                              {recipe?.title || 'Loading...'}
+                            </p>
+                            {!isApproved && (
+                              <span style={{ fontSize: '0.6rem', color: 'var(--color-primary)', display: 'block', marginTop: '0.15rem' }}>tap to swap</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })
@@ -230,7 +330,7 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
               <button onClick={() => setSwapDay(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6B5C52' }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {allRecipes.map(recipe => (
+              {allRecipes.filter(r => !isLocked(r)).map(recipe => (
                 <button
                   key={recipe.id}
                   onClick={() => handleSwap(recipe.id)}
@@ -242,6 +342,56 @@ export default function WeeklyMenuView({ menuId, tenantId, onApproved, onGoShopp
                   </p>
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unlock modal */}
+      {unlockModal && (
+        <div
+          onClick={() => setUnlockModal(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'white', borderRadius: '20px', maxWidth: '420px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(44,24,16,0.25)' }}
+          >
+            <div style={{ background: 'var(--color-primary)', padding: '1.5rem 2rem' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>
+                {unlockModal.pack.name}
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.875rem' }}>
+                Unlock this recipe pack to access all premium recipes
+              </p>
+            </div>
+            <div style={{ padding: '1.5rem 2rem' }}>
+              <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
+                <p style={{ margin: 0, color: '#2C1810', fontWeight: '500', fontSize: '0.95rem' }}>
+                  {unlockModal.recipeTitle} + more recipes in this pack
+                </p>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <span style={{ color: '#6B5C52', fontSize: '0.9rem' }}>One-time purchase</span>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#2C1810', fontWeight: '700' }}>
+                  ${(unlockModal.pack.price_cents / 100).toFixed(2)}
+                </span>
+              </div>
+              <button
+                onClick={handleCheckout}
+                disabled={checkingOut}
+                style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '700', cursor: checkingOut ? 'not-allowed' : 'pointer', opacity: checkingOut ? 0.7 : 1, fontFamily: 'var(--font-sans)' }}
+              >
+                {checkingOut ? 'Redirecting...' : `Unlock for $${(unlockModal.pack.price_cents / 100).toFixed(2)}`}
+              </button>
+              <button
+                onClick={() => setUnlockModal(null)}
+                style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}
+              >
+                Maybe later
+              </button>
             </div>
           </div>
         </div>

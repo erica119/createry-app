@@ -194,7 +194,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ recipe_pack_id: packId, tenant_id: tenant?.id || FALLBACK_TENANT_ID }),
       })
-      const { url, error } = await res.json()
+      const result = await res.json()
+      console.log('Checkout result:', JSON.stringify(result))
+      const { url, error } = result
       if (error) throw new Error(error)
       window.location.href = url
     } catch (err) {

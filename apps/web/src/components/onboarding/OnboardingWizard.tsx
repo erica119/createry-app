@@ -11,6 +11,8 @@ interface Props {
   user: User
   tenantId: string
   onComplete: () => void
+  brandName?: string
+  brandColor?: string
 }
 
 const STEPS = ['Family Size', 'Dietary Restrictions', 'Weekly Schedule', 'Grocery Schedule', 'Meal Preferences']

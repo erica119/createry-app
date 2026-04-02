@@ -30,7 +30,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
   const [error, setError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
+  const [_uploadingImage, setUploadingImage] = useState(false)
 
   const toggleTag = (list: string[], setList: (v: string[]) => void, id: string) => {
     setList(list.includes(id) ? list.filter(x => x !== id) : [...list, id])

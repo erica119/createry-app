@@ -519,7 +519,7 @@ export default function App() {
                 disabled={checkingOut}
                 style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '700', cursor: checkingOut ? 'not-allowed' : 'pointer', opacity: checkingOut ? 0.7 : 1 }}
               >
-                {checkingOut ? 'Redirecting...' : `Unlock for $${(unlockModal.pack.price_cents / 100).toFixed(2)}`}
+                {checkingOut ? 'Redirecting...' : `Unlock ${unlockModal.pack.name}`}
               </button>
               <button onClick={() => setUnlockModal(null)} style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}>
                 Maybe later

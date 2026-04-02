@@ -193,8 +193,8 @@ export default function App() {
       console.log('token present:', !!token)
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ recipe_pack_id: packId, tenant_id: tenant?.id || FALLBACK_TENANT_ID }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({ recipe_pack_id: packId, tenant_id: tenant?.id || FALLBACK_TENANT_ID, user_id: user?.id, success_url: `${window.location.origin}/?purchase=success`, cancel_url: `${window.location.origin}/` }),
       })
       const result = await res.json()
       console.log('Checkout result:', JSON.stringify(result))

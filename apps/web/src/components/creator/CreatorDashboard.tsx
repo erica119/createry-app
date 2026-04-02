@@ -470,8 +470,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
                         if (newPackCsvFile && pack) {
                           const text = await newPackCsvFile.text()
-                          const lines = text.trim().split('
-')
+                          const lines = text.trim().split('\n')
                           const headers = lines[0].split(',')
                           const rows = lines.slice(1)
                           const recipesToInsert = rows.map(row => {

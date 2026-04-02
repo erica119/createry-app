@@ -85,9 +85,13 @@ serve(async (req) => {
         const recipe = recipeMap[recipeId];
         const ingredients = recipe.ingredients as Array<{ name: string; quantity: string; unit: string }>;
 
-        ingredients.forEach(ing => {
-          const key = `${ing.name.toLowerCase().trim()}__${ing.unit.toLowerCase().trim()}`;
-          const qty = parseFloat(ing.quantity) || 0;
+        ingredients.forEach((ing: any) => {
+          if (!ing || !ing.name) return;
+          const ingName = (ing.name || '').trim()
+          const ingUnit = (ing.unit || '').trim()
+          const ingQty = ing.quantity || ''
+          const key = `${ingName.toLowerCase()}__${ingUnit.toLowerCase()}`;
+          const qty = parseFloat(ingQty) || 0;
 
           if (ingredientMap[key]) {
             ingredientMap[key].quantity += qty;
@@ -96,9 +100,9 @@ serve(async (req) => {
             }
           } else {
             ingredientMap[key] = {
-              name: ing.name.trim(),
+              name: ingName,
               quantity: qty,
-              unit: ing.unit.trim(),
+              unit: ingUnit,
               recipe_sources: [recipe.title],
             };
           }

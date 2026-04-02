@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import RecipeForm from '../recipes/RecipeForm'
+import OnboardingWizard from '../onboarding/OnboardingWizard'
+import WeeklyMenuView from '../menu/WeeklyMenuView'
+import ShoppingList from '../shopping/ShoppingList'
 import RecipeImport from '../recipes/RecipeImport'
 import RecipeModal from '../recipes/RecipeModal'
 
@@ -24,7 +27,7 @@ interface Tenant {
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan'>('overview')
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
@@ -37,10 +40,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [editColor, setEditColor] = useState('#C4622D')
   const [savingBranding, setSavingBranding] = useState(false)
   const [brandingSaved, setBrandingSaved] = useState(false)
+  const [familyId, setFamilyId] = useState<string | null>(null)
+  const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
+  const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
+  const [generatingMenu, setGeneratingMenu] = useState(false)
+  const [menuError, setMenuError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTenant()
     fetchRecipes()
+    fetchFamilyProfile()
   }, [tenantId])
 
   const fetchTenant = async () => {
@@ -61,6 +70,61 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     if (data) setRecipes(data)
+  }
+
+  const fetchFamilyProfile = async () => {
+    const { data } = await supabase
+      .from('family_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (data?.id) {
+      setFamilyId(data.id)
+      fetchCurrentMenu(data.id)
+    }
+  }
+
+  const fetchCurrentMenu = async (fid: string) => {
+    const { data } = await supabase
+      .from('weekly_menus')
+      .select('id')
+      .eq('family_id', fid)
+      .order('week_start_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (data?.id) setCurrentMenuId(data.id)
+  }
+
+  const generateMenu = async () => {
+    if (!familyId) return
+    setGeneratingMenu(true)
+    setMenuError(null)
+    try {
+      const weekStartDate = new Date()
+      const day = weekStartDate.getDay()
+      weekStartDate.setDate(weekStartDate.getDate() - day)
+      const weekStr = weekStartDate.toISOString().split('T')[0]
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-weekly-menu`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ family_id: familyId, tenant_id: tenantId, week_start_date: weekStr }),
+        }
+      )
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Generation failed')
+      setCurrentMenuId(result.menu.id)
+      setMenuView('menu')
+    } catch (err: any) {
+      setMenuError(err.message)
+    } finally {
+      setGeneratingMenu(false)
+    }
   }
 
   const saveBranding = async () => {
@@ -125,7 +189,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             🍽️ {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
           </span>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            {(['overview', 'recipes', 'branding'] as const).map(v => (
+            {(['overview', 'recipes', 'branding', 'mealplan'] as const).map(v => (
               <button key={v} onClick={() => setView(v)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontWeight: view === v ? '700' : '400',
@@ -133,8 +197,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 fontSize: '0.95rem', padding: '0.25rem 0',
                 fontFamily: 'var(--font-sans)',
                 borderBottom: view === v ? `2px solid ${color}` : '2px solid transparent',
-                transition: 'all 0.15s ease', textTransform: 'capitalize',
-              }}>{v}</button>
+                transition: 'all 0.15s ease',
+              }}>{v === 'mealplan' ? 'My Meal Plan' : v.charAt(0).toUpperCase() + v.slice(1)}</button>
             ))}
           </div>
         </div>
@@ -243,6 +307,54 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 </div>
               ))}
             </div>
+          </>
+        )}
+
+        {/* MEAL PLAN */}
+        {view === 'mealplan' && (
+          <>
+            {!familyId ? (
+              <div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>My Meal Plan</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Set up your family profile to start generating meal plans.</p>
+                </div>
+                <OnboardingWizard
+                  user={user}
+                  tenantId={tenantId}
+                  onComplete={() => fetchFamilyProfile()}
+                />
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '1.5rem', padding: '1.5rem 2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Menu</h2>
+                    <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
+                      {currentMenuId ? 'Your meal plan is ready.' : 'Generate a personalized weekly meal plan.'}
+                    </p>
+                    {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {currentMenuId && (
+                      <>
+                        <button onClick={() => setMenuView('menu')} style={{ background: 'white', color, border: `1.5px solid ${color}`, padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>View Menu</button>
+                        <button onClick={() => setMenuView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>Shopping List</button>
+                      </>
+                    )}
+                    <button onClick={generateMenu} disabled={generatingMenu} style={{ background: color, color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
+                      {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
+                    </button>
+                  </div>
+                </div>
+                {menuView === 'menu' && currentMenuId && (
+                  <WeeklyMenuView menuId={currentMenuId} tenantId={tenantId} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setMenuView('shopping')} />
+                )}
+                {menuView === 'shopping' && currentMenuId && familyId && (
+                  <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} />
+                )}
+              </div>
+            )}
           </>
         )}
 

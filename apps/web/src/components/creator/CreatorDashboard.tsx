@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import RecipeForm from '../recipes/RecipeForm'
@@ -24,6 +24,69 @@ interface Tenant {
   subscription_status: string
   stripe_account_id: string | null
   stripe_onboarded: boolean
+}
+
+function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdated }: {
+  recipe: any
+  color: string
+  tenantId: string
+  onSelect: () => void
+  onDelete: () => void
+  onImageUpdated: () => void
+}) {
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingImage(true)
+    const ext = file.name.split('.').pop()
+    const path = `${tenantId}/${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('recipe-images').upload(path, file)
+    if (uploadError) { console.error('upload error:', uploadError); setUploadingImage(false); return }
+    const { data } = supabase.storage.from('recipe-images').getPublicUrl(path)
+    await supabase.from('recipes').update({ image_url: data.publicUrl }).eq('id', recipe.id)
+    setUploadingImage(false)
+    onImageUpdated()
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+      <div onClick={onSelect} style={{ cursor: 'pointer' }}>
+        {recipe.image_url ? (
+          <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <div style={{ width: '100%', height: '120px', background: '#F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#C8BAB2', fontSize: '2rem' }}>🍽️</span>
+          </div>
+        )}
+      </div>
+      <div style={{ padding: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+          <h3 onClick={onSelect} style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3, cursor: 'pointer' }}>{recipe.title}</h3>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
+            <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color, padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+            <button onClick={onDelete} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }}>✕</button>
+          </div>
+        </div>
+        {recipe.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
+        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#9B8B82', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+          {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}
+          {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
+          {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
+        </div>
+        <button
+          onClick={() => imageInputRef.current?.click()}
+          disabled={uploadingImage}
+          style={{ background: 'none', border: `1.5px solid ${color}`, color, padding: '0.35rem 0.85rem', borderRadius: '8px', fontSize: '0.8rem', cursor: uploadingImage ? 'not-allowed' : 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)', opacity: uploadingImage ? 0.6 : 1 }}
+        >
+          {uploadingImage ? 'Uploading...' : recipe.image_url ? '🖼 Change photo' : '📷 Add photo'}
+        </button>
+        <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+      </div>
+    </div>
+  )
 }
 
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
@@ -341,24 +404,15 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '65vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
               {filteredRecipes.map(recipe => (
-                <div key={recipe.id} onClick={() => setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)', cursor: 'pointer' }}>
-                  {recipe.image_url && <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />}
-                  <div style={{ padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                      <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
-                        <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color, padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
-                        <button onClick={async (e) => { e.stopPropagation(); if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }}>✕</button>
-                      </div>
-                    </div>
-                    {recipe.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
-                    <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#9B8B82', flexWrap: 'wrap' }}>
-                      {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}
-                      {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
-                      {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
-                    </div>
-                  </div>
-                </div>
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  color={color}
+                  tenantId={tenantId}
+                  onSelect={() => setSelectedRecipe(recipe)}
+                  onDelete={async () => { if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }}
+                  onImageUpdated={fetchRecipes}
+                />
               ))}
             </div>
           </>

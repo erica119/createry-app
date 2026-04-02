@@ -1,13 +1,26 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import type { TenantConfig } from '../../lib/tenant'
 
 interface Props {
   onGoogleSignIn: () => void
   onSignIn: (user: User) => void
+  tenant?: TenantConfig | null
 }
 
-export default function LoginScreen({ onGoogleSignIn, onSignIn }: Props) {
+export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props) {
+  const brandName = tenant?.brand_name || 'Plate'
+  const brandColor = tenant?.primary_color || '#C4622D'
+  const tagline = tenant?.tagline || 'Personalized weekly meal plans built from recipes you love. Shopping lists ready to go.'
+  const isCreatorBranded = !!tenant && tenant.id !== 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+
+  const handleGoogleSignIn = () => {
+    if (tenant && isCreatorBranded) {
+      localStorage.setItem('pending_tenant_id', tenant.id)
+    }
+    onGoogleSignIn()
+  }
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -70,10 +83,10 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn }: Props) {
     <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', padding: '2rem', textAlign: 'center' }}>
       <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
       <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
-        Your Kitchen,<br /><em>Planned.</em>
+        {isCreatorBranded ? brandName : <>{`Your Kitchen,`}<br /><em>Planned.</em></>}
       </h1>
       <p style={{ color: '#6B5C52', margin: '0 0 2.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
-        Personalized weekly meal plans built from recipes you love. Shopping lists ready to go.
+        {tagline}
       </p>
 
       <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 24px rgba(44,24,16,0.08)', maxWidth: '380px', width: '100%' }}>
@@ -126,7 +139,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn }: Props) {
           onClick={handleEmailAuth}
           disabled={loading}
           style={{
-            width: '100%', padding: '0.875rem', background: '#C4622D', color: 'white',
+            width: '100%', padding: '0.875rem', background: brandColor, color: 'white',
             border: 'none', borderRadius: '10px', fontSize: '1rem', fontWeight: '600',
             cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)',
             opacity: loading ? 0.7 : 1, marginBottom: '1rem',
@@ -144,7 +157,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn }: Props) {
 
         {/* Google */}
         <button
-          onClick={onGoogleSignIn}
+          onClick={handleGoogleSignIn}
           style={{
             width: '100%', padding: '0.875rem', background: 'white', color: '#2C1810',
             border: '2px solid #E8D5B7', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600',

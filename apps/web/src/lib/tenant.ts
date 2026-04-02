@@ -21,20 +21,27 @@ const DEFAULT_TENANT: TenantConfig = {
 }
 
 export async function resolveTenant(): Promise<TenantConfig> {
-  // Check for ?creator=subdomain in URL
   const params = new URLSearchParams(window.location.search)
   const creatorParam = params.get('creator')
 
-  if (!creatorParam) return DEFAULT_TENANT
+  if (creatorParam) {
+    localStorage.setItem('creator_subdomain', creatorParam)
+  }
+
+  const subdomain = creatorParam || localStorage.getItem('creator_subdomain')
+  console.log('resolveTenant called, subdomain:', subdomain, 'creatorParam:', creatorParam)
+
+  if (!subdomain) return DEFAULT_TENANT
 
   const { data, error } = await supabase
     .from('tenants')
     .select('id, brand_name, primary_color, tagline, logo_url, subdomain')
-    .eq('subdomain', creatorParam)
+    .eq('subdomain', subdomain)
     .maybeSingle()
 
+  console.log('tenant query result:', data, 'error:', error)
   if (error || !data) {
-    console.warn(`Tenant not found for subdomain: ${creatorParam}`)
+    console.warn(`Tenant not found for subdomain: ${subdomain}`, error)
     return DEFAULT_TENANT
   }
 
@@ -46,4 +53,9 @@ export async function resolveTenant(): Promise<TenantConfig> {
     logo_url: data.logo_url,
     subdomain: data.subdomain,
   }
+}
+
+export function clearCreatorSession() {
+  localStorage.removeItem('creator_subdomain')
+  localStorage.removeItem('pending_tenant_id')
 }

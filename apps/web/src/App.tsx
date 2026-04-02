@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { resolveTenant } from './lib/tenant'
+import { resolveTenant, clearCreatorSession } from './lib/tenant'
 import type { TenantConfig } from './lib/tenant'
 import type { User } from '@supabase/supabase-js'
 import OnboardingWizard from './components/onboarding/OnboardingWizard'
@@ -30,11 +30,21 @@ export default function App() {
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
   const [appMode, setAppMode] = useState<'unknown' | 'user' | 'creator'>('unknown')
-  const [tenant, setTenant] = useState<TenantConfig | null>(null)
+  const [tenant, setTenant] = useState<TenantConfig | null>(() => {
+    // Synchronously initialize from localStorage so branding shows immediately
+    const subdomain = new URLSearchParams(window.location.search).get('creator') 
+      || localStorage.getItem('creator_subdomain')
+    if (subdomain) {
+      // Return a placeholder with just the subdomain — will be replaced by resolveTenant
+      return { id: '', brand_name: '', primary_color: '', tagline: null, logo_url: null, subdomain }
+    }
+    return null
+  })
+  const [tenantLoading, setTenantLoading] = useState(true)
   const [recipeSearch, setRecipeSearch] = useState('')
 
   useEffect(() => {
-    resolveTenant().then(t => setTenant(t))
+    resolveTenant().then(t => { console.log('tenant resolved:', t); setTenant(t); setTenantLoading(false) })
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
@@ -64,6 +74,28 @@ export default function App() {
       return
     }
 
+    // Check for pending tenant from creator URL
+    const pendingTenantId = localStorage.getItem('pending_tenant_id')
+    if (pendingTenantId) {
+      localStorage.removeItem('pending_tenant_id')
+      // Look up the tenant and set it
+      const { data: tenantData } = await supabase
+        .from('tenants')
+        .select('id, brand_name, primary_color, tagline, logo_url, subdomain')
+        .eq('id', pendingTenantId)
+        .maybeSingle()
+      if (tenantData) {
+        setTenant({
+          id: tenantData.id,
+          brand_name: tenantData.brand_name || 'Plate',
+          primary_color: tenantData.primary_color || '#C4622D',
+          tagline: tenantData.tagline,
+          logo_url: tenantData.logo_url,
+          subdomain: tenantData.subdomain,
+        })
+      }
+    }
+
     // Check family profile for regular user
     const { data } = await supabase
       .from('family_profiles')
@@ -76,6 +108,12 @@ export default function App() {
       fetchRecipes()
       fetchCurrentMenu(data.id)
     }
+    // If no family profile, stay 'unknown' so role select shows
+    // unless we came from a creator URL - then go straight to user onboarding
+    else if (pendingTenantId || localStorage.getItem('creator_subdomain')) {
+      setAppMode('user')
+    }
+    // Brand new user with no context - show role select
   }
 
   const fetchRecipes = async () => {
@@ -139,6 +177,7 @@ export default function App() {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    clearCreatorSession()
     setFamilyId(null)
     setRecipes([])
     setCurrentMenuId(null)
@@ -151,10 +190,13 @@ export default function App() {
     return <CreatorDashboard user={user!} tenantId={creatorTenantId} onSignOut={signOut} />
   }
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
+  if (loading || tenantLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
+
+  // Ensure we have real tenant data before rendering anything
+  const activeTenant = tenant?.id ? tenant : null
 
   if (!user) {
-    return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} />
+    return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} tenant={tenant} />
   }
 
   if (appMode === 'unknown') {
@@ -185,6 +227,8 @@ export default function App() {
           user={user}
           tenantId={tenant?.id || FALLBACK_TENANT_ID}
           onComplete={() => checkOnboarding()}
+          brandName={activeTenant?.brand_name}
+          brandColor={activeTenant?.primary_color}
         />
       </div>
     )

@@ -123,7 +123,7 @@ export default function App() {
           })
         }
       }
-      fetchRecipes()
+      fetchRecipes(data.tenant_id)
       fetchCurrentMenu(data.id)
     }
     // If no family profile, stay 'unknown' so role select shows
@@ -134,11 +134,12 @@ export default function App() {
     // Brand new user with no context - show role select
   }
 
-  const fetchRecipes = async () => {
+  const fetchRecipes = async (overrideTenantId?: string) => {
+    const tid = overrideTenantId || tenant?.id || FALLBACK_TENANT_ID
     const { data } = await supabase
       .from('recipes')
       .select('*')
-      .eq('tenant_id', tenant?.id || FALLBACK_TENANT_ID)
+      .eq('tenant_id', tid)
       .order('created_at', { ascending: false })
     if (data) setRecipes(data)
   }

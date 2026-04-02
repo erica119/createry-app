@@ -29,7 +29,7 @@ interface Tenant {
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs'>('overview')
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
@@ -44,6 +44,13 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [brandingSaved, setBrandingSaved] = useState(false)
   const [connectingStripe, setConnectingStripe] = useState(false)
   const [stripeError, setStripeError] = useState<string | null>(null)
+  const [packs, setPacks] = useState<any[]>([])
+  const [showPackForm, setShowPackForm] = useState(false)
+  const [newPackName, setNewPackName] = useState('')
+  const [newPackDescription, setNewPackDescription] = useState('')
+  const [newPackPrice, setNewPackPrice] = useState('')
+  const [newPackRecipeIds, setNewPackRecipeIds] = useState<string[]>([])
+  const [savingPack, setSavingPack] = useState(false)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
@@ -54,6 +61,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     fetchTenant()
     fetchRecipes()
     fetchFamilyProfile()
+    fetchPacks()
   }, [tenantId])
 
   useEffect(() => {
@@ -93,6 +101,15 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     if (data) setRecipes(data)
+  }
+
+  const fetchPacks = async () => {
+    const { data } = await supabase
+      .from('recipe_packs')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+    if (data) setPacks(data)
   }
 
   const fetchFamilyProfile = async () => {
@@ -225,7 +242,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             🍽️ {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
           </span>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            {(['overview', 'recipes', 'branding', 'mealplan'] as const).map(v => (
+            {(['overview', 'recipes', 'packs', 'branding', 'mealplan'] as const).map(v => (
               <button key={v} onClick={() => setView(v)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontWeight: view === v ? '700' : '400',
@@ -234,7 +251,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 fontFamily: 'var(--font-sans)',
                 borderBottom: view === v ? `2px solid ${color}` : '2px solid transparent',
                 transition: 'all 0.15s ease',
-              }}>{v === 'mealplan' ? 'My Meal Plan' : v.charAt(0).toUpperCase() + v.slice(1)}</button>
+              }}>{v === 'mealplan' ? 'My Meal Plan' : v === 'packs' ? 'Recipe Packs' : v.charAt(0).toUpperCase() + v.slice(1)}</button>
             ))}
           </div>
         </div>
@@ -389,6 +406,105 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 {menuView === 'shopping' && currentMenuId && familyId && (
                   <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} />
                 )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* PACKS */}
+        {view === 'packs' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Recipe Packs</h2>
+                <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Bundle recipes into packs your audience can purchase.</p>
+              </div>
+              <button onClick={() => setShowPackForm(!showPackForm)} style={{ background: color, color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600', fontFamily: 'var(--font-sans)' }}>
+                {showPackForm ? '✕ Cancel' : '+ New Pack'}
+              </button>
+            </div>
+
+            {showPackForm && (
+              <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1.25rem', fontSize: '1.1rem' }}>Create New Pack</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Pack name</label>
+                    <input type="text" value={newPackName} onChange={e => setNewPackName(e.target.value)} placeholder="e.g. Summer Grilling Collection" style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Description</label>
+                    <input type="text" value={newPackDescription} onChange={e => setNewPackDescription(e.target.value)} placeholder="What's included in this pack?" style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Price (USD)</label>
+                    <input type="number" value={newPackPrice} onChange={e => setNewPackPrice(e.target.value)} placeholder="9.99" min="0.99" step="0.01" style={{ width: '200px', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Select recipes to include ({newPackRecipeIds.length} selected)</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', padding: '0.5rem', border: '2px solid #E8D5B7', borderRadius: '10px', background: '#FDF6EE' }}>
+                      {recipes.map(r => (
+                        <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.4rem', borderRadius: '6px', background: newPackRecipeIds.includes(r.id) ? 'var(--color-primary-light)' : 'white', border: '1px solid #E8D5B7' }}>
+                          <input type="checkbox" checked={newPackRecipeIds.includes(r.id)} onChange={e => {
+                            if (e.target.checked) setNewPackRecipeIds(ids => [...ids, r.id])
+                            else setNewPackRecipeIds(ids => ids.filter(id => id !== r.id))
+                          }} />
+                          <span style={{ fontSize: '0.85rem', color: '#2C1810' }}>{r.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!newPackName.trim() || !newPackPrice) return
+                      setSavingPack(true)
+                      const priceCents = Math.round(parseFloat(newPackPrice) * 100)
+                      const { error } = await supabase.from('recipe_packs').insert({
+                        tenant_id: tenantId,
+                        name: newPackName.trim(),
+                        description: newPackDescription.trim() || null,
+                        price_cents: priceCents,
+                        recipe_ids: newPackRecipeIds,
+                      })
+                      if (!error) {
+                        setNewPackName('')
+                        setNewPackDescription('')
+                        setNewPackPrice('')
+                        setNewPackRecipeIds([])
+                        setShowPackForm(false)
+                        fetchPacks()
+                      }
+                      setSavingPack(false)
+                    }}
+                    disabled={savingPack || !newPackName.trim() || !newPackPrice}
+                    style={{ background: color, color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: savingPack ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: savingPack ? 0.7 : 1 }}
+                  >
+                    {savingPack ? 'Saving...' : 'Create Pack'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {packs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📦</div>
+                <p style={{ color: '#6B5C52', margin: '0 0 1rem' }}>No recipe packs yet. Create your first pack to start monetizing your recipes.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                {packs.map(pack => (
+                  <div key={pack.id} style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600' }}>{pack.name}</h3>
+                      <span style={{ fontWeight: '700', color, fontSize: '1.1rem', flexShrink: 0, marginLeft: '0.5rem' }}>${(pack.price_cents / 100).toFixed(2)}</span>
+                    </div>
+                    {pack.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{pack.description}</p>}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#9B8B82' }}>{pack.recipe_ids?.length || 0} recipes</span>
+                      <button onClick={async () => { if (confirm('Delete this pack?')) { await supabase.from('recipe_packs').delete().eq('id', pack.id); fetchPacks() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '0.85rem' }}>Delete</button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </>

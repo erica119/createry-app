@@ -29,7 +29,7 @@ export async function resolveTenant(): Promise<TenantConfig> {
   }
 
   const subdomain = creatorParam || localStorage.getItem('creator_subdomain')
-  console.log('resolveTenant called, subdomain:', subdomain, 'creatorParam:', creatorParam)
+  console.log('resolveTenant called, subdomain:', subdomain, 'creatorParam:', creatorParam, 'localStorage:', localStorage.getItem('creator_subdomain'))
 
   if (!subdomain) return DEFAULT_TENANT
 

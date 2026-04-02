@@ -188,8 +188,9 @@ export default function App() {
     console.log('handleCheckout called with packId:', packId)
     setCheckingOut(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+      console.log('token present:', !!token)
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

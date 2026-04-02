@@ -470,11 +470,28 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
                         if (newPackCsvFile && pack) {
                           const text = await newPackCsvFile.text()
+                          const parseCSVLine = (line: string): string[] => {
+                            const result: string[] = []
+                            let current = ''
+                            let inQuotes = false
+                            for (let i = 0; i < line.length; i++) {
+                              if (line[i] === '"') {
+                                inQuotes = !inQuotes
+                              } else if (line[i] === ',' && !inQuotes) {
+                                result.push(current.trim())
+                                current = ''
+                              } else {
+                                current += line[i]
+                              }
+                            }
+                            result.push(current.trim())
+                            return result
+                          }
                           const lines = text.trim().split('\n')
-                          const headers = lines[0].split(',')
+                          const headers = parseCSVLine(lines[0])
                           const rows = lines.slice(1)
                           const recipesToInsert = rows.map(row => {
-                            const vals = row.split(',')
+                            const vals = parseCSVLine(row)
                             const get = (key: string) => {
                               const i = headers.indexOf(key)
                               return i >= 0 ? vals[i]?.trim().replace(/^"|"$/g, '') : ''

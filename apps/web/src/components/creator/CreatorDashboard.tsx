@@ -438,7 +438,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   <h4 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1rem' }}>Stripe Payouts</h4>
                   <p style={{ color: '#6B5C52', fontSize: '0.85rem', margin: '0 0 1rem', lineHeight: 1.5 }}>
                     {tenant?.stripe_onboarded
-                      ? '✅ Your Stripe account is connected. You'll receive payouts automatically.'
+                      ? "✅ Your Stripe account is connected. You'll receive payouts automatically."
                       : 'Connect your Stripe account to receive payouts when users purchase your recipe packs.'}
                   </p>
                   {stripeError && <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>{stripeError}</p>}

@@ -217,8 +217,7 @@ export default function App() {
   // Ensure we have real tenant data before rendering anything
   // Use tenant if it has a real ID (not the fallback)
   const activeTenant = (tenant?.id && tenant.id !== FALLBACK_TENANT_ID) ? tenant : null
-  const displayTenantName = activeTenant?.brand_name || 'Plate'
-  const displayTenantColor = activeTenant?.primary_color || '#C4622D'
+
 
   if (!user) {
     return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} tenant={tenant} />

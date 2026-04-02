@@ -185,6 +185,7 @@ export default function App() {
   }
 
   const handleCheckout = async (packId: string) => {
+    console.log('handleCheckout called with packId:', packId)
     setCheckingOut(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()

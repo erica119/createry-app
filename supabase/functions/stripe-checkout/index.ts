@@ -13,17 +13,21 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
-    const { recipe_pack_id, user_id, tenant_id, success_url, cancel_url } = await req.json()
+    const body = await req.json()
+    console.log('Request body:', JSON.stringify(body))
+    const { recipe_pack_id, user_id, tenant_id, success_url, cancel_url } = body
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
-    const { data: pack } = await supabase
+    console.log('Querying pack:', recipe_pack_id)
+    const { data: pack, error: packError } = await supabase
       .from('recipe_packs')
       .select('*, tenants(stripe_account_id)')
       .eq('id', recipe_pack_id)
       .single()
+    console.log('Pack result:', JSON.stringify(pack), 'Error:', JSON.stringify(packError))
     if (!pack) throw new Error('Recipe pack not found')
     const connectedAccountId = pack.tenants?.stripe_account_id
     if (!connectedAccountId) throw new Error('Creator has not connected Stripe')

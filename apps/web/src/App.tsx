@@ -43,7 +43,7 @@ export default function App() {
   const [tenantLoading, setTenantLoading] = useState(true)
   const [recipeSearch, setRecipeSearch] = useState('')
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
-  const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitle: string } | null>(null)
+  const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
 
@@ -480,7 +480,7 @@ export default function App() {
                     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F0E0E0' }}>
                       <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#9B8B82' }}>🔒 {pack.name}</p>
                       <button
-                        onClick={e => { e.stopPropagation(); setUnlockModal({ pack, recipeTitle: recipe.title }) }}
+                        onClick={e => { e.stopPropagation(); setUnlockModal({ pack, recipeTitles: recipes.filter((r: any) => r.recipe_pack_id === pack.id).map((r: any) => r.title) }) }}
                         style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
                       >
                         Unlock {pack.name}
@@ -508,7 +508,11 @@ export default function App() {
             <div style={{ padding: '1.5rem 2rem' }}>
               <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
                 <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
-                <p style={{ margin: 0, color: '#2C1810', fontWeight: '500', fontSize: '0.95rem' }}>{unlockModal.recipeTitle} + more recipes in this pack</p>
+                <ul style={{ margin: 0, padding: '0 0 0 1.1rem' }}>
+                  {unlockModal.recipeTitles.map((t, i) => (
+                    <li key={i} style={{ color: '#2C1810', fontSize: '0.875rem', marginBottom: '0.3rem', lineHeight: 1.4 }}>{t}</li>
+                  ))}
+                </ul>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                 <span style={{ color: '#6B5C52', fontSize: '0.9rem' }}>One-time purchase</span>

@@ -36,7 +36,7 @@ export default function App() {
       || localStorage.getItem('creator_subdomain')
     if (subdomain) {
       // Return a placeholder with just the subdomain — will be replaced by resolveTenant
-      return { id: '', brand_name: '', primary_color: '', tagline: null, logo_url: null, subdomain }
+      return { id: FALLBACK_TENANT_ID, brand_name: '', primary_color: '', tagline: null, logo_url: null, subdomain }
     }
     return null
   })
@@ -109,8 +109,8 @@ export default function App() {
       fetchCurrentMenu(data.id)
     }
     // If no family profile, stay 'unknown' so role select shows
-    // unless we came from a creator URL - then go straight to user onboarding
-    else if (pendingTenantId || localStorage.getItem('creator_subdomain')) {
+    // unless we came from a creator URL right now - then go straight to user onboarding
+    else if (new URLSearchParams(window.location.search).get('creator') || pendingTenantId) {
       setAppMode('user')
     }
     // Brand new user with no context - show role select

@@ -45,6 +45,7 @@ export default function App() {
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
   const [checkingOut, setCheckingOut] = useState(false)
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
 
   useEffect(() => {
@@ -84,6 +85,19 @@ export default function App() {
     if (!user) return
     checkOnboarding()
   }, [user])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('purchase') === 'success') {
+      setPurchaseSuccess(true)
+      window.history.replaceState({}, '', '/')
+      if (user && tenant) {
+        fetchUnlockedPacks(user.id, tenant.id)
+        fetchRecipes(tenant.id)
+      }
+      setTimeout(() => setPurchaseSuccess(false), 6000)
+    }
+  }, [user, tenant])
 
   const checkOnboarding = async () => {
     // Check if creator first
@@ -434,6 +448,15 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              {purchaseSuccess && (
+                <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🎉</span>
+                  <div>
+                    <p style={{ margin: '0 0 0.2rem', color: '#16a34a', fontWeight: '700', fontSize: '0.95rem' }}>Purchase successful!</p>
+                    <p style={{ margin: 0, color: '#16a34a', fontSize: '0.85rem' }}>Your recipes have been unlocked and are ready to use.</p>
+                  </div>
+                </div>
+              )}
               <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>⬆ Import CSV</button>

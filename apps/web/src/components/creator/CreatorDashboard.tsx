@@ -52,6 +52,25 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     fetchFamilyProfile()
   }, [tenantId])
 
+  useEffect(() => {
+    if (!tenant) return
+    const color = tenant.primary_color || '#C4622D'
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substring(0,2), 16)
+    const g = parseInt(hex.substring(2,4), 16)
+    const b = parseInt(hex.substring(4,6), 16)
+    const dr = Math.max(0, Math.round(r * 0.8))
+    const dg = Math.max(0, Math.round(g * 0.8))
+    const db = Math.max(0, Math.round(b * 0.8))
+    const darkColor = '#' + [dr,dg,db].map(x => x.toString(16).padStart(2,'0')).join('')
+    const lightColor = `rgba(${r},${g},${b},0.15)`
+    const root = document.documentElement
+    root.style.setProperty('--brand-color', color)
+    root.style.setProperty('--color-primary', color)
+    root.style.setProperty('--color-primary-dark', darkColor)
+    root.style.setProperty('--color-primary-light', lightColor)
+  }, [tenant])
+
   const fetchTenant = async () => {
     const { data } = await supabase.from('tenants').select('*').eq('id', tenantId).single()
     if (data) {
@@ -137,6 +156,19 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     }).eq('id', tenantId)
     if (!error) {
       setTenant(t => t ? { ...t, brand_name: editBrandName, tagline: editTagline, primary_color: editColor } : t)
+      const hex = editColor.replace('#', '')
+      const r = parseInt(hex.substring(0,2), 16)
+      const g = parseInt(hex.substring(2,4), 16)
+      const b = parseInt(hex.substring(4,6), 16)
+      const dr = Math.max(0, Math.round(r * 0.8))
+      const dg = Math.max(0, Math.round(g * 0.8))
+      const db = Math.max(0, Math.round(b * 0.8))
+      const darkColor = '#' + [dr,dg,db].map(x => x.toString(16).padStart(2,'0')).join('')
+      const lightColor = `rgba(${r},${g},${b},0.15)`
+      document.documentElement.style.setProperty('--brand-color', editColor)
+      document.documentElement.style.setProperty('--color-primary', editColor)
+      document.documentElement.style.setProperty('--color-primary-dark', darkColor)
+      document.documentElement.style.setProperty('--color-primary-light', lightColor)
       setBrandingSaved(true)
       setTimeout(() => setBrandingSaved(false), 2000)
     }

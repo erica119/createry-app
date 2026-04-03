@@ -95,6 +95,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
   const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics'>('overview')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [earnings, setEarnings] = useState<any[]>([])
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
@@ -170,6 +172,17 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     root.style.setProperty('--color-primary-dark', darkColor)
     root.style.setProperty('--color-primary-light', lightColor)
   }, [tenant])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen])
 
   const fetchTenant = async () => {
     const { data } = await supabase.from('tenants').select('*').eq('id', tenantId).single()
@@ -347,32 +360,42 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
   const color = tenant?.primary_color || '#C4622D'
 
+  const TAB_LABELS: Record<string, string> = {
+    overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs',
+    earnings: 'Earnings', analytics: 'Analytics', branding: 'Branding', mealplan: 'My Meal Plan',
+  }
+
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
       {/* Nav */}
-      <div style={{ padding: '0 2rem', background: color, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+      <div ref={menuRef} style={{ position: 'relative' }}>
+        <div style={{ padding: '0 2rem', background: color, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
             🍽️ {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
+            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {TAB_LABELS[view]}</span>
           </span>
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            {(['overview', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'mealplan'] as const).map(v => (
-              <button key={v} onClick={() => setView(v)} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontWeight: view === v ? '700' : '400',
-                color: view === v ? 'white' : 'rgba(255,255,255,0.7)',
-                fontSize: '0.95rem', padding: '0.25rem 0',
-                fontFamily: 'var(--font-sans)',
-                borderBottom: view === v ? `2px solid ${color}` : '2px solid transparent',
-                transition: 'all 0.15s ease',
-              }}>{v === 'mealplan' ? 'My Meal Plan' : v === 'packs' ? 'Recipe Packs' : v === 'analytics' ? 'Analytics' : v.charAt(0).toUpperCase() + v.slice(1)}</button>
-            ))}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
+            <button onClick={onSignOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
+            <button onClick={() => setMenuOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: '0.25rem' }}>☰</button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
-          <button onClick={onSignOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
-        </div>
+        {menuOpen && (
+          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '200px', zIndex: 50, overflow: 'hidden' }}>
+            {(['overview', 'mealplan', 'recipes', 'packs', 'earnings', 'analytics', 'branding'] as const).map((v, i, arr) => (
+              <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '0.8rem 1.25rem',
+                background: view === v ? '#FDF6EE' : 'white',
+                color: view === v ? color : '#2C1810',
+                fontWeight: view === v ? '700' : '400',
+                fontSize: '0.95rem', border: 'none',
+                borderBottom: i < arr.length - 1 ? '1px solid #F5EFE6' : 'none',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+              }}>{TAB_LABELS[v]}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>

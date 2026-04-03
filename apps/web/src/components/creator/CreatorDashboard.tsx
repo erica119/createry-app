@@ -103,6 +103,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [logoUrl, setLogoUrl] = useState(tenant?.logo_url || '')
   const logoInputRef = useRef<HTMLInputElement>(null)
   const [earnings, setEarnings] = useState<any[]>([])
+  const [payouts, setPayouts] = useState<any[]>([])
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
@@ -155,7 +156,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     fetchFamilyProfile()
     fetchPacks()
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) fetchEarnings()
+      if (session) { fetchEarnings(); fetchPayouts() }
     })
   }, [tenantId])
 
@@ -230,6 +231,15 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       byPack[packId].gross_cents += p.amount_cents
     }
     setEarnings(Object.values(byPack))
+  }
+
+  const fetchPayouts = async () => {
+    const { data } = await supabase
+      .from('creator_payouts')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+    if (data) setPayouts(data)
   }
 
   const fetchPacks = async () => {
@@ -853,6 +863,37 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 </div>
               </>
             )}
+
+            {/* Payout History */}
+            <div style={{ marginTop: '2.5rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.2rem' }}>Payout History</h3>
+              {payouts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+                  <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>🏦</div>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>No payouts yet. Payouts are processed weekly.</p>
+                </div>
+              ) : (
+                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
+                    {['Period', 'Amount (Your 80%)', 'Status', 'Date'].map(h => (
+                      <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6B5C52', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+                    ))}
+                  </div>
+                  {payouts.map((p, i) => (
+                    <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < payouts.length - 1 ? '1px solid #F5EFE6' : 'none', alignItems: 'center' }}>
+                      <div style={{ color: '#2C1810', fontSize: '0.9rem' }}>{p.period_start} → {p.period_end}</div>
+                      <div style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.9rem' }}>${(p.amount_cents / 100).toFixed(2)}</div>
+                      <div>
+                        <span style={{ fontSize: '0.75rem', background: p.status === 'paid' ? '#F0FDF4' : '#FEF9C3', color: p.status === 'paid' ? '#16a34a' : '#854D0E', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>
+                          {p.status === 'paid' ? '✓ Paid' : p.status}
+                        </span>
+                      </div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
 

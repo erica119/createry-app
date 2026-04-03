@@ -10,6 +10,7 @@ interface Props {
 export default function OperatorDashboard({ user, onSignOut }: Props) {
   const [earnings, setEarnings] = useState<any[]>([])
   const [tenants, setTenants] = useState<any[]>([])
+  const [allPayouts, setAllPayouts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [scraperMode, setScraperMode] = useState<'single' | 'blog'>('single')
@@ -23,11 +24,12 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   const [saving, setSaving] = useState(false)
   const [scraperError, setScraperError] = useState<string | null>(null)
   const [scraperSuccess, setScraperSuccess] = useState<string | null>(null)
-  const [view, setView] = useState<'revenue' | 'tenants' | 'scraper'>('revenue')
+  const [view, setView] = useState<'revenue' | 'tenants' | 'payouts' | 'scraper'>('revenue')
 
   useEffect(() => {
     fetchAllEarnings()
     fetchTenants()
+    fetchAllPayouts()
   }, [])
 
   const fetchAllEarnings = async () => {
@@ -72,6 +74,14 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
       }))
       setTenants(enriched)
     }
+  }
+
+  const fetchAllPayouts = async () => {
+    const { data } = await supabase
+      .from('creator_payouts')
+      .select('*, tenants(brand_name)')
+      .order('created_at', { ascending: false })
+    if (data) setAllPayouts(data)
   }
 
   const totalGross = earnings.reduce((s, e) => s + e.gross_cents, 0)
@@ -210,6 +220,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
             <button onClick={() => setView('tenants')} style={navStyle('tenants') as any}>
               Tenants <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.15)', padding: '0.1rem 0.4rem', borderRadius: '10px', marginLeft: '0.3rem' }}>{tenants.length}</span>
             </button>
+            <button onClick={() => setView('payouts')} style={navStyle('payouts') as any}>💸 Payouts</button>
             <button onClick={() => setView('scraper')} style={navStyle('scraper') as any}>🔍 Scraper</button>
           </div>
         </div>
@@ -325,6 +336,56 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                     </div>
                   ))}
                 </div>
+              </>
+            )}
+
+            {view === 'payouts' && (
+              <>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Creator Payouts</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>All weekly payouts processed across the platform.</p>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                  {[
+                    { label: 'Total Paid Out', value: `$${(allPayouts.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount_cents, 0) / 100).toFixed(2)}`, icon: '💸' },
+                    { label: 'Platform Fees Collected', value: `$${(allPayouts.reduce((s, p) => s + p.amount_cents, 0) / 100 / 0.8 * 0.2).toFixed(2)}`, icon: '🏦' },
+                    { label: 'Total Payouts', value: allPayouts.length, icon: '🧾' },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {allPayouts.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '3rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>💸</div>
+                    <p style={{ color: '#6B5C52', margin: 0 }}>No payouts processed yet.</p>
+                  </div>
+                ) : (
+                  <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 2fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
+                      {['Creator', 'Period', 'Amount', 'Stripe Transfer ID', 'Status', 'Date'].map(h => (
+                        <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6B5C52', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+                      ))}
+                    </div>
+                    {allPayouts.map((p, i) => (
+                      <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 2fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < allPayouts.length - 1 ? '1px solid #F5EFE6' : 'none', alignItems: 'center' }}>
+                        <div style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.9rem' }}>{(p.tenants as any)?.brand_name || '—'}</div>
+                        <div style={{ color: '#6B5C52', fontSize: '0.85rem' }}>{p.period_start} → {p.period_end}</div>
+                        <div style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.9rem' }}>${(p.amount_cents / 100).toFixed(2)}</div>
+                        <div style={{ color: '#9B8B82', fontSize: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>{p.stripe_transfer_id || '—'}</div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', background: p.status === 'paid' ? '#F0FDF4' : '#FEF9C3', color: p.status === 'paid' ? '#16a34a' : '#854D0E', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>
+                            {p.status === 'paid' ? '✓ Paid' : p.status}
+                          </span>
+                        </div>
+                        <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 

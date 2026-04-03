@@ -11,7 +11,19 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   const [earnings, setEarnings] = useState<any[]>([])
   const [tenants, setTenants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'revenue' | 'tenants'>('revenue')
+
+  const [scraperMode, setScraperMode] = useState<'single' | 'blog'>('single')
+  const [scraperUrl, setScraperUrl] = useState('')
+  const [scraperTenantId, setScraperTenantId] = useState('')
+  const [discovering, setDiscovering] = useState(false)
+  const [discoveredLinks, setDiscoveredLinks] = useState<{ title: string; url: string }[]>([])
+  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
+  const [parsing, setParsing] = useState(false)
+  const [parsedRecipes, setParsedRecipes] = useState<{ url: string; recipe: any; error: string | null; selected: boolean }[]>([])
+  const [saving, setSaving] = useState(false)
+  const [scraperError, setScraperError] = useState<string | null>(null)
+  const [scraperSuccess, setScraperSuccess] = useState<string | null>(null)
+  const [view, setView] = useState<'revenue' | 'tenants' | 'scraper'>('revenue')
 
   useEffect(() => {
     fetchAllEarnings()
@@ -67,6 +79,115 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   const totalPlatform = totalGross * 0.2
   const totalCreators = totalGross * 0.8
 
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+  const callScraper = async (body: any) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`${supabaseUrl}/functions/v1/scrape-recipe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+        'apikey': supabaseAnonKey,
+      },
+      body: JSON.stringify(body),
+    })
+    return await res.json()
+  }
+
+  const handleDiscover = async () => {
+    if (!scraperUrl.trim()) return
+    setDiscovering(true)
+    setScraperError(null)
+    setDiscoveredLinks([])
+    setSelectedLinks(new Set())
+    setParsedRecipes([])
+    try {
+      const data = await callScraper({ mode: 'discover', url: scraperUrl.trim() })
+      if (data.error) throw new Error(data.error)
+      setDiscoveredLinks(data.links || [])
+      if ((data.links || []).length === 0) setScraperError('No recipe links found on that page. Try a more specific URL.')
+    } catch (err: any) {
+      setScraperError(err.message)
+    } finally {
+      setDiscovering(false)
+    }
+  }
+
+  const handleParseSingle = async () => {
+    if (!scraperUrl.trim()) return
+    setParsing(true)
+    setScraperError(null)
+    setParsedRecipes([])
+    try {
+      const data = await callScraper({ mode: 'parse', urls: [scraperUrl.trim()] })
+      if (data.error) throw new Error(data.error)
+      setParsedRecipes((data.results || []).map((r: any) => ({ ...r, selected: !r.error })))
+    } catch (err: any) {
+      setScraperError(err.message)
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const handleParseSelected = async () => {
+    const urls = Array.from(selectedLinks)
+    if (urls.length === 0) return
+    setParsing(true)
+    setScraperError(null)
+    setParsedRecipes([])
+    try {
+      const data = await callScraper({ mode: 'parse', urls })
+      if (data.error) throw new Error(data.error)
+      setParsedRecipes((data.results || []).map((r: any) => ({ ...r, selected: !r.error })))
+    } catch (err: any) {
+      setScraperError(err.message)
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!scraperTenantId) { setScraperError('Please select a tenant.'); return }
+    const toSave = parsedRecipes.filter(r => r.selected && r.recipe)
+    if (toSave.length === 0) { setScraperError('No recipes selected to save.'); return }
+    setSaving(true)
+    setScraperError(null)
+    try {
+      const recipesToInsert = toSave.map(r => ({
+        tenant_id: scraperTenantId,
+        title: r.recipe.title,
+        description: r.recipe.description || null,
+        ingredients: (r.recipe.ingredients || []).map((ing: string) => ({ name: ing, quantity: '', unit: '' })),
+        instructions: r.recipe.instructions || '',
+        prep_time_minutes: r.recipe.prep_time_minutes || null,
+        cook_time_minutes: r.recipe.cook_time_minutes || null,
+        servings: r.recipe.servings || null,
+        cuisine_tags: r.recipe.cuisine_tags || [],
+        meal_type: r.recipe.meal_type || ['dinner'],
+        dietary_tags: r.recipe.dietary_tags || [],
+        complexity: r.recipe.complexity || 'moderate',
+        image_url: r.recipe.image_url || null,
+        is_premium: false,
+        is_active: true,
+        created_by: user.id,
+      }))
+      const { error } = await supabase.from('recipes').insert(recipesToInsert)
+      if (error) throw new Error(error.message)
+      setScraperSuccess(`${toSave.length} recipe${toSave.length > 1 ? 's' : ''} saved successfully!`)
+      setParsedRecipes([])
+      setDiscoveredLinks([])
+      setSelectedLinks(new Set())
+      setScraperUrl('')
+      setTimeout(() => setScraperSuccess(null), 4000)
+    } catch (err: any) {
+      setScraperError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const navStyle = (v: string) => ({
     background: 'none', border: 'none', cursor: 'pointer',
     fontWeight: view === v ? '700' : '400',
@@ -89,6 +210,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
             <button onClick={() => setView('tenants')} style={navStyle('tenants') as any}>
               Tenants <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.15)', padding: '0.1rem 0.4rem', borderRadius: '10px', marginLeft: '0.3rem' }}>{tenants.length}</span>
             </button>
+            <button onClick={() => setView('scraper')} style={navStyle('scraper') as any}>🔍 Scraper</button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -203,6 +325,146 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                     </div>
                   ))}
                 </div>
+              </>
+            )}
+
+            {view === 'scraper' && (
+              <>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Recipe Scraper</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Import recipes from any website into a creator tenant.</p>
+                </div>
+
+                <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                    {(['single', 'blog'] as const).map(m => (
+                      <button key={m} onClick={() => { setScraperMode(m); setDiscoveredLinks([]); setSelectedLinks(new Set()); setParsedRecipes([]); setScraperError(null) }}
+                        style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', border: `2px solid ${scraperMode === m ? '#C4622D' : '#E8D5B7'}`, background: scraperMode === m ? '#C4622D' : 'white', color: scraperMode === m ? 'white' : '#6B5C52', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                        {m === 'single' ? '🔗 Single Recipe' : '📰 Blog / Recipe Index'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>
+                        {scraperMode === 'single' ? 'Recipe URL' : 'Blog or Recipe Index URL'}
+                      </label>
+                      <input type="url" value={scraperUrl} onChange={e => setScraperUrl(e.target.value)}
+                        placeholder={scraperMode === 'single' ? 'https://www.example.com/recipes/chocolate-cake' : 'https://www.example.com/recipes'}
+                        style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Save to tenant</label>
+                      <select value={scraperTenantId} onChange={e => setScraperTenantId(e.target.value)}
+                        style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none' }}>
+                        <option value=''>Select a tenant...</option>
+                        {tenants.map(t => (
+                          <option key={t.id} value={t.id}>{t.brand_name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {scraperError && (
+                      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '0.875rem 1rem' }}>
+                        <p style={{ color: '#dc2626', margin: 0, fontSize: '0.9rem' }}>{scraperError}</p>
+                      </div>
+                    )}
+
+                    {scraperSuccess && (
+                      <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px', padding: '0.875rem 1rem' }}>
+                        <p style={{ color: '#16a34a', margin: 0, fontSize: '0.9rem' }}>✅ {scraperSuccess}</p>
+                      </div>
+                    )}
+
+                    {scraperMode === 'single' && (
+                      <button onClick={handleParseSingle} disabled={parsing || !scraperUrl.trim()}
+                        style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: parsing || !scraperUrl.trim() ? 'not-allowed' : 'pointer', opacity: parsing || !scraperUrl.trim() ? 0.6 : 1, fontFamily: 'var(--font-sans)' }}>
+                        {parsing ? 'Parsing...' : '✨ Parse Recipe'}
+                      </button>
+                    )}
+
+                    {scraperMode === 'blog' && discoveredLinks.length === 0 && (
+                      <button onClick={handleDiscover} disabled={discovering || !scraperUrl.trim()}
+                        style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: discovering || !scraperUrl.trim() ? 'not-allowed' : 'pointer', opacity: discovering || !scraperUrl.trim() ? 0.6 : 1, fontFamily: 'var(--font-sans)' }}>
+                        {discovering ? 'Discovering...' : '🔍 Find Recipes'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {discoveredLinks.length > 0 && (
+                  <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: 0, fontSize: '1.1rem' }}>Found {discoveredLinks.length} recipe links</h3>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => setSelectedLinks(new Set(discoveredLinks.map(l => l.url)))}
+                          style={{ background: 'none', border: '1.5px solid #C4622D', color: '#C4622D', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}>Select All</button>
+                        <button onClick={() => setSelectedLinks(new Set())}
+                          style={{ background: 'none', border: '1.5px solid #E8D5B7', color: '#6B5C52', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}>Clear</button>
+                      </div>
+                    </div>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
+                      {discoveredLinks.map(link => (
+                        <label key={link.url} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '8px', background: selectedLinks.has(link.url) ? '#FDF6EE' : 'transparent', cursor: 'pointer', border: `1px solid ${selectedLinks.has(link.url) ? '#E8D5B7' : 'transparent'}` }}>
+                          <input type='checkbox' checked={selectedLinks.has(link.url)}
+                            onChange={e => { const next = new Set(selectedLinks); e.target.checked ? next.add(link.url) : next.delete(link.url); setSelectedLinks(next) }}
+                            style={{ marginTop: '2px', flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#2C1810' }}>{link.title}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#9B8B82', wordBreak: 'break-all' }}>{link.url}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                    <button onClick={handleParseSelected} disabled={parsing || selectedLinks.size === 0}
+                      style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.875rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: parsing || selectedLinks.size === 0 ? 'not-allowed' : 'pointer', opacity: parsing || selectedLinks.size === 0 ? 0.6 : 1, fontFamily: 'var(--font-sans)' }}>
+                      {parsing ? 'Parsing...' : `✨ Parse ${selectedLinks.size} Selected Recipe${selectedLinks.size !== 1 ? 's' : ''}`}
+                    </button>
+                  </div>
+                )}
+
+                {parsedRecipes.length > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: 0, fontSize: '1.1rem' }}>
+                        Preview — {parsedRecipes.filter(r => r.selected).length} of {parsedRecipes.length} selected
+                      </h3>
+                      <button onClick={handleSave} disabled={saving || parsedRecipes.filter(r => r.selected).length === 0 || !scraperTenantId}
+                        style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'var(--font-sans)' }}>
+                        {saving ? 'Saving...' : `💾 Save to ${tenants.find(t => t.id === scraperTenantId)?.brand_name || 'Tenant'}`}
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {parsedRecipes.map((r, i) => (
+                        <div key={i} style={{ background: 'white', borderRadius: '16px', border: `1px solid ${r.error ? '#fecaca' : r.selected ? '#E8D5B7' : '#F0EDE8'}`, overflow: 'hidden', opacity: r.selected ? 1 : 0.6 }}>
+                          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #F5EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                              <input type='checkbox' checked={r.selected} disabled={!!r.error}
+                                onChange={e => { const next = [...parsedRecipes]; next[i] = { ...next[i], selected: e.target.checked }; setParsedRecipes(next) }} />
+                              <span style={{ fontWeight: '700', color: '#2C1810', fontSize: '1rem' }}>{r.recipe?.title || 'Parse failed'}</span>
+                            </label>
+                            {r.error && <span style={{ fontSize: '0.8rem', color: '#dc2626' }}>⚠️ {r.error}</span>}
+                          </div>
+                          {r.recipe && (
+                            <div style={{ padding: '1rem 1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.875rem' }}>
+                              {r.recipe.image_url && <div style={{ gridColumn: '1 / -1' }}><img src={r.recipe.image_url} alt={r.recipe.title} style={{ height: '120px', borderRadius: '8px', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} /></div>}
+                              {r.recipe.description && <div style={{ gridColumn: '1 / -1', color: '#6B5C52' }}>{r.recipe.description}</div>}
+                              <div><span style={{ color: '#9B8B82' }}>Prep:</span> {r.recipe.prep_time_minutes ? `${r.recipe.prep_time_minutes}m` : '—'}</div>
+                              <div><span style={{ color: '#9B8B82' }}>Cook:</span> {r.recipe.cook_time_minutes ? `${r.recipe.cook_time_minutes}m` : '—'}</div>
+                              <div><span style={{ color: '#9B8B82' }}>Servings:</span> {r.recipe.servings || '—'}</div>
+                              <div><span style={{ color: '#9B8B82' }}>Complexity:</span> {r.recipe.complexity}</div>
+                              <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#9B8B82' }}>Ingredients:</span> {(r.recipe.ingredients || []).length} items</div>
+                              {r.recipe.cuisine_tags?.length > 0 && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#9B8B82' }}>Cuisine:</span> {r.recipe.cuisine_tags.join(', ')}</div>}
+                              {r.recipe.dietary_tags?.length > 0 && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#9B8B82' }}>Dietary:</span> {r.recipe.dietary_tags.join(', ')}</div>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </>

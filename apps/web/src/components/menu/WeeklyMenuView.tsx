@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import WeekCalendarPicker from './WeekCalendarPicker'
 
 interface Props {
   menuId: string
   tenantId: string
   userId?: string
+  familyId?: string
   onApproved: () => void
   onGoShopping?: () => void
+  onWeekChange?: (menuId: string | null, weekDate: string) => void
+  onRegenerate?: (feedback: string) => void
 }
 
 interface Recipe {
@@ -39,7 +43,7 @@ interface WeeklyMenu {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function WeeklyMenuView({ menuId, tenantId, userId, onApproved, onGoShopping }: Props) {
+export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onWeekChange, onRegenerate }: Props) {
   const [menu, setMenu] = useState<WeeklyMenu | null>(null)
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({})
   const [packs, setPacks] = useState<Record<string, RecipePack>>({})
@@ -51,6 +55,10 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, onApproved, o
   const [justApproved, setJustApproved] = useState(false)
   const [unlockModal, setUnlockModal] = useState<{ pack: RecipePack; recipeTitle: string } | null>(null)
   const [checkingOut, setCheckingOut] = useState(false)
+  const [feedback, setFeedback] = useState('')
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [navigating, setNavigating] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
 
   useEffect(() => {
     fetchMenu()
@@ -121,6 +129,22 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, onApproved, o
     if (data) {
       setUnlockedPackIds(new Set(data.map(p => p.recipe_pack_id).filter((id): id is string => !!id)))
     }
+  }
+
+  const navigateWeek = async (direction: 'prev' | 'next') => {
+    if (!menu || !familyId) return
+    setNavigating(true)
+    const current = new Date(menu.week_start_date)
+    current.setUTCDate(current.getUTCDate() + (direction === 'next' ? 7 : -7))
+    const newWeekStr = current.toISOString().split('T')[0]
+    const { data } = await supabase
+      .from('weekly_menus')
+      .select('id')
+      .eq('family_id', familyId)
+      .eq('week_start_date', newWeekStr)
+      .maybeSingle()
+    if (onWeekChange) onWeekChange(data?.id || null, newWeekStr)
+    setNavigating(false)
   }
 
   const handleApprove = async () => {
@@ -208,35 +232,79 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, onApproved, o
     <div>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: '0 0 0.25rem' }}>
-            This Week's Menu
-          </h2>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+            {familyId && (
+              <button onClick={() => navigateWeek('prev')} disabled={navigating}
+                style={{ background: 'none', border: '1.5px solid #E8D5B7', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#6B5C52' }}>←</button>
+            )}
+            <h2 onClick={() => familyId && setShowCalendar(true)}
+              style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: 0, cursor: familyId ? 'pointer' : 'default', textDecoration: familyId ? 'underline dotted #C8BAB2' : 'none' }}>
+              Week of {weekDate}
+            </h2>
+            {familyId && (
+              <button onClick={() => navigateWeek('next')} disabled={navigating}
+                style={{ background: 'none', border: '1.5px solid #E8D5B7', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#6B5C52' }}>→</button>
+            )}
+            {familyId && (
+              <button onClick={() => setShowCalendar(true)}
+                style={{ background: 'none', border: '1.5px solid #E8D5B7', borderRadius: '6px', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#6B5C52' }}>📅</button>
+            )}
+          </div>
           <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
-            Week of {weekDate} · Status: <strong>{menu.status.replace('_', ' ')}</strong>
+            Status: <strong>{menu.status.replace('_', ' ')}</strong>
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {isApproved ? (
             <>
               <span style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>✓ Approved</span>
               {onGoShopping && (
-                <button
-                  onClick={onGoShopping}
-                  style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}
-                >
+                <button onClick={onGoShopping}
+                  style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>
                   → Build Shopping List
                 </button>
               )}
+              {onRegenerate && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => setShowFeedback(!showFeedback)}
+                      style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500' }}>
+                      💬 Feedback
+                    </button>
+                    <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }}
+                      style={{ background: 'white', color: 'var(--color-primary)', border: '1.5px solid var(--color-primary)', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600' }}>
+                      ✨ Regenerate
+                    </button>
+                  </div>
+                  {showFeedback && (
+                    <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
+                      placeholder="e.g. more Italian, less chicken..."
+                      style={{ width: '280px', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #E8D5B7', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                  )}
+                </div>
+              )}
             </>
           ) : (
-            <button
-              onClick={handleApprove}
-              disabled={approving}
-              style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: approving ? 0.7 : 1 }}
-            >
-              {approving ? 'Approving...' : '✓ Approve Menu'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => setShowFeedback(!showFeedback)}
+                  style={{ background: 'white', color: 'var(--color-primary)', border: '1.5px solid var(--color-primary)', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500' }}>
+                  💬 Add Feedback
+                </button>
+                <button onClick={handleApprove} disabled={approving}
+                  style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: approving ? 0.7 : 1 }}>
+                  {approving ? 'Approving...' : '✓ Approve Menu'}
+                </button>
+              </div>
+              {showFeedback && (
+                <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                  <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
+                    placeholder="e.g. more Italian, less chicken..."
+                    style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #E8D5B7', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -345,6 +413,24 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, onApproved, o
             </div>
           </div>
         </div>
+      )}
+
+      {showCalendar && onWeekChange && (
+        <WeekCalendarPicker
+          currentWeekDate={menu.week_start_date}
+          onSelectWeek={async (weekDate) => {
+            setNavigating(true)
+            const { data } = await supabase
+              .from('weekly_menus')
+              .select('id')
+              .eq('family_id', familyId!)
+              .eq('week_start_date', weekDate)
+              .maybeSingle()
+            onWeekChange(data?.id || null, weekDate)
+            setNavigating(false)
+          }}
+          onClose={() => setShowCalendar(false)}
+        />
       )}
 
       {/* Unlock modal */}

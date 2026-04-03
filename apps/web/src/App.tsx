@@ -49,6 +49,7 @@ export default function App() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
+  const [menuHistory, setMenuHistory] = useState<{ id: string; week_start_date: string; status: string }[]>([])
 
   useEffect(() => {
     const color = tenant?.primary_color || '#C4622D'
@@ -181,6 +182,7 @@ export default function App() {
       fetchRecipes(data.tenant_id)
       fetchUnlockedPacks(user!.id, data.tenant_id)
       fetchCurrentMenu(data.id)
+      fetchMenuHistory(data.id)
     }
     // If no family profile, stay 'unknown' so role select shows
     // unless we came from a creator URL right now - then go straight to user onboarding
@@ -255,7 +257,17 @@ export default function App() {
     if (data?.id) setCurrentMenuId(data.id)
   }
 
-  const generateMenu = async () => {
+  const fetchMenuHistory = async (fid: string) => {
+    const { data } = await supabase
+      .from('weekly_menus')
+      .select('id, week_start_date, status')
+      .eq('family_id', fid)
+      .order('week_start_date', { ascending: false })
+      .limit(12)
+    if (data) setMenuHistory(data)
+  }
+
+  const generateMenu = async (feedback?: string) => {
     if (!familyId) return
     setGeneratingMenu(true)
     setMenuError(null)
@@ -273,7 +285,7 @@ export default function App() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ family_id: familyId, tenant_id: tenant?.id || FALLBACK_TENANT_ID, week_start_date: weekStr }),
+          body: JSON.stringify({ family_id: familyId, tenant_id: tenant?.id || FALLBACK_TENANT_ID, week_start_date: weekStr, feedback: feedback || undefined }),
         }
       )
       const result = await response.json()
@@ -426,7 +438,23 @@ export default function App() {
 
       <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
         {view === 'menu' && currentMenuId && (
-          <WeeklyMenuView menuId={currentMenuId} tenantId={tenant?.id || FALLBACK_TENANT_ID} userId={user?.id} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setView('shopping')} />
+          <WeeklyMenuView
+            menuId={currentMenuId}
+            tenantId={tenant?.id || FALLBACK_TENANT_ID}
+            userId={user?.id}
+            familyId={familyId}
+            onApproved={() => fetchCurrentMenu(familyId!)}
+            onGoShopping={() => setView('shopping')}
+            onWeekChange={(newMenuId, weekDate) => {
+              if (newMenuId) {
+                setCurrentMenuId(newMenuId)
+              } else {
+                setCurrentMenuId(null)
+                setView('dashboard')
+              }
+            }}
+            onRegenerate={(feedback) => generateMenu(feedback)}
+          />
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
@@ -463,6 +491,36 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            {menuHistory.length > 1 && (
+              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #F5EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: 0, fontSize: '1.1rem' }}>Menu History</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {menuHistory.map((m, i) => {
+                    const weekDate = new Date(m.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                    const isCurrent = m.id === currentMenuId
+                    return (
+                      <div key={m.id} onClick={() => { setCurrentMenuId(m.id); setView('menu') }}
+                        style={{ padding: '0.875rem 1.5rem', borderBottom: i < menuHistory.length - 1 ? '1px solid #F5EFE6' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: isCurrent ? '#FDF6EE' : 'white' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ fontSize: '1rem' }}>📅</span>
+                          <span style={{ fontWeight: isCurrent ? '700' : '500', color: '#2C1810', fontSize: '0.9rem' }}>Week of {weekDate}</span>
+                          {isCurrent && <span style={{ fontSize: '0.7rem', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: '600' }}>Current</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ fontSize: '0.8rem', color: m.status === 'approved' ? '#16a34a' : '#9B8B82', fontWeight: '500' }}>
+                            {m.status === 'approved' ? '✓ Approved' : 'Draft'}
+                          </span>
+                          <span style={{ color: '#C8BAB2', fontSize: '0.85rem' }}>→</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {purchaseSuccess && (
               <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

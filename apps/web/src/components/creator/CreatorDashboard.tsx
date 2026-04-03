@@ -121,6 +121,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [menuError, setMenuError] = useState<string | null>(null)
+  const [targetWeekDate, setTargetWeekDate] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTenant()
@@ -226,15 +227,18 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     if (data?.id) setCurrentMenuId(data.id)
   }
 
-  const generateMenu = async () => {
+  const generateMenu = async (feedback?: string) => {
     if (!familyId) return
     setGeneratingMenu(true)
     setMenuError(null)
     try {
-      const weekStartDate = new Date()
-      const day = weekStartDate.getDay()
-      weekStartDate.setDate(weekStartDate.getDate() - day)
-      const weekStr = weekStartDate.toISOString().split('T')[0]
+      let weekStr = targetWeekDate
+      if (!weekStr) {
+        const weekStartDate = new Date()
+        const day = weekStartDate.getDay()
+        weekStartDate.setDate(weekStartDate.getDate() - day)
+        weekStr = weekStartDate.toISOString().split('T')[0]
+      }
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-weekly-menu`,
         {
@@ -244,7 +248,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ family_id: familyId, tenant_id: tenantId, week_start_date: weekStr }),
+          body: JSON.stringify({ family_id: familyId, tenant_id: tenantId, week_start_date: weekStr, feedback: feedback || undefined }),
         }
       )
       const result = await response.json()
@@ -466,7 +470,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   <div>
                     <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Menu</h2>
                     <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
-                      {currentMenuId ? 'Your meal plan is ready.' : 'Generate a personalized weekly meal plan.'}
+                      {currentMenuId ? 'Your meal plan is ready.' : targetWeekDate ? `Generate a menu for the week of ${new Date(targetWeekDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.` : 'Generate a personalized weekly meal plan.'}
                     </p>
                     {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
                   </div>
@@ -477,13 +481,30 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                         <button onClick={() => setMenuView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>Shopping List</button>
                       </>
                     )}
-                    <button onClick={generateMenu} disabled={generatingMenu} style={{ background: color, color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
+                    <button onClick={() => generateMenu()} disabled={generatingMenu} style={{ background: color, color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
                       {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
                     </button>
                   </div>
                 </div>
                 {menuView === 'menu' && currentMenuId && (
-                  <WeeklyMenuView menuId={currentMenuId} tenantId={tenantId} onApproved={() => fetchCurrentMenu(familyId!)} onGoShopping={() => setMenuView('shopping')} />
+                  <WeeklyMenuView
+                    menuId={currentMenuId}
+                    tenantId={tenantId}
+                    familyId={familyId}
+                    onApproved={() => fetchCurrentMenu(familyId!)}
+                    onGoShopping={() => setMenuView('shopping')}
+                    onWeekChange={(newMenuId, weekDate) => {
+                      if (newMenuId) {
+                        setCurrentMenuId(newMenuId)
+                        setTargetWeekDate(weekDate)
+                      } else {
+                        setCurrentMenuId(null)
+                        setTargetWeekDate(weekDate)
+                        setMenuView('dashboard')
+                      }
+                    }}
+                    onRegenerate={(feedback) => generateMenu(feedback)}
+                  />
                 )}
                 {menuView === 'shopping' && currentMenuId && familyId && (
                   <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} />

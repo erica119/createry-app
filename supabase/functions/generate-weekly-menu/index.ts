@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { family_id, tenant_id, week_start_date } = await req.json();
+    const { family_id, tenant_id, week_start_date, feedback } = await req.json();
 
     if (!family_id || !tenant_id || !week_start_date) {
       return new Response(
@@ -174,7 +174,7 @@ AVAILABLE RECIPES (${compactRecipes.length} total):
 ${JSON.stringify(compactRecipes)}
 
 INSTRUCTIONS:
-1. Create a meal plan for the week starting ${week_start_date}
+1. Create a meal plan for the week starting ${week_start_date}${feedback ? `\n\nUSER FEEDBACK FOR THIS REGENERATION: ${feedback}\nPlease take this feedback into account when selecting recipes.` : ''}
 2. Only use recipes from the AVAILABLE RECIPES list
 3. Prefer recipes NOT marked as "recent: true" to avoid repetition
 4. Match meal_type appropriately (breakfast recipes for breakfast slots, etc)

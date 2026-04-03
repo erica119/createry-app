@@ -445,7 +445,7 @@ export default function App() {
             familyId={familyId}
             onApproved={() => fetchCurrentMenu(familyId!)}
             onGoShopping={() => setView('shopping')}
-            onWeekChange={(newMenuId, weekDate) => {
+            onWeekChange={(newMenuId, _weekDate) => {
               if (newMenuId) {
                 setCurrentMenuId(newMenuId)
               } else {

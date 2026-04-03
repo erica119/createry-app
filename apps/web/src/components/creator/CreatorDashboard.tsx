@@ -8,6 +8,7 @@ import ShoppingList from '../shopping/ShoppingList'
 import RecipeImport from '../recipes/RecipeImport'
 import RecipeModal from '../recipes/RecipeModal'
 import ProfileSettings from '../profile/ProfileSettings'
+import CreatorAnalytics from './CreatorAnalytics'
 
 interface Props {
   user: User
@@ -93,7 +94,7 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics'>('overview')
   const [earnings, setEarnings] = useState<any[]>([])
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
@@ -338,7 +339,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             🍽️ {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
           </span>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            {(['overview', 'recipes', 'packs', 'earnings', 'branding', 'mealplan'] as const).map(v => (
+            {(['overview', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'mealplan'] as const).map(v => (
               <button key={v} onClick={() => setView(v)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontWeight: view === v ? '700' : '400',
@@ -347,7 +348,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 fontFamily: 'var(--font-sans)',
                 borderBottom: view === v ? `2px solid ${color}` : '2px solid transparent',
                 transition: 'all 0.15s ease',
-              }}>{v === 'mealplan' ? 'My Meal Plan' : v === 'packs' ? 'Recipe Packs' : v.charAt(0).toUpperCase() + v.slice(1)}</button>
+              }}>{v === 'mealplan' ? 'My Meal Plan' : v === 'packs' ? 'Recipe Packs' : v === 'analytics' ? 'Analytics' : v.charAt(0).toUpperCase() + v.slice(1)}</button>
             ))}
           </div>
         </div>
@@ -813,6 +814,11 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             </div>
           </>
         )}
+        {/* ANALYTICS */}
+        {view === 'analytics' && (
+          <CreatorAnalytics tenantId={tenantId} primaryColor={color} />
+        )}
+
       </div>
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
     </div>

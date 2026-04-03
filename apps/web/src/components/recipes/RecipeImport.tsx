@@ -29,6 +29,12 @@ interface ParsedRecipe {
   _row: number
 }
 
+interface ImportedRecipe {
+  id: string
+  title: string
+  image_url: string | null
+}
+
 const VALID_COMPLEXITY = ['simple', 'moderate', 'complex']
 const VALID_MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -106,13 +112,18 @@ function validateAndParseRows(rows: string[][]): ParsedRecipe[] {
 }
 
 export default function RecipeImport({ user, tenantId, onComplete, onCancel }: Props) {
-  const [stage, setStage] = useState<'upload' | 'preview' | 'importing' | 'done'>('upload')
+  const [stage, setStage] = useState<'upload' | 'preview' | 'importing' | 'images' | 'done'>('upload')
   const [dragging, setDragging] = useState(false)
   const [recipes, setRecipes] = useState<ParsedRecipe[]>([])
   const [fileName, setFileName] = useState('')
   const [importProgress, setImportProgress] = useState(0)
   const [importResults, setImportResults] = useState<{ success: number; failed: number }>({ success: 0, failed: 0 })
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const [importedRecipes, setImportedRecipes] = useState<ImportedRecipe[]>([])
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [uploadedIds, setUploadedIds] = useState<Set<string>>(new Set())
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const activeRecipeIdRef = useRef<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const processFile = (file: File) => {
@@ -157,6 +168,7 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
     setStage('importing')
     const toImport = recipes.filter((_, i) => selectedRows.has(i))
     let success = 0; let failed = 0
+    const inserted: ImportedRecipe[] = []
     const BATCH = 50
     for (let i = 0; i < toImport.length; i += BATCH) {
       const batch = toImport.slice(i, i + BATCH).map(r => ({
@@ -169,12 +181,53 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
         is_premium: r.is_premium, source_url: r.source_url || null,
         image_url: r.image_url || null, is_active: r.is_active,
       }))
-      const { error } = await supabase.from('recipes').insert(batch)
-      if (error) { console.error('Import error:', error); failed += batch.length } else { success += batch.length }
+      const { data, error } = await supabase.from('recipes').insert(batch).select('id, title, image_url')
+      if (error) { console.error('Import error:', error); failed += batch.length }
+      else {
+        success += batch.length
+        inserted.push(...(data || []).map(r => ({ id: r.id, title: r.title, image_url: r.image_url })))
+      }
       setImportProgress(Math.round(((i + BATCH) / toImport.length) * 100))
     }
     setImportResults({ success, failed })
-    setStage('done')
+    setImportedRecipes(inserted)
+    setStage('images')
+  }
+
+  const triggerImageUpload = (recipeId: string) => {
+    activeRecipeIdRef.current = recipeId
+    imageInputRef.current?.click()
+  }
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const recipeId = activeRecipeIdRef.current
+    if (!file || !recipeId) return
+    e.target.value = ''
+    setUploadingId(recipeId)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${tenantId}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(path, file, { upsert: true })
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(path)
+      const publicUrl = urlData.publicUrl
+      const { error: updateError } = await supabase
+        .from('recipes')
+        .update({ image_url: publicUrl })
+        .eq('id', recipeId)
+      if (updateError) throw updateError
+      setImportedRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, image_url: publicUrl } : r))
+      setUploadedIds(prev => new Set([...prev, recipeId]))
+    } catch (err) {
+      console.error('Image upload error:', err)
+      alert('Image upload failed. Please try again.')
+    } finally {
+      setUploadingId(null)
+      activeRecipeIdRef.current = null
+    }
   }
 
   const validCount = recipes.filter(r => r._errors.length === 0).length
@@ -223,10 +276,10 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
             <div style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#F5EFE6', borderRadius: '10px', border: '1px solid #E8D5B7' }}>
               <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#2C1810', fontSize: '0.85rem' }}>📋 Required columns:</p>
               <p style={{ margin: 0, color: '#6B5C52', fontSize: '0.8rem', lineHeight: 1.7 }}>
-                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>title</code>{' '}
-                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>ingredients</code>{' '}(pipe-separated){' '}
-                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>instructions</code>{' '}
-                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>complexity</code>{' '}(easy/medium/hard)
+                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>title</code>{" "}
+                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>ingredients</code>{" "}(pipe-separated){" "}
+                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>instructions</code>{" "}
+                <code style={{ background: '#E8D5B7', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>complexity</code>{" "}(simple/moderate/complex)
               </p>
             </div>
           </div>
@@ -304,6 +357,124 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
               <div style={{ background: '#C4622D', height: '100%', width: `${importProgress}%`, borderRadius: '999px', transition: 'width 0.3s ease' }} />
             </div>
             <p style={{ color: '#9B8B82', marginTop: '0.75rem', fontSize: '0.85rem' }}>{importProgress}%</p>
+          </div>
+        )}
+
+        {stage === 'images' && (
+          <div>
+            <div style={{ ...s.card, marginBottom: '1.5rem', padding: '1.25rem 1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.2rem' }}>
+                    🎉 {importResults.success} recipe{importResults.success !== 1 ? 's' : ''} imported!
+                  </h3>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.875rem' }}>
+                    Add photos to your recipes now, or skip and do it later from the recipe editor.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  {uploadedIds.size > 0 && (
+                    <span style={{ alignSelf: 'center', fontSize: '0.82rem', color: '#16a34a', fontWeight: '600' }}>
+                      ✓ {uploadedIds.size} photo{uploadedIds.size !== 1 ? 's' : ''} added
+                    </span>
+                  )}
+                  <button onClick={onComplete} style={s.secondaryBtn}>Skip → Done</button>
+                </div>
+              </div>
+            </div>
+
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
+            />
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+              {importedRecipes.map(recipe => {
+                const isUploading = uploadingId === recipe.id
+                const hasImage = !!recipe.image_url
+                const wasUploaded = uploadedIds.has(recipe.id)
+                return (
+                  <div
+                    key={recipe.id}
+                    style={{
+                      background: 'white',
+                      border: `1.5px solid ${wasUploaded ? '#86efac' : '#E8D5B7'}`,
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      boxShadow: '0 1px 4px rgba(44,24,16,0.06)',
+                      transition: 'border-color 0.2s',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '130px',
+                        background: hasImage ? '#000' : '#F5EFE6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        cursor: isUploading ? 'wait' : 'pointer',
+                      }}
+                      onClick={() => !isUploading && triggerImageUpload(recipe.id)}
+                    >
+                      {hasImage ? (
+                        <img
+                          src={recipe.image_url!}
+                          alt={recipe.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploading ? 0.5 : 1 }}
+                        />
+                      ) : (
+                        <div style={{ textAlign: 'center', color: '#C8BAB2' }}>
+                          <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>📷</div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>Add Photo</div>
+                        </div>
+                      )}
+                      {isUploading && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#C4622D', fontWeight: '600' }}>
+                          Uploading…
+                        </div>
+                      )}
+                      {wasUploaded && !isUploading && (
+                        <div style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', background: '#16a34a', color: 'white', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '700' }}>✓</div>
+                      )}
+                    </div>
+                    <div style={{ padding: '0.65rem 0.75rem' }}>
+                      <div style={{ fontWeight: '600', fontSize: '0.82rem', color: '#2C1810', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {recipe.title}
+                      </div>
+                      <button
+                        onClick={() => !isUploading && triggerImageUpload(recipe.id)}
+                        disabled={isUploading}
+                        style={{
+                          marginTop: '0.4rem',
+                          width: '100%',
+                          padding: '0.35rem',
+                          border: '1.5px solid #E8D5B7',
+                          borderRadius: '6px',
+                          background: '#FDF6EE',
+                          color: '#6B5C52',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          cursor: isUploading ? 'wait' : 'pointer',
+                        }}
+                      >
+                        {isUploading ? 'Uploading…' : hasImage ? 'Change Photo' : '+ Add Photo'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+              <button onClick={onComplete} style={s.primaryBtn}>
+                Finish → View Recipes
+              </button>
+            </div>
           </div>
         )}
 

@@ -53,14 +53,21 @@ serve(async (req) => {
       .select("*")
       .eq("family_id", family_id);
 
-    // 4. Fetch weekly schedule (which days/meals need planning)
+    // 4. Fetch family members
+    const { data: familyMembers } = await supabase
+      .from("family_members")
+      .select("name, age_range, dietary_restrictions, notes")
+      .eq("family_id", family_id)
+      .order("created_at");
+
+    // 4b. Fetch weekly schedule (which days/meals need planning)
     const { data: schedule } = await supabase
       .from("weekly_schedule")
       .select("*")
       .eq("family_id", family_id)
       .order("day_of_week");
 
-    // 5. Parse all constraints by type
+    // 5b. Parse all constraints by type
     const allergyValues = (constraints || [])
       .filter(c => c.severity === "allergy" || c.severity === "intolerance")
       .map(c => c.value);
@@ -185,6 +192,16 @@ serve(async (req) => {
 FAMILY INFO:
 - Adults: ${family.adults}, Children: ${family.children}
 - Family name: ${family.family_name}
+${familyMembers && familyMembers.length > 0 ? `
+INDIVIDUAL FAMILY MEMBERS (personalize meals to suit everyone):
+${familyMembers.map(m => {
+  const restrictions = m.dietary_restrictions && m.dietary_restrictions.length > 0
+    ? ` | Dietary restrictions: ${m.dietary_restrictions.join(", ")}`
+    : "";
+  const notes = m.notes ? ` | Notes: ${m.notes}` : "";
+  return `- ${m.name} (${m.age_range})${restrictions}${notes}`;
+}).join("\n")}
+` : ""}
 
 COOKING SCHEDULE (days and meals that need planning):
 ${scheduleDescription || "Dinner every day"}

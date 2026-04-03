@@ -4,6 +4,7 @@ import StepDietaryConstraints from '../onboarding/StepDietaryConstraints'
 import StepMealPreferences from '../onboarding/StepMealPreferences'
 import StepWeeklySchedule from '../onboarding/StepWeeklySchedule'
 import StepFamilySize from '../onboarding/StepFamilySize'
+import FamilyMembers from '../FamilyMembers'
 
 interface Props {
   user: User
@@ -11,7 +12,7 @@ interface Props {
   tenantId: string
 }
 
-type Section = 'overview' | 'family' | 'dietary' | 'schedule' | 'preferences'
+type Section = 'overview' | 'family' | 'dietary' | 'schedule' | 'preferences' | 'members'
 
 export default function ProfileSettings({ user, familyId, tenantId }: Props) {
   const [section, setSection] = useState<Section>('overview')
@@ -57,13 +58,29 @@ export default function ProfileSettings({ user, familyId, tenantId }: Props) {
       {section === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {sectionBtn('Family Size', 'family', '👨‍👩‍👧')}
+          {sectionBtn('Family Members', 'members', '👨‍👩‍👧‍👦')}
           {sectionBtn('Dietary Restrictions', 'dietary', '🥗')}
           {sectionBtn('Weekly Schedule', 'schedule', '📅')}
           {sectionBtn('Meal Preferences', 'preferences', '❤️')}
         </div>
       )}
 
-      {section !== 'overview' && (
+      {section === 'members' && (
+        <div>
+          <button onClick={() => setSection('overview')}
+            style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '600', padding: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            ← Back
+          </button>
+          <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.15rem' }}>
+            Family Members
+          </h3>
+          <p style={{ color: '#6B5C52', fontSize: '0.85rem', marginBottom: '1.25rem', marginTop: '-0.5rem' }}>
+            Add individual members so Claude can personalize meals for everyone.
+          </p>
+          <FamilyMembers familyId={familyId} tenantId={tenantId} />
+        </div>
+      )}
+      {section !== 'overview' && section !== 'members' && (
         <div>
           <button onClick={() => setSection('overview')}
             style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '600', padding: '0 0 1rem', fontFamily: 'var(--font-sans)' }}>

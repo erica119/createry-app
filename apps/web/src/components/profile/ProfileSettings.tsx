@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import StepDietaryConstraints from '../onboarding/StepDietaryConstraints'
 import StepMealPreferences from '../onboarding/StepMealPreferences'

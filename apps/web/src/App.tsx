@@ -15,6 +15,7 @@ import CreatorOnboarding from './components/creator/CreatorOnboarding'
 import CreatorDashboard from './components/creator/CreatorDashboard'
 import ProfileSettings from './components/profile/ProfileSettings'
 import OperatorDashboard from './components/creator/OperatorDashboard'
+import SupportModal from './components/shared/SupportModal'
 
 const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
@@ -48,6 +49,7 @@ export default function App() {
   const [recipeSearch, setRecipeSearch] = useState('')
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
+  const [showSupport, setShowSupport] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
@@ -612,6 +614,12 @@ export default function App() {
       </div>
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
 
+      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C4622D'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Plate</strong></span>
+        <button onClick={() => setShowSupport(true)} style={{ background: 'none', border: 'none', fontSize: '0.78rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: '500', padding: 0, fontFamily: 'var(--font-sans)' }}>Help &amp; Support</button>
+      </footer>
+
+      {showSupport && <SupportModal primaryColor={tenant?.primary_color} onClose={() => setShowSupport(false)} />}
       {unlockModal && (
         <div onClick={() => setUnlockModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', maxWidth: '420px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(44,24,16,0.25)' }}>

@@ -9,6 +9,7 @@ import RecipeImport from '../recipes/RecipeImport'
 import RecipeModal from '../recipes/RecipeModal'
 import ProfileSettings from '../profile/ProfileSettings'
 import CreatorAnalytics from './CreatorAnalytics'
+import SupportModal from '../shared/SupportModal'
 
 interface Props {
   user: User
@@ -96,6 +97,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [recipes, setRecipes] = useState<any[]>([])
   const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showSupport, setShowSupport] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoUrl, setLogoUrl] = useState(tenant?.logo_url || '')
@@ -969,6 +971,11 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         )}
 
       </div>
+      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${color}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Plate</strong></span>
+        <button onClick={() => setShowSupport(true)} style={{ background: 'none', border: 'none', fontSize: '0.78rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: '500', padding: 0, fontFamily: 'var(--font-sans)' }}>Help &amp; Support</button>
+      </footer>
+      {showSupport && <SupportModal primaryColor={color} onClose={() => setShowSupport(false)} />}
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
     </div>
   )

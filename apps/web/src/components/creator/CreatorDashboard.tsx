@@ -97,6 +97,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoUrl, setLogoUrl] = useState(tenant?.logo_url || '')
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const [earnings, setEarnings] = useState<any[]>([])
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
@@ -323,6 +326,23 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     setSavingBranding(false)
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return }
+    setUploadingLogo(true)
+    const ext = file.name.split('.').pop()
+    const path = `${tenantId}/logo.${ext}`
+    const { error: uploadError } = await supabase.storage.from('recipe-images').upload(path, file, { upsert: true })
+    if (uploadError) { console.error('logo upload error:', uploadError); setUploadingLogo(false); return }
+    const { data } = supabase.storage.from('recipe-images').getPublicUrl(path)
+    await supabase.from('tenants').update({ logo_url: data.publicUrl }).eq('id', tenantId)
+    const cachedUrl = `${data.publicUrl}?t=${Date.now()}`
+    setTenant(t => t ? { ...t, logo_url: cachedUrl } : t)
+    setLogoUrl(cachedUrl)
+    setUploadingLogo(false)
+  }
+
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
 
   if (showRecipeForm) {
@@ -370,8 +390,11 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       {/* Nav */}
       <div ref={menuRef} style={{ position: 'relative' }}>
         <div style={{ padding: '0 2rem', background: color, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
-            🍽️ {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            {logoUrl
+              ? <img src={logoUrl} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }} />
+              : <span>🍽️</span>}
+            {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
             <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {TAB_LABELS[view]}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -841,6 +864,27 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
             <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #E8D5B7', maxWidth: '560px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.75rem', fontSize: '0.875rem' }}>Logo / profile image</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '12px', border: '2px solid #E8D5B7', overflow: 'hidden', background: '#F5EFE6', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {logoUrl
+                        ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: '2rem' }}>🍽️</span>}
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                        style={{ background: 'none', border: `1.5px solid ${color}`, color, padding: '0.45rem 1rem', borderRadius: '8px', fontSize: '0.85rem', cursor: uploadingLogo ? 'not-allowed' : 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)', opacity: uploadingLogo ? 0.6 : 1 }}
+                      >
+                        {uploadingLogo ? 'Uploading...' : logoUrl ? '🖼 Change logo' : '📷 Upload logo'}
+                      </button>
+                      <p style={{ color: '#9B8B82', fontSize: '0.78rem', margin: '0.4rem 0 0' }}>JPG or PNG, max 2MB</p>
+                    </div>
+                  </div>
+                  <input ref={logoInputRef} type="file" accept="image/jpeg,image/png" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                </div>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Brand name</label>
                   <input type="text" value={editBrandName} onChange={e => setEditBrandName(e.target.value)} style={inputStyle} />

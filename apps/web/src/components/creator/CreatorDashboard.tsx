@@ -7,6 +7,7 @@ import WeeklyMenuView from '../menu/WeeklyMenuView'
 import ShoppingList from '../shopping/ShoppingList'
 import RecipeImport from '../recipes/RecipeImport'
 import RecipeModal from '../recipes/RecipeModal'
+import ProfileSettings from '../profile/ProfileSettings'
 
 interface Props {
   user: User
@@ -118,7 +119,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [packSaveError, setPackSaveError] = useState<string | null>(null)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
-  const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
+  const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings'>('dashboard')
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [menuError, setMenuError] = useState<string | null>(null)
   const [targetWeekDate, setTargetWeekDate] = useState<string | null>(null)
@@ -481,6 +482,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                         <button onClick={() => setMenuView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>Shopping List</button>
                       </>
                     )}
+                    <button onClick={() => setMenuView('settings')} style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>⚙️ Settings</button>
                     <button onClick={() => generateMenu()} disabled={generatingMenu} style={{ background: color, color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
                       {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
                     </button>
@@ -508,6 +510,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 )}
                 {menuView === 'shopping' && currentMenuId && familyId && (
                   <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} />
+                )}
+                {menuView === 'settings' && familyId && (
+                  <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} />
                 )}
               </div>
             )}

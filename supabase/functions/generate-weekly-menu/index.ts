@@ -60,9 +60,13 @@ serve(async (req) => {
       .eq("family_id", family_id)
       .order("day_of_week");
 
-    // 5. Get dietary tags to exclude based on constraints
+    // 5. Parse all constraints by type
     const allergyValues = (constraints || [])
       .filter(c => c.severity === "allergy" || c.severity === "intolerance")
+      .map(c => c.value);
+
+    const lifestyleDiets = (constraints || [])
+      .filter(c => c.constraint_type === "lifestyle" || c.constraint_type === "preference" || c.constraint_type === "religious")
       .map(c => c.value);
 
     // 6. Get max cook time preference
@@ -87,14 +91,38 @@ serve(async (req) => {
 
     const { data: allRecipes } = await recipeQuery.limit(60);
 
-    // Filter out recipes with allergens
+    // Diet tag mapping — maps constraint value to required dietary_tag
+    const dietTagMap: Record<string, string> = {
+      vegetarian: "vegetarian",
+      vegan: "vegan",
+      pescatarian: "pescatarian",
+      keto: "keto",
+      paleo: "paleo",
+      gluten_free: "gluten-free",
+      gluten: "gluten-free",
+      dairy: "dairy-free",
+    };
+
+    // Filter recipes: must pass allergy check AND lifestyle diet check
     const safeRecipes = (allRecipes || []).filter(recipe => {
-      if (!allergyValues.length) return true;
-      const recipeTags = recipe.dietary_tags || [];
-      return !allergyValues.some(allergen =>
-        recipe.title.toLowerCase().includes(allergen) ||
-        JSON.stringify(recipe.ingredients).toLowerCase().includes(allergen)
+      const recipeTags = (recipe.dietary_tags || []).map((t: string) => t.toLowerCase());
+      const ingredientsStr = JSON.stringify(recipe.ingredients).toLowerCase();
+      const titleStr = recipe.title.toLowerCase();
+
+      // Hard exclude: allergy/intolerance ingredient match
+      const hasAllergen = allergyValues.some(allergen =>
+        titleStr.includes(allergen.toLowerCase()) ||
+        ingredientsStr.includes(allergen.toLowerCase())
       );
+      if (hasAllergen) return false;
+
+      // Hard exclude: lifestyle diet — recipe must have matching dietary tag
+      for (const diet of lifestyleDiets) {
+        const requiredTag = dietTagMap[diet];
+        if (requiredTag && !recipeTags.includes(requiredTag)) return false;
+      }
+
+      return true;
     });
 
     // 9. Get last 3 weeks of recipe history to avoid repeats
@@ -162,7 +190,8 @@ COOKING SCHEDULE (days and meals that need planning):
 ${scheduleDescription || "Dinner every day"}
 
 DIETARY RESTRICTIONS:
-${allergyValues.length ? allergyValues.join(", ") : "None"}
+Allergies/intolerances (NEVER include these ingredients): ${allergyValues.length ? allergyValues.join(", ") : "None"}
+Lifestyle diets (ALL recipes must comply): ${lifestyleDiets.length ? lifestyleDiets.join(", ") : "None"}
 
 PREFERENCES:
 - Liked cuisines: ${likedCuisines || "No preference"}

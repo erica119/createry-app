@@ -13,6 +13,7 @@ import RecipeImport from './components/recipes/RecipeImport'
 import RoleSelect from './components/auth/RoleSelect'
 import CreatorOnboarding from './components/creator/CreatorOnboarding'
 import CreatorDashboard from './components/creator/CreatorDashboard'
+import ProfileSettings from './components/profile/ProfileSettings'
 import OperatorDashboard from './components/creator/OperatorDashboard'
 
 const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
@@ -26,7 +27,7 @@ export default function App() {
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuError, setMenuError] = useState<string | null>(null)
-  const [view, setView] = useState<'dashboard' | 'menu' | 'shopping'>('dashboard')
+  const [view, setView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
@@ -315,6 +316,7 @@ export default function App() {
     setCreatorTenantId(null)
     setAppMode('unknown')
     setTenant(null)
+    setIsOperator(false)
   }
 
   if (isOperator) {
@@ -428,6 +430,7 @@ export default function App() {
             {navBtn('Recipes', 'dashboard')}
             {navBtn('This Week', 'menu', !!currentMenuId)}
             {navBtn('Shopping', 'shopping', !!currentMenuId)}
+            {navBtn('Settings', 'settings')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -459,6 +462,10 @@ export default function App() {
 
         {view === 'shopping' && currentMenuId && familyId && (
           <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} />
+        )}
+
+        {view === 'settings' && familyId && (
+          <ProfileSettings user={user!} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} />
         )}
 
         {view === 'dashboard' && (

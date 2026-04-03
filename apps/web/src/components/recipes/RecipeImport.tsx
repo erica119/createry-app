@@ -273,6 +273,25 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
               <p style={{ margin: 0, color: '#9B8B82', fontSize: '0.85rem' }}>Accepts .csv files only</p>
               <input ref={fileRef} type="file" accept=".csv" onChange={onFileChange} style={{ display: 'none' }} />
             </div>
+            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+              <button
+                onClick={() => {
+                  const headers = 'title,description,ingredients,instructions,prep_time_minutes,cook_time_minutes,servings,cuisine_tags,meal_type,dietary_tags,complexity,is_premium,source_url,image_url,is_active'
+                  const example = 'Lemon Herb Chicken,Juicy roasted chicken with herbs,2 lbs chicken|2 lemons|3 tbsp olive oil|salt and pepper,"Preheat oven to 425F. Season chicken. Roast 60 minutes.",15,60,4,"american",dinner,"gluten-free, dairy-free",simple,FALSE,,,TRUE'
+                  const csv = headers + '\n' + example
+                  const blob = new Blob([csv], { type: 'text/csv' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = 'plate_recipe_template.csv'
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+                style={{ background: 'none', border: '1px solid #C4622D', color: '#C4622D', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+              >
+                ⬇️ Download CSV Template
+              </button>
+            </div>
             <div style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#F5EFE6', borderRadius: '10px', border: '1px solid #E8D5B7' }}>
               <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#2C1810', fontSize: '0.85rem' }}>📋 Required columns:</p>
               <p style={{ margin: 0, color: '#6B5C52', fontSize: '0.8rem', lineHeight: 1.7 }}>

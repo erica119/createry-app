@@ -302,6 +302,12 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                   <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
                     placeholder="e.g. more Italian, less chicken..."
                     style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #E8D5B7', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                  {onRegenerate && (
+                    <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }}
+                      style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                      ✨ Regenerate
+                    </button>
+                  )}
                 </div>
               )}
             </div>

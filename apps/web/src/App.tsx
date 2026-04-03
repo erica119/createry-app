@@ -26,6 +26,7 @@ export default function App() {
   const [recipes, setRecipes] = useState<any[]>([])
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
+  const [menuRefreshKey, setMenuRefreshKey] = useState(0)
   const [menuError, setMenuError] = useState<string | null>(null)
   const [view, setView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
@@ -292,6 +293,7 @@ export default function App() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Generation failed')
       setCurrentMenuId(result.menu.id)
+      setMenuRefreshKey(k => k + 1)
       setView('menu')
     } catch (err: any) {
       setMenuError(err.message)
@@ -440,8 +442,15 @@ export default function App() {
       </div>
 
       <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
-        {view === 'menu' && currentMenuId && (
-          <WeeklyMenuView
+        {view === 'menu' && generatingMenu && (
+          <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✨</div>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', marginBottom: '0.5rem' }}>Generating your menu...</div>
+            <div style={{ color: '#6B5C52', fontSize: '0.95rem' }}>This usually takes 15-30 seconds. Hang tight!</div>
+          </div>
+        )}
+        {view === 'menu' && currentMenuId && !generatingMenu && (
+          <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}
             userId={user?.id}

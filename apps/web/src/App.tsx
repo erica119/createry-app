@@ -483,7 +483,7 @@ export default function App() {
                   </>
                 )}
                 <button
-                  onClick={generateMenu}
+                  onClick={() => generateMenu()}
                   disabled={generatingMenu}
                   style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap' }}
                 >

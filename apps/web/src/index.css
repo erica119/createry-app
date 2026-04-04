@@ -455,6 +455,55 @@ a.btn-link {
     display: none !important;
   }
 
+  /* Creator Dashboard nav bar */
+  .creator-nav-bar {
+    padding: 0 1rem !important;
+  }
+
+  /* Operator Dashboard nav bar */
+  .op-nav-bar {
+    padding: 0 1rem !important;
+  }
+
+  /* Operator Dashboard nav — left section shrinks, tabs scroll, right section always visible */
+  .op-nav-left {
+    min-width: 0;
+    flex: 1;
+    gap: 0.5rem !important;
+    overflow: hidden;
+  }
+  .op-nav-tabs {
+    min-width: 0;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    gap: 0.75rem !important;
+    padding-bottom: 2px;
+  }
+  .op-nav-tabs::-webkit-scrollbar { height: 0; }
+  .op-nav-right {
+    flex-shrink: 0;
+  }
+  .op-sign-out {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Stats grids — 2 columns on mobile */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Table horizontal scroll */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 16px;
+  }
+  .table-scroll > div {
+    min-width: 560px;
+  }
+
   /* Main content padding */
   .main-content {
     padding: 1rem !important;

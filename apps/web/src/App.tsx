@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { resolveTenant, clearCreatorSession } from './lib/tenant'
 import type { TenantConfig } from './lib/tenant'
@@ -50,6 +50,8 @@ export default function App() {
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
   const [showSupport, setShowSupport] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const navRef = useRef<HTMLDivElement>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
@@ -105,6 +107,15 @@ export default function App() {
       setTimeout(() => setPurchaseSuccess(false), 6000)
     }
   }, [user, tenant])
+
+  useEffect(() => {
+    if (!navOpen) return
+    const handler = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setNavOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [navOpen])
 
   const checkOnboarding = async () => {
     // Check if platform admin first
@@ -337,7 +348,6 @@ export default function App() {
   // Use tenant if it has a real ID (not the fallback)
   const activeTenant = (tenant?.id && tenant.id !== FALLBACK_TENANT_ID) ? tenant : null
 
-
   if (!user) {
     return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} tenant={tenant} />
   }
@@ -407,40 +417,50 @@ export default function App() {
     )
   }
 
-  const navBtn = (label: string, viewName: typeof view, enabled = true) => (
-    <button
-      onClick={() => enabled && setView(viewName)}
-      style={{
-        background: 'none', border: 'none',
-        cursor: enabled ? 'pointer' : 'not-allowed',
-        fontWeight: view === viewName ? '700' : '400',
-        color: view === viewName ? 'white' : enabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
-        fontSize: '0.95rem', padding: '0.25rem 0',
-        fontFamily: 'var(--font-sans)',
-        borderBottom: view === viewName ? '2px solid var(--brand-color)' : '2px solid transparent',
-        transition: 'all 0.15s ease',
-      }}
-    >
-      {label}
-    </button>
-  )
+  const NAV_LABELS: { view: typeof view; label: string; enabled: boolean }[] = [
+    { view: 'dashboard', label: 'Recipes', enabled: true },
+    { view: 'menu', label: 'This Week', enabled: !!currentMenuId },
+    { view: 'shopping', label: 'Shopping', enabled: !!currentMenuId },
+    { view: 'settings', label: 'Settings', enabled: true },
+  ]
+  const activeLabel = NAV_LABELS.find(n => n.view === view)?.label || 'Recipes'
+  const brandColor = tenant?.primary_color || '#2C1810'
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
-      <div className="nav-bar" style={{ padding: '0 2rem', background: tenant?.primary_color || '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="nav-links">
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            {navBtn('Recipes', 'dashboard')}
-            {navBtn('This Week', 'menu', !!currentMenuId)}
-            {navBtn('Shopping', 'shopping', !!currentMenuId)}
-            {navBtn('Settings', 'settings')}
+      <div ref={navRef} style={{ position: 'relative' }}>
+        <div className="nav-bar" style={{ padding: '0 2rem', background: brandColor, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
+            🍽️ {tenant?.brand_name || 'Plate'}
+            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {activeLabel}</span>
+          </span>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
+            <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Sign out</button>
+            <button onClick={() => setNavOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: '0.25rem' }}>☰</button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
-          <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
-        </div>
+        {navOpen && (
+          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '180px', zIndex: 50, overflow: 'hidden' }}>
+            {NAV_LABELS.map(({ view: v, label, enabled }, i, arr) => (
+              <button
+                key={v}
+                onClick={() => { if (enabled) { setView(v); setNavOpen(false) } }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '0.8rem 1.25rem',
+                  background: view === v ? '#FDF6EE' : 'white',
+                  color: view === v ? brandColor : enabled ? '#2C1810' : '#C8BAB2',
+                  fontWeight: view === v ? '700' : '400',
+                  fontSize: '0.95rem', border: 'none',
+                  borderBottom: i < arr.length - 1 ? '1px solid #F5EFE6' : 'none',
+                  cursor: enabled ? 'pointer' : 'not-allowed',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >{label}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>

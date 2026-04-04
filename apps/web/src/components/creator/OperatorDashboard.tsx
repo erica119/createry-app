@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
@@ -25,6 +25,8 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   const [scraperError, setScraperError] = useState<string | null>(null)
   const [scraperSuccess, setScraperSuccess] = useState<string | null>(null)
   const [view, setView] = useState<'revenue' | 'tenants' | 'payouts' | 'scraper'>('revenue')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchAllEarnings()
@@ -198,6 +200,22 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
     }
   }
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen])
+
+  const OP_TABS: { view: typeof view; label: string }[] = [
+    { view: 'revenue', label: 'Revenue' },
+    { view: 'tenants', label: `Tenants${tenants.length ? ` (${tenants.length})` : ''}` },
+    { view: 'payouts', label: '💸 Payouts' },
+    { view: 'scraper', label: '🔍 Scraper' },
+  ]
+
   const navStyle = (v: string) => ({
     background: 'none', border: 'none', cursor: 'pointer',
     fontWeight: view === v ? '700' : '400',
@@ -210,24 +228,34 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
-      <div style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
+      <div ref={menuRef} style={{ position: 'relative' }}>
+        <div className="op-nav-bar" style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', whiteSpace: 'nowrap' }}>
             🍽️ Plate <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Operator</span>
+            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {{ revenue: 'Revenue', tenants: 'Tenants', payouts: 'Payouts', scraper: 'Scraper' }[view]}</span>
           </span>
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <button onClick={() => setView('revenue')} style={navStyle('revenue') as any}>Revenue</button>
-            <button onClick={() => setView('tenants')} style={navStyle('tenants') as any}>
-              Tenants <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.15)', padding: '0.1rem 0.4rem', borderRadius: '10px', marginLeft: '0.3rem' }}>{tenants.length}</span>
-            </button>
-            <button onClick={() => setView('payouts')} style={navStyle('payouts') as any}>💸 Payouts</button>
-            <button onClick={() => setView('scraper')} style={navStyle('scraper') as any}>🔍 Scraper</button>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
+            <button onClick={onSignOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Sign out</button>
+            <button onClick={() => setMenuOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: '0.25rem' }}>☰</button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
-          <button onClick={onSignOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
-        </div>
+        {menuOpen && (
+          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '180px', zIndex: 50, overflow: 'hidden' }}>
+            {OP_TABS.map(({ view: v, label }, i, arr) => (
+              <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '0.8rem 1.25rem',
+                background: view === v ? '#FDF6EE' : 'white',
+                color: view === v ? '#C4622D' : '#2C1810',
+                fontWeight: view === v ? '700' : '400',
+                fontSize: '0.95rem', border: 'none',
+                borderBottom: i < arr.length - 1 ? '1px solid #F5EFE6' : 'none',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+              }}>{label}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem' }}>
@@ -241,7 +269,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                   <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Platform Revenue</h2>
                   <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>All-time earnings across all creator tenants.</p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                   {[
                     { label: 'Total Gross', value: `$${(totalGross / 100).toFixed(2)}`, icon: '💵' },
                     { label: 'Platform 20%', value: `$${(totalPlatform / 100).toFixed(2)}`, icon: '🏦' },
@@ -261,6 +289,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                     <p style={{ color: '#6B5C52', margin: 0 }}>No sales across the platform yet.</p>
                   </div>
                 ) : (
+                  <div className="table-scroll">
                   <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
                       {['Creator', 'Pack', 'Units', 'Gross', 'Creator 80%', 'Platform 20%'].map(h => (
@@ -278,6 +307,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                       </div>
                     ))}
                   </div>
+                  </div>
                 )}
               </>
             )}
@@ -288,7 +318,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                   <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Creator Tenants</h2>
                   <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>All creator accounts on the platform.</p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                   {[
                     { label: 'Total Tenants', value: tenants.length, icon: '🏪' },
                     { label: 'Stripe Connected', value: tenants.filter(t => t.stripe_onboarded).length, icon: '💳' },
@@ -345,7 +375,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                   <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Creator Payouts</h2>
                   <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>All weekly payouts processed across the platform.</p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                   {[
                     { label: 'Total Paid Out', value: `$${(allPayouts.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount_cents, 0) / 100).toFixed(2)}`, icon: '💸' },
                     { label: 'Platform Fees Collected', value: `$${(allPayouts.reduce((s, p) => s + p.amount_cents, 0) / 100 / 0.8 * 0.2).toFixed(2)}`, icon: '🏦' },
@@ -364,6 +394,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                     <p style={{ color: '#6B5C52', margin: 0 }}>No payouts processed yet.</p>
                   </div>
                 ) : (
+                  <div className="table-scroll">
                   <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 2fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
                       {['Creator', 'Period', 'Amount', 'Stripe Transfer ID', 'Status', 'Date'].map(h => (
@@ -384,6 +415,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                         <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</div>
                       </div>
                     ))}
+                  </div>
                   </div>
                 )}
               </>

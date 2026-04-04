@@ -216,16 +216,6 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
     { view: 'scraper', label: '🔍 Scraper' },
   ]
 
-  const navStyle = (v: string) => ({
-    background: 'none', border: 'none', cursor: 'pointer',
-    fontWeight: view === v ? '700' : '400',
-    color: view === v ? 'white' : 'rgba(255,255,255,0.7)',
-    fontSize: '0.95rem', padding: '0.25rem 0',
-    fontFamily: 'var(--font-sans)',
-    borderBottom: view === v ? '2px solid #C4622D' : '2px solid transparent',
-    transition: 'all 0.15s ease',
-  })
-
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
       <div ref={menuRef} style={{ position: 'relative' }}>

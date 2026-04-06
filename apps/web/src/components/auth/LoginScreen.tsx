@@ -84,7 +84,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
     <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', padding: '2rem', textAlign: 'center' }}>
       <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
       <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
-        {isCreatorBranded ? brandName : <>{`Your Kitchen,`}<br /><em>Planned.</em></>}
+        {isCreatorBranded ? brandName : <>{`Your Meals,`}<br /><em>Planned.</em></>}
       </h1>
       <p style={{ color: '#6B5C52', margin: '0 0 2.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
         {tagline}

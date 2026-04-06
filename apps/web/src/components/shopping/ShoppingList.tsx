@@ -123,16 +123,12 @@ export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
           </p>
         </div>
         <div className="shopping-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {list.instacart_cart_url && (
-            <a
-              href={list.instacart_cart_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ background: '#43b02a', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', textDecoration: 'none', fontWeight: '600', display: 'inline-block' }}
-            >
-              🛒 Instacart
-            </a>
-          )}
+          <button
+            disabled
+            style={{ background: '#a0a0a0', color: '#e0e0e0', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'not-allowed', opacity: 0.7 }}
+          >
+            🛒 Instacart Shopping Coming Soon
+          </button>
           <button onClick={() => window.print()} style={{ background: "#C4622D", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
 
           <button

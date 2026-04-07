@@ -55,7 +55,7 @@ export default function App() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
-  const [menuHistory, setMenuHistory] = useState<{ id: string; week_start_date: string; status: string }[]>([])
+  // const [menuHistory, setMenuHistory] = useState<{ id: string; week_start_date: string; status: string }[]>([])
   const [menuData, setMenuData] = useState<any>(null)
   const [currentMenuStatus, setCurrentMenuStatus] = useState<string | null>(null)
   const [shoppingListBuilt, setShoppingListBuilt] = useState(false)
@@ -201,7 +201,7 @@ export default function App() {
       fetchRecipes(data.tenant_id)
       fetchUnlockedPacks(user!.id, data.tenant_id)
       fetchCurrentMenu(data.id)
-      fetchMenuHistory(data.id)
+      // fetchMenuHistory(data.id)
     }
     // If no family profile, stay 'unknown' so role select shows
     // unless we came from a creator URL right now - then go straight to user onboarding
@@ -288,15 +288,7 @@ export default function App() {
     }
   }
 
-  const fetchMenuHistory = async (fid: string) => {
-    const { data } = await supabase
-      .from('weekly_menus')
-      .select('id, week_start_date, status')
-      .eq('family_id', fid)
-      .order('week_start_date', { ascending: false })
-      .limit(12)
-    if (data) setMenuHistory(data)
-  }
+
 
   const generateMenu = async (feedback?: string) => {
     if (!familyId) return

@@ -376,7 +376,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                             onClick={() => !isApproved && !locked && setSwapDay({ day: String(i), meal: key })}
                           >
                             <p style={{ margin: 0, fontSize: '0.72rem', color: '#2C1810', fontWeight: '500', lineHeight: 1.3 }}>
-                              {recipe?.title || 'Loading...'}
+                              {recipe?.title || 'Recipe Not Found'}
                             </p>
                             {!isApproved && (
                               <span style={{ fontSize: '0.6rem', color: 'var(--color-primary)', display: 'block', marginTop: '0.15rem' }}>tap to swap</span>

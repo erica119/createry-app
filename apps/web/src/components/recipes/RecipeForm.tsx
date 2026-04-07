@@ -88,6 +88,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         dietary_tags: dietaryTags,
         is_premium: false,
         is_active: true,
+        source: 'user',
         image_url: imageUrl || null,
       })
       if (error) throw error

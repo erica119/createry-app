@@ -179,7 +179,7 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
         cuisine_tags: r.cuisine_tags, meal_type: r.meal_type,
         dietary_tags: r.dietary_tags, complexity: r.complexity,
         is_premium: r.is_premium, source_url: r.source_url || null,
-        image_url: r.image_url || null, is_active: r.is_active,
+        image_url: r.image_url || null, is_active: r.is_active, source: 'user',
       }))
       const { data, error } = await supabase.from('recipes').insert(batch).select('id, title, image_url')
       if (error) { console.error('Import error:', error); failed += batch.length }

@@ -5,6 +5,7 @@ interface Props {
   menuId: string
   familyId: string
   tenantId: string
+  onShoppingComplete?: () => void
 }
 
 interface GroceryItem {
@@ -27,7 +28,7 @@ interface GroceryList {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
+export default function ShoppingList({ menuId, familyId, tenantId, onShoppingComplete }: Props) {
   const [list, setList] = useState<GroceryList | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -69,6 +70,13 @@ export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
     } finally {
       setGenerating(false)
     }
+  }
+
+  const markShoppingComplete = async () => {
+    if (!list) return
+    await supabase.from('grocery_lists').update({ status: 'complete' }).eq('id', list.id)
+    setList({ ...list, status: 'complete' })
+    if (onShoppingComplete) onShoppingComplete()
   }
 
   const toggleItem = async (index: number) => {
@@ -196,6 +204,21 @@ export default function ShoppingList({ menuId, familyId, tenantId }: Props) {
           </div>
         ))
       }
+      {list.status !== 'complete' && (
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <button
+            onClick={markShoppingComplete}
+            style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.875rem 2rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+          >
+            ✓ Shopping Complete
+          </button>
+        </div>
+      )}
+      {list.status === 'complete' && (
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #86efac' }}>
+          <p style={{ margin: 0, color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>✓ Shopping complete! Enjoy your meals this week.</p>
+        </div>
+      )}
       {error && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{error}</p>}
     </div>
   )

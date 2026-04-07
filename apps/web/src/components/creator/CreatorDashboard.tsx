@@ -95,7 +95,7 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -149,6 +149,12 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [menuError, setMenuError] = useState<string | null>(null)
   const [targetWeekDate, setTargetWeekDate] = useState<string | null>(null)
+  const [creatorFamilyId, setCreatorFamilyId] = useState<string | null>(null)
+  const [creatorMenuId, setCreatorMenuId] = useState<string | null>(null)
+  const [creatorMenuData, setCreatorMenuData] = useState<any>(null)
+  const [creatorMenuStatus, setCreatorMenuStatus] = useState<string | null>(null)
+  const [creatorShoppingStatus, setCreatorShoppingStatus] = useState<string | null>(null)
+  const [creatorMenuRecipes, setCreatorMenuRecipes] = useState<any[]>([])
 
   useEffect(() => {
     fetchTenant()
@@ -189,6 +195,50 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [menuOpen])
+
+  useEffect(() => {
+    if (!user) return
+    const fetchCreatorUserData = async () => {
+      const { data: fp } = await supabase
+        .from('family_profiles')
+        .select('id, tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!fp) return
+      setCreatorFamilyId(fp.id)
+      const { data: menu } = await supabase
+        .from('weekly_menus')
+        .select('id, menu_data, status')
+        .eq('family_id', fp.id)
+        .order('week_start_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!menu) return
+      setCreatorMenuId(menu.id)
+      setCreatorMenuData(menu.menu_data)
+      setCreatorMenuStatus(menu.status)
+      const { data: shopping } = await supabase
+        .from('grocery_lists')
+        .select('id, status')
+        .eq('weekly_menu_id', menu.id)
+        .limit(1)
+        .maybeSingle()
+      setCreatorShoppingStatus(shopping?.status || null)
+      if (menu.menu_data?.days) {
+        const recipeIds = Object.values(menu.menu_data.days).flatMap((day: any) =>
+          ['breakfast', 'lunch', 'dinner'].map((m: string) => day[m]).filter(Boolean)
+        )
+        if (recipeIds.length > 0) {
+          const { data: recipeData } = await supabase
+            .from('recipes')
+            .select('id, title, image_url, meal_type')
+            .in('id', recipeIds)
+          if (recipeData) setCreatorMenuRecipes(recipeData)
+        }
+      }
+    }
+    fetchCreatorUserData()
+  }, [user])
 
   const fetchTenant = async () => {
     const { data } = await supabase.from('tenants').select('*').eq('id', tenantId).single()
@@ -393,7 +443,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const color = tenant?.primary_color || '#C4622D'
 
   const TAB_LABELS: Record<string, string> = {
-    overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs',
+    overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs', shopping: 'Shopping',
     earnings: 'Earnings', analytics: 'Analytics', branding: 'Branding', mealplan: 'My Meal Plan',
   }
 
@@ -417,7 +467,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         </div>
         {menuOpen && (
           <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '200px', zIndex: 50, overflow: 'hidden' }}>
-            {(['overview', 'mealplan', 'recipes', 'packs', 'earnings', 'analytics', 'branding'] as const).map((v, i, arr) => (
+            {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding'] as const).map((v, i, arr) => (
               <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '0.8rem 1.25rem',
@@ -438,6 +488,97 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {/* OVERVIEW */}
         {view === 'overview' && (
           <>
+            {/* ── Creator's own meal plan status ── */}
+            {!creatorMenuId ? (
+              <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>👩‍🍳</div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>Let's plan your week</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Generate a meal plan for your own family from your recipe library.</p>
+                </div>
+                <button onClick={() => setView('mealplan')} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
+                  Go to Meal Plan →
+                </button>
+              </div>
+            ) : creatorMenuStatus !== 'approved' ? (
+              <div style={{ background: '#FFF9F0', borderRadius: '16px', border: `1.5px solid ${color}`, padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>📋</div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>Your menu is ready to review</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Take a look at this week's meal plan and approve it when ready.</p>
+                </div>
+                <button onClick={() => setView('mealplan')} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
+                  View Menu →
+                </button>
+              </div>
+            ) : !creatorShoppingStatus ? (
+              <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1.5px solid #16a34a', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>🛒</div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>Time to build your shopping list</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your menu is approved — head to your meal plan to generate a list.</p>
+                </div>
+                <button onClick={() => setView('mealplan')} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
+                  Shopping List →
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1px solid #86efac', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '1.75rem' }}>✅</span>
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>You're all set this week!</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals.</p>
+                </div>
+              </div>
+            )}
+
+            {/* This Week's Recipes */}
+            {creatorMenuData?.days && (() => {
+              const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+              const DAY_COLORS = ['#C4622D', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
+              const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
+              const slots: { day: number; meal: string; recipeId: string }[] = []
+              Object.entries(creatorMenuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
+                const day = parseInt(dayKey)
+                ;['breakfast', 'lunch', 'dinner'].forEach(meal => {
+                  if (meals[meal]) slots.push({ day, meal, recipeId: meals[meal] })
+                })
+              })
+              if (slots.length === 0) return null
+              return (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.875rem', color: '#2C1810', fontSize: '1.2rem' }}>This Week's Recipes</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.875rem' }}>
+                    {slots.map(({ day, meal, recipeId }) => {
+                      const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
+                      if (!recipe) return null
+                      return (
+                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                          {recipe.image_url && (
+                            <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '120px', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          )}
+                          <div style={{ padding: '0.75rem 0.875rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
+                              <span style={{ fontSize: '0.65rem', color: '#9B8B82', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3 }}>{recipe.title}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '2rem 0' }}>
+              <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
+              <span style={{ color: '#9B8B82', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Creator Dashboard</span>
+              <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
+            </div>
+
             <div style={{ marginBottom: '2rem' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>
                 Welcome back! 👋
@@ -450,7 +591,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               {[
                 { label: 'Recipes', value: recipes.length, icon: '📖' },
                 { label: 'Subdomain', value: tenant?.subdomain ? `${tenant.subdomain}.plate.app` : '—', icon: '🌐' },
-                { label: 'Status', value: tenant?.subscription_status || '—', icon: '✅' },
+
               ].map(stat => (
                 <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
@@ -778,6 +919,32 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           </>
         )}
 
+        {/* SHOPPING */}
+        {view === 'shopping' && (
+          <>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Shopping List</h2>
+              <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your shopping list for this week's meal plan.</p>
+            </div>
+            {creatorMenuId && creatorFamilyId ? (
+              <ShoppingList
+                menuId={creatorMenuId}
+                familyId={creatorFamilyId}
+                tenantId={tenantId}
+                onShoppingComplete={() => setCreatorShoppingStatus('complete')}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛒</div>
+                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem' }}>No meal plan yet</h3>
+                <p style={{ color: '#6B5C52', margin: '0 0 1.5rem', fontSize: '0.9rem' }}>Generate a meal plan first to build your shopping list.</p>
+                <button onClick={() => setView('mealplan')} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                  Go to Meal Plan
+                </button>
+              </div>
+            )}
+          </>
+        )}
         {/* EARNINGS */}
         {view === 'earnings' && (
           <>

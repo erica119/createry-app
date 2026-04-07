@@ -29,7 +29,7 @@ export default function App() {
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuRefreshKey, setMenuRefreshKey] = useState(0)
   const [menuError, setMenuError] = useState<string | null>(null)
-  const [view, setView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings'>('dashboard')
+  const [view, setView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings' | 'recipes'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
@@ -56,6 +56,10 @@ export default function App() {
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
   const [menuHistory, setMenuHistory] = useState<{ id: string; week_start_date: string; status: string }[]>([])
+  const [menuData, setMenuData] = useState<any>(null)
+  const [currentMenuStatus, setCurrentMenuStatus] = useState<string | null>(null)
+  const [shoppingListBuilt, setShoppingListBuilt] = useState(false)
+  const [shoppingComplete, setShoppingComplete] = useState(false)
 
   useEffect(() => {
     const color = tenant?.primary_color || '#C4622D'
@@ -264,12 +268,24 @@ export default function App() {
   const fetchCurrentMenu = async (fid: string) => {
     const { data } = await supabase
       .from('weekly_menus')
-      .select('id')
+      .select('id, menu_data, status')
       .eq('family_id', fid)
       .order('week_start_date', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (data?.id) setCurrentMenuId(data.id)
+    if (data?.id) {
+      setCurrentMenuId(data.id)
+      setMenuData(data.menu_data || null)
+      setCurrentMenuStatus(data.status || null)
+      const { data: shoppingData } = await supabase
+        .from('grocery_lists')
+        .select('id, status')
+        .eq('weekly_menu_id', data.id)
+        .limit(1)
+        .maybeSingle()
+      setShoppingListBuilt(!!shoppingData?.id)
+      setShoppingComplete(shoppingData?.status === 'complete')
+    }
   }
 
   const fetchMenuHistory = async (fid: string) => {
@@ -328,6 +344,9 @@ export default function App() {
     setFamilyId(null)
     setRecipes([])
     setCurrentMenuId(null)
+    setMenuData(null)
+    setCurrentMenuStatus(null)
+    setShoppingListBuilt(false)
     setCreatorTenantId(null)
     setAppMode('unknown')
     setTenant(null)
@@ -418,12 +437,13 @@ export default function App() {
   }
 
   const NAV_LABELS: { view: typeof view; label: string; enabled: boolean }[] = [
-    { view: 'dashboard', label: 'Recipes', enabled: true },
+    { view: 'dashboard', label: 'Home', enabled: true },
+    { view: 'recipes', label: 'My Recipes', enabled: true },
     { view: 'menu', label: 'This Week', enabled: !!currentMenuId },
     { view: 'shopping', label: 'Shopping', enabled: !!currentMenuId },
     { view: 'settings', label: 'Settings', enabled: true },
   ]
-  const activeLabel = NAV_LABELS.find(n => n.view === view)?.label || 'Recipes'
+  const activeLabel = NAV_LABELS.find(n => n.view === view)?.label || 'Home'
   const brandColor = tenant?.primary_color || '#2C1810'
 
   return (
@@ -492,74 +512,15 @@ export default function App() {
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
-          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} />
+          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onShoppingComplete={() => { setShoppingListBuilt(true); setShoppingComplete(true) }} />
         )}
 
         {view === 'settings' && familyId && (
           <ProfileSettings user={user!} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} />
         )}
 
-        {view === 'dashboard' && (
+        {view === 'recipes' && (
           <>
-            <div className="dashboard-header" style={{ marginBottom: '2rem', padding: '1.5rem 2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Menu</h2>
-                <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
-                  {currentMenuId ? "Your meal plan is ready." : "Generate a personalized weekly meal plan."}
-                </p>
-                {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
-              </div>
-              <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
-                {currentMenuId && (
-                  <>
-                    <button onClick={() => setView('menu')} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
-                      View Menu
-                    </button>
-                    <button onClick={() => setView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>
-                      Shopping List
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => generateMenu()}
-                  disabled={generatingMenu}
-                  style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap' }}
-                >
-                  {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
-                </button>
-              </div>
-            </div>
-
-            {menuHistory.length > 1 && (
-              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', marginBottom: '1.5rem', overflow: 'hidden' }}>
-                <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #F5EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: 0, fontSize: '1.1rem' }}>Menu History</h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {menuHistory.map((m, i) => {
-                    const weekDate = new Date(m.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-                    const isCurrent = m.id === currentMenuId
-                    return (
-                      <div key={m.id} onClick={() => { setCurrentMenuId(m.id); setView('menu') }}
-                        style={{ padding: '0.875rem 1.5rem', borderBottom: i < menuHistory.length - 1 ? '1px solid #F5EFE6' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: isCurrent ? '#FDF6EE' : 'white' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span style={{ fontSize: '1rem' }}>📅</span>
-                          <span style={{ fontWeight: isCurrent ? '700' : '500', color: '#2C1810', fontSize: '0.9rem' }}>Week of {weekDate}</span>
-                          {isCurrent && <span style={{ fontSize: '0.7rem', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: '600' }}>Current</span>}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span style={{ fontSize: '0.8rem', color: m.status === 'approved' ? '#16a34a' : '#9B8B82', fontWeight: '500' }}>
-                            {m.status === 'approved' ? '✓ Approved' : 'Draft'}
-                          </span>
-                          <span style={{ color: '#C8BAB2', fontSize: '0.85rem' }}>→</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
             {purchaseSuccess && (
               <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ fontSize: '1.5rem' }}>🎉</span>
@@ -629,6 +590,124 @@ export default function App() {
                 )
               })}
             </div>
+          </>
+        )}
+
+        {view === 'dashboard' && (
+          <>
+            {/* Context-aware status card */}
+            {!currentMenuId ? (
+              <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👩‍🍳</div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>Let's get started</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Generate a personalized weekly meal plan from your recipes.</p>
+                  {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
+                </div>
+                <button onClick={() => generateMenu()} disabled={generatingMenu} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: generatingMenu ? 'not-allowed' : 'pointer', opacity: generatingMenu ? 0.7 : 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  {generatingMenu ? 'Generating...' : '✨ Generate Menu'}
+                </button>
+              </div>
+            ) : currentMenuStatus !== 'approved' ? (
+              <div style={{ background: '#FFF9F0', borderRadius: '16px', border: '1.5px solid var(--brand-color)', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>Your menu is ready to review</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Take a look at this week's meal plan and approve it when ready.</p>
+                </div>
+                <button onClick={() => setView('menu')} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  View Menu →
+                </button>
+              </div>
+            ) : !shoppingListBuilt ? (
+              <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1.5px solid #16a34a', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🛒</div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>Time to shop</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your menu is approved — build your shopping list and you're all set.</p>
+                </div>
+                <button onClick={() => setView('shopping')} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  Shopping List →
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1px solid #86efac', padding: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '2rem' }}>✅</span>
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>You're all set this week</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals!</p>
+                </div>
+              </div>
+            )}
+
+            {/* Quick stats row */}
+            {(() => {
+              const mealCount = menuData?.days
+                ? (Object.values(menuData.days) as any[]).reduce((acc: number, day: any) =>
+                    acc + ['breakfast', 'lunch', 'dinner'].filter(m => day[m]).length, 0)
+                : 0
+              const shoppingLabel = !currentMenuId ? 'No menu' : shoppingComplete ? 'Complete' : shoppingListBuilt ? 'Ready' : currentMenuStatus === 'approved' ? 'Not built' : 'Pending'
+              const shoppingColor = shoppingComplete ? '#16a34a' : shoppingListBuilt ? '#2563eb' : currentMenuStatus === 'approved' ? '#d97706' : '#9B8B82'
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>in your library</p>
+                  </div>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meals Planned</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{mealCount}</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>this week</p>
+                  </div>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>{shoppingLabel}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* This Week's Recipes */}
+            {menuData?.days && (() => {
+              const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+              const DAY_COLORS = ['#7C3AED', '#2563EB', '#0891B2', '#16A34A', '#D97706', '#DC2626', '#DB2777']
+              const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
+              const slots: { day: number; meal: string; recipeId: string }[] = []
+              Object.entries(menuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
+                const day = parseInt(dayKey)
+                ;['breakfast', 'lunch', 'dinner'].forEach(meal => {
+                  if (meals[meal]) slots.push({ day, meal, recipeId: meals[meal] })
+                })
+              })
+              if (slots.length === 0) return null
+              return (
+                <>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 1rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Recipes</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
+                    {slots.map(({ day, meal, recipeId }) => {
+                      const recipe = recipes.find((r: any) => r.id === recipeId)
+                      if (!recipe) return null
+                      return (
+                        <div key={`${day}-${meal}`} onClick={() => setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                          {recipe.image_url && (
+                            <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '130px', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          )}
+                          <div style={{ padding: '0.875rem 1rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
+                              <span style={{ fontSize: '0.7rem', color: '#9B8B82', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3 }}>{recipe.title}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )
+            })()}
           </>
         )}
       </div>

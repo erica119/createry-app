@@ -5,9 +5,10 @@ import type { User } from '@supabase/supabase-js'
 interface Props {
   user: User
   onSignOut: () => void
+  accessToken: string | null
 }
 
-export default function OperatorDashboard({ user, onSignOut }: Props) {
+export default function OperatorDashboard({ user, onSignOut, accessToken }: Props) {
   const [earnings, setEarnings] = useState<any[]>([])
   const [tenants, setTenants] = useState<any[]>([])
   const [allPayouts, setAllPayouts] = useState<any[]>([])
@@ -33,19 +34,38 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
 
   useEffect(() => {
     fetchAllEarnings()
-    fetchTenants()
     fetchAllPayouts()
-    fetchPlatformStats()
+    // Fetch operator stats first (needs service-role), then enrich tenants
+    fetchOperatorStats().then(({ usersByTenant, menusByTenant }) => {
+      fetchTenants(usersByTenant, menusByTenant)
+    })
   }, [])
 
-  const fetchPlatformStats = async () => {
-    const [{ count: userCount }, { count: menuCount }] = await Promise.all([
-      supabase.from('family_profiles').select('id', { count: 'exact', head: true })
-        .neq('tenant_id', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
-      supabase.from('weekly_menus').select('id', { count: 'exact', head: true }),
-    ])
-    setTotalUsers(userCount || 0)
-    setTotalMenusGenerated(menuCount || 0)
+  const fetchOperatorStats = async (): Promise<{ usersByTenant: Record<string, number>; menusByTenant: Record<string, number> }> => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-operator-stats`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+        }
+      )
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || response.status.toString())
+      setTotalUsers(result.total_users || 0)
+      setTotalMenusGenerated(result.total_menus || 0)
+      return {
+        usersByTenant: result.users_by_tenant || {},
+        menusByTenant: result.menus_by_tenant || {},
+      }
+    } catch (err) {
+      console.error('fetchOperatorStats error:', err)
+      return { usersByTenant: {}, menusByTenant: {} }
+    }
   }
 
   const fetchAllEarnings = async () => {
@@ -72,7 +92,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
     setLoading(false)
   }
 
-  const fetchTenants = async () => {
+  const fetchTenants = async (usersByTenant: Record<string, number>, menusByTenant: Record<string, number>) => {
     const { data } = await supabase
       .from('tenants')
       .select('id, brand_name, subdomain, subscription_status, stripe_onboarded, created_at')
@@ -80,18 +100,24 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
       .order('created_at', { ascending: false })
     if (data) {
       const enriched = await Promise.all(data.map(async t => {
-        const [{ count: recipeCount }, { count: packCount }, { data: purchases }, { count: userCount }, { count: menuCount }] = await Promise.all([
+        const [{ count: recipeCount }, { count: packCount }, { data: purchases }] = await Promise.all([
           supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
           supabase.from('recipe_packs').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
           supabase.from('user_purchases').select('amount_cents').eq('tenant_id', t.id).eq('status', 'paid'),
-          supabase.from('family_profiles').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
-          supabase.from('weekly_menus').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
         ])
         const gross = (purchases || []).reduce((s: number, p: any) => s + p.amount_cents, 0)
-        return { ...t, recipe_count: recipeCount || 0, pack_count: packCount || 0, gross_cents: gross, user_count: userCount || 0, menu_count: menuCount || 0 }
+        return {
+          ...t,
+          recipe_count: recipeCount || 0,
+          pack_count: packCount || 0,
+          gross_cents: gross,
+          user_count: usersByTenant[t.id] || 0,
+          menu_count: menusByTenant[t.id] || 0,
+        }
       }))
       setTenants(enriched)
     }
+    setLoading(false)
   }
 
   const fetchAllPayouts = async () => {

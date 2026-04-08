@@ -155,12 +155,15 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [creatorMenuStatus, setCreatorMenuStatus] = useState<string | null>(null)
   const [creatorShoppingStatus, setCreatorShoppingStatus] = useState<string | null>(null)
   const [creatorMenuRecipes, setCreatorMenuRecipes] = useState<any[]>([])
+  const [homeActiveUsers, setHomeActiveUsers] = useState(0)
+  const [homeMenusThisWeek, setHomeMenusThisWeek] = useState(0)
 
   useEffect(() => {
     fetchTenant()
     fetchRecipes()
     fetchFamilyProfile()
     fetchPacks()
+    fetchHomeStats()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) { fetchEarnings(); fetchPayouts() }
     })
@@ -299,6 +302,29 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     if (data) setPacks(data)
+  }
+
+  const fetchHomeStats = async () => {
+    // Get the start of the current week (Sunday)
+    const now = new Date()
+    const dayOfWeek = now.getDay()
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - dayOfWeek)
+    weekStart.setHours(0, 0, 0, 0)
+    const weekStartStr = weekStart.toISOString().split('T')[0]
+
+    // Creators can see all weekly_menus in their tenant (weekly_menus_creator_select policy)
+    const { data: allMenus } = await supabase
+      .from('weekly_menus')
+      .select('family_id, week_start_date')
+      .eq('tenant_id', tenantId)
+
+    if (allMenus) {
+      const uniqueUsers = new Set(allMenus.map(m => m.family_id)).size
+      const menusThisWeek = allMenus.filter(m => m.week_start_date >= weekStartStr).length
+      setHomeActiveUsers(uniqueUsers)
+      setHomeMenusThisWeek(menusThisWeek)
+    }
   }
 
   const fetchFamilyProfile = async () => {
@@ -489,6 +515,25 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {/* OVERVIEW */}
         {view === 'overview' && (
           <>
+            {/* ── Quick stats ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
+                <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>in your library</p>
+              </div>
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Users</p>
+                <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{homeActiveUsers}</p>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>subscribers with meal plans</p>
+              </div>
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Menus This Week</p>
+                <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{homeMenusThisWeek}</p>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>generated this week</p>
+              </div>
+            </div>
+
             {/* ── Creator's own meal plan status ── */}
             {!creatorMenuId ? (
               <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -532,46 +577,6 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 </div>
               </div>
             )}
-
-            {/* This Week's Recipes */}
-            {creatorMenuData?.days && (() => {
-              const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-              const DAY_COLORS = ['#C4622D', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
-              const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
-              const slots: { day: number; meal: string; recipeId: string }[] = []
-              Object.entries(creatorMenuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
-                const day = parseInt(dayKey)
-                ;['breakfast', 'lunch', 'dinner'].forEach(meal => {
-                  if (meals[meal]) slots.push({ day, meal, recipeId: meals[meal] })
-                })
-              })
-              if (slots.length === 0) return null
-              return (
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.875rem', color: '#2C1810', fontSize: '1.2rem' }}>This Week's Recipes</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.875rem' }}>
-                    {slots.map(({ day, meal, recipeId }) => {
-                      const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
-                      if (!recipe) return null
-                      return (
-                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
-                          {recipe.image_url && (
-                            <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '120px', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                          )}
-                          <div style={{ padding: '0.75rem 0.875rem' }}>
-                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.65rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
-                              <span style={{ fontSize: '0.65rem', color: '#9B8B82', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
-                            </div>
-                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3 }}>{recipe.title}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })()}
 
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '2rem 0' }}>
@@ -659,6 +664,46 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                       <span style={{ color: item.done ? '#9B8B82' : '#2C1810', fontSize: '0.9rem', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
                     </div>
                   ))}
+                </div>
+              )
+            })()}
+
+            {/* This Week's Recipes */}
+            {creatorMenuData?.days && (() => {
+              const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+              const DAY_COLORS = ['#C4622D', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
+              const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
+              const slots: { day: number; meal: string; recipeId: string }[] = []
+              Object.entries(creatorMenuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
+                const day = parseInt(dayKey)
+                ;['breakfast', 'lunch', 'dinner'].forEach(meal => {
+                  if (meals[meal]) slots.push({ day, meal, recipeId: meals[meal] })
+                })
+              })
+              if (slots.length === 0) return null
+              return (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.875rem', color: '#2C1810', fontSize: '1.2rem' }}>This Week's Recipes</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.875rem' }}>
+                    {slots.map(({ day, meal, recipeId }) => {
+                      const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
+                      if (!recipe) return null
+                      return (
+                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                          {recipe.image_url && (
+                            <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '120px', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          )}
+                          <div style={{ padding: '0.75rem 0.875rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
+                              <span style={{ fontSize: '0.65rem', color: '#9B8B82', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3 }}>{recipe.title}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })()}

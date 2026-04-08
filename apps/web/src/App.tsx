@@ -21,6 +21,7 @@ const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [showRecipeForm, setShowRecipeForm] = useState(false)
@@ -86,10 +87,12 @@ export default function App() {
     resolveTenant().then(t => { console.log('tenant resolved:', t); setTenant(t); setTenantLoading(false) })
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      setAccessToken(session?.access_token ?? null)
       setLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      setAccessToken(session?.access_token ?? null)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -348,7 +351,7 @@ export default function App() {
   }
 
   if (isOperator) {
-    return <OperatorDashboard user={user!} onSignOut={signOut} />
+    return <OperatorDashboard user={user!} onSignOut={signOut} accessToken={accessToken} />
   }
 
   if (appMode === 'creator' && creatorTenantId) {

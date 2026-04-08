@@ -177,6 +177,7 @@ export default function App() {
     if (data?.id) {
       setFamilyId(data.id)
       setAppMode('user')
+      setView('dashboard')
       // Use the tenant from their family profile, not the URL
       if (data.tenant_id) {
         const { data: tenantData } = await supabase
@@ -207,6 +208,7 @@ export default function App() {
     // unless we came from a creator URL right now - then go straight to user onboarding
     else if (new URLSearchParams(window.location.search).get('creator') || pendingTenantId) {
       setAppMode('user')
+      setView('dashboard')
     }
     // Brand new user with no context - show role select
   }
@@ -359,6 +361,61 @@ export default function App() {
   // Use tenant if it has a real ID (not the fallback)
   const activeTenant = (tenant?.id && tenant.id !== FALLBACK_TENANT_ID) ? tenant : null
 
+  const path = window.location.pathname
+
+  const legalFooter = (
+    <footer style={{ padding: '0.6rem 2rem', background: 'rgba(244,235,225,0.95)', borderTop: '1px solid #E8D5B7', display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
+      <a href="/terms" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
+      <a href="/privacy" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
+      <a href="/cookies" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
+    </footer>
+  )
+
+  if (path === '/terms') {
+    return (
+      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', padding: '3rem 2rem', flex: 1 }}>
+          <a href="/" style={{ fontSize: '0.85rem', color: '#C4622D', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
+          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', marginBottom: '0.5rem' }}>Terms of Service</h1>
+          <p style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
+          <p style={{ color: '#6B5C52', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Terms of Service, please visit:</p>
+          <a href="https://www.notion.so/Terms-of-Service-33cf2e6d5092819ab105d956ab1c5d62" target="_blank" rel="noopener noreferrer" style={{ color: '#C4622D', fontWeight: '600', fontSize: '1rem' }}>View Terms of Service →</a>
+        </div>
+        {legalFooter}
+      </div>
+    )
+  }
+
+  if (path === '/privacy') {
+    return (
+      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', padding: '3rem 2rem', flex: 1 }}>
+          <a href="/" style={{ fontSize: '0.85rem', color: '#C4622D', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
+          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', marginBottom: '0.5rem' }}>Privacy Policy</h1>
+          <p style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
+          <p style={{ color: '#6B5C52', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Privacy Policy, please visit:</p>
+          <a href="https://www.notion.so/Privacy-Policy-33cf2e6d509281b282d0c0bdb872eff8" target="_blank" rel="noopener noreferrer" style={{ color: '#C4622D', fontWeight: '600', fontSize: '1rem' }}>View Privacy Policy →</a>
+        </div>
+        {legalFooter}
+      </div>
+    )
+  }
+
+  if (path === '/cookies') {
+    return (
+      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', padding: '3rem 2rem', flex: 1 }}>
+          <a href="/" style={{ fontSize: '0.85rem', color: '#C4622D', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
+          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', marginBottom: '0.5rem' }}>Cookies Policy</h1>
+          <p style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
+          <p style={{ color: '#6B5C52', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Cookies Policy, please visit:</p>
+          <a href="https://www.notion.so/Cookies-Policy-33cf2e6d5092819083bfe0df26e03c71" target="_blank" rel="noopener noreferrer" style={{ color: '#C4622D', fontWeight: '600', fontSize: '1rem' }}>View Cookies Policy →</a>
+        </div>
+        {legalFooter}
+      </div>
+    )
+  }
+
   if (!user) {
     return <LoginScreen onGoogleSignIn={signInWithGoogle} onSignIn={setUser} tenant={tenant} />
   }
@@ -484,6 +541,8 @@ export default function App() {
           </div>
         )}
         {view === 'menu' && currentMenuId && !generatingMenu && (
+          <div>
+          <p style={{ fontSize: '0.78rem', color: '#9B8B82', margin: '0 0 0.75rem', textAlign: 'center' }}>AI-generated plan based on your preferences</p>
           <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}
@@ -501,6 +560,7 @@ export default function App() {
             }}
             onRegenerate={(feedback) => generateMenu(feedback)}
           />
+          </div>
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
@@ -705,9 +765,14 @@ export default function App() {
       </div>
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
 
-      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C4622D'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C4622D'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Plate</strong></span>
-        <button onClick={() => setShowSupport(true)} style={{ background: 'none', border: 'none', fontSize: '0.78rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: '500', padding: 0, fontFamily: 'var(--font-sans)' }}>Help &amp; Support</button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <a href="/terms" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
+          <a href="/privacy" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
+          <a href="/cookies" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
+          <button onClick={() => setShowSupport(true)} style={{ background: 'none', border: 'none', fontSize: '0.75rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: '500', padding: 0, fontFamily: 'var(--font-sans)' }}>Help &amp; Support</button>
+        </div>
       </footer>
 
       {showSupport && <SupportModal primaryColor={tenant?.primary_color} onClose={() => setShowSupport(false)} />}
@@ -718,6 +783,7 @@ export default function App() {
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
               <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>{unlockModal.pack.name}</h2>
               <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.875rem' }}>Unlock this recipe pack to access all premium recipes</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0.5rem 0 0', fontSize: '0.75rem', fontStyle: 'italic' }}>Recipes provided by Creator. Plate AI may include these recipes in your generated meal plans based on your preferences.</p>
             </div>
             <div style={{ padding: '1.5rem 2rem' }}>
               <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>

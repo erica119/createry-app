@@ -12,6 +12,9 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   const [tenants, setTenants] = useState<any[]>([])
   const [allPayouts, setAllPayouts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [totalMenusGenerated, setTotalMenusGenerated] = useState(0)
+  const [selectedTenant, setSelectedTenant] = useState<any | null>(null)
 
   const [scraperMode, setScraperMode] = useState<'single' | 'blog'>('single')
   const [scraperUrl, setScraperUrl] = useState('')
@@ -24,7 +27,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   const [saving, setSaving] = useState(false)
   const [scraperError, setScraperError] = useState<string | null>(null)
   const [scraperSuccess, setScraperSuccess] = useState<string | null>(null)
-  const [view, setView] = useState<'revenue' | 'tenants' | 'payouts' | 'scraper'>('revenue')
+  const [view, setView] = useState<'overview' | 'revenue' | 'tenants' | 'payouts' | 'scraper'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -32,7 +35,18 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
     fetchAllEarnings()
     fetchTenants()
     fetchAllPayouts()
+    fetchPlatformStats()
   }, [])
+
+  const fetchPlatformStats = async () => {
+    const [{ count: userCount }, { count: menuCount }] = await Promise.all([
+      supabase.from('family_profiles').select('id', { count: 'exact', head: true })
+        .neq('tenant_id', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+      supabase.from('weekly_menus').select('id', { count: 'exact', head: true }),
+    ])
+    setTotalUsers(userCount || 0)
+    setTotalMenusGenerated(menuCount || 0)
+  }
 
   const fetchAllEarnings = async () => {
     const { data } = await supabase
@@ -66,13 +80,15 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
       .order('created_at', { ascending: false })
     if (data) {
       const enriched = await Promise.all(data.map(async t => {
-        const [{ count: recipeCount }, { count: packCount }, { data: purchases }] = await Promise.all([
+        const [{ count: recipeCount }, { count: packCount }, { data: purchases }, { count: userCount }, { count: menuCount }] = await Promise.all([
           supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
           supabase.from('recipe_packs').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
           supabase.from('user_purchases').select('amount_cents').eq('tenant_id', t.id).eq('status', 'paid'),
+          supabase.from('family_profiles').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
+          supabase.from('weekly_menus').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
         ])
         const gross = (purchases || []).reduce((s: number, p: any) => s + p.amount_cents, 0)
-        return { ...t, recipe_count: recipeCount || 0, pack_count: packCount || 0, gross_cents: gross }
+        return { ...t, recipe_count: recipeCount || 0, pack_count: packCount || 0, gross_cents: gross, user_count: userCount || 0, menu_count: menuCount || 0 }
       }))
       setTenants(enriched)
     }
@@ -210,8 +226,9 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
   }, [menuOpen])
 
   const OP_TABS: { view: typeof view; label: string }[] = [
-    { view: 'revenue', label: 'Revenue' },
-    { view: 'tenants', label: `Tenants${tenants.length ? ` (${tenants.length})` : ''}` },
+    { view: 'overview', label: '📊 Overview' },
+    { view: 'tenants', label: `🏪 Tenants${tenants.length ? ` (${tenants.length})` : ''}` },
+    { view: 'revenue', label: '💵 Revenue' },
     { view: 'payouts', label: '💸 Payouts' },
     { view: 'scraper', label: '🔍 Scraper' },
   ]
@@ -222,7 +239,7 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
         <div className="op-nav-bar" style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', whiteSpace: 'nowrap' }}>
             🍽️ Plate <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Operator</span>
-            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {{ revenue: 'Revenue', tenants: 'Tenants', payouts: 'Payouts', scraper: 'Scraper' }[view]}</span>
+            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {{ overview: 'Overview', revenue: 'Revenue', tenants: 'Tenants', payouts: 'Payouts', scraper: 'Scraper' }[view]}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
@@ -253,6 +270,83 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
           <p style={{ color: '#6B5C52' }}>Loading...</p>
         ) : (
           <>
+            {view === 'overview' && (
+              <>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Platform Overview</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Health and activity across all creator tenants.</p>
+                </div>
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                  {[
+                    { label: 'Total Tenants', value: tenants.length, icon: '🏪', sub: `${tenants.filter(t => t.subscription_status === 'active').length} active` },
+                    { label: 'Total Users', value: totalUsers, icon: '👥', sub: 'across all tenants' },
+                    { label: 'Menus Generated', value: totalMenusGenerated, icon: '📋', sub: 'all time' },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{stat.label}</div>
+                      <div style={{ color: '#C8BAB2', fontSize: '0.75rem', marginTop: '0.2rem' }}>{stat.sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                  {[
+                    { label: 'Total Platform Revenue', value: `$${(totalGross / 100).toFixed(2)}`, icon: '💵', sub: 'gross across all tenants' },
+                    { label: 'Platform Take (20%)', value: `$${(totalPlatform / 100).toFixed(2)}`, icon: '🏦', sub: 'your share' },
+                    { label: 'Stripe Connected', value: tenants.filter(t => t.stripe_onboarded).length, icon: '💳', sub: `of ${tenants.length} tenants` },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{stat.label}</div>
+                      <div style={{ color: '#C8BAB2', fontSize: '0.75rem', marginTop: '0.2rem' }}>{stat.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.15rem' }}>Tenant Health</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {tenants.map(t => {
+                    const isActive = t.user_count > 0 && t.recipe_count > 0
+                    const isSetup = !isActive && t.recipe_count > 0
+                    const health = isActive ? 'active' : isSetup ? 'setup' : 'inactive'
+                    const healthStyle: Record<string, { bg: string; color: string; label: string }> = {
+                      active: { bg: '#F0FDF4', color: '#16a34a', label: '● Active' },
+                      setup: { bg: '#FEF9C3', color: '#854D0E', label: '◑ Setup' },
+                      inactive: { bg: '#FFF5F5', color: '#dc2626', label: '○ Inactive' },
+                    }
+                    const hs = healthStyle[health]
+                    return (
+                      <div key={t.id} onClick={() => { setSelectedTenant(t); setView('tenants') }} style={{ background: 'white', borderRadius: '12px', padding: '1rem 1.25rem', border: '1px solid #E8D5B7', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
+                        <div>
+                          <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '0.95rem' }}>{t.brand_name}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>{t.subdomain}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810' }}>{t.user_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.72rem' }}>users</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810' }}>{t.recipe_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.72rem' }}>recipes</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810' }}>{t.menu_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.72rem' }}>menus</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#16a34a' }}>${(t.gross_cents / 100).toFixed(0)}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.72rem' }}>revenue</div>
+                        </div>
+                        <span style={{ background: hs.bg, color: hs.color, fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px', whiteSpace: 'nowrap' }}>{hs.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
             {view === 'revenue' && (
               <>
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -302,15 +396,16 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
               </>
             )}
 
-            {view === 'tenants' && (
+            {view === 'tenants' && !selectedTenant && (
               <>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Creator Tenants</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>All creator accounts on the platform.</p>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>All creator accounts on the platform. Click a tenant to view details.</p>
                 </div>
-                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                   {[
                     { label: 'Total Tenants', value: tenants.length, icon: '🏪' },
+                    { label: 'Total Users', value: totalUsers, icon: '👥' },
                     { label: 'Stripe Connected', value: tenants.filter(t => t.stripe_onboarded).length, icon: '💳' },
                     { label: 'Total Recipes', value: tenants.reduce((s, t) => s + t.recipe_count, 0), icon: '📖' },
                   ].map(stat => (
@@ -321,40 +416,100 @@ export default function OperatorDashboard({ user, onSignOut }: Props) {
                     </div>
                   ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {tenants.map(t => (
-                    <div key={t.id} style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr', alignItems: 'center', gap: '1rem' }}>
-                      <div>
-                        <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1rem', marginBottom: '0.2rem' }}>{t.brand_name}</div>
-                        <div style={{ color: '#9B8B82', fontSize: '0.8rem' }}>{t.subdomain}.plate.app</div>
-                        <div style={{ marginTop: '0.4rem' }}>
-                          <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600', background: t.subscription_status === 'trialing' ? '#FEF9C3' : '#F0FDF4', color: t.subscription_status === 'trialing' ? '#854D0E' : '#16a34a' }}>
-                            {t.subscription_status}
-                          </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {tenants.map(t => {
+                    const isActive = t.user_count > 0 && t.recipe_count > 0
+                    const isSetup = !isActive && t.recipe_count > 0
+                    const health = isActive ? 'active' : isSetup ? 'setup' : 'inactive'
+                    const healthStyle: Record<string, { bg: string; color: string; label: string }> = {
+                      active: { bg: '#F0FDF4', color: '#16a34a', label: '● Active' },
+                      setup: { bg: '#FEF9C3', color: '#854D0E', label: '◑ Setup' },
+                      inactive: { bg: '#FFF5F5', color: '#dc2626', label: '○ Inactive' },
+                    }
+                    const hs = healthStyle[health]
+                    return (
+                      <div key={t.id} onClick={() => setSelectedTenant(t)} style={{ background: 'white', borderRadius: '16px', padding: '1.25rem 1.5rem', border: '1px solid #E8D5B7', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr auto', alignItems: 'center', gap: '1rem', cursor: 'pointer', transition: 'box-shadow 0.15s' }}>
+                        <div>
+                          <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1rem', marginBottom: '0.2rem' }}>{t.brand_name}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.8rem' }}>{t.subdomain}.plate.app</div>
+                          <div style={{ marginTop: '0.4rem' }}>
+                            <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600', background: t.subscription_status === 'trialing' ? '#FEF9C3' : '#F0FDF4', color: t.subscription_status === 'trialing' ? '#854D0E' : '#16a34a' }}>
+                              {t.subscription_status}
+                            </span>
+                          </div>
                         </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>{t.user_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>users</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>{t.recipe_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>recipes</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>{t.pack_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>packs</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>{t.menu_count}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>menus</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontWeight: '700', color: '#16a34a', fontSize: '1.1rem' }}>${(t.gross_cents / 100).toFixed(2)}</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>gross</div>
+                        </div>
+                        <span style={{ background: hs.bg, color: hs.color, fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px', whiteSpace: 'nowrap' }}>{hs.label}</span>
                       </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>{t.recipe_count}</div>
-                        <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>recipes</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>{t.pack_count}</div>
-                        <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>packs</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1.1rem' }}>${(t.gross_cents / 100).toFixed(2)}</div>
-                        <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>gross</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: '700', color: '#16a34a', fontSize: '1.1rem' }}>${(t.gross_cents * 0.8 / 100).toFixed(2)}</div>
-                        <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>their 80%</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.25rem' }}>{t.stripe_onboarded ? '✅' : '⚠️'}</div>
-                        <div style={{ color: '#9B8B82', fontSize: '0.75rem' }}>{t.stripe_onboarded ? 'Stripe connected' : 'Not connected'}</div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {view === 'tenants' && selectedTenant && (
+              <>
+                <button onClick={() => setSelectedTenant(null)} style={{ background: 'none', border: 'none', color: '#C4622D', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '600', padding: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontFamily: 'var(--font-sans)' }}>
+                  ← Back to Tenants
+                </button>
+                <div style={{ background: 'white', borderRadius: '16px', padding: '1.75rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div>
+                      <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>{selectedTenant.brand_name}</h2>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{selectedTenant.subdomain}.plate.app · ID: {selectedTenant.id}</div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600', background: selectedTenant.subscription_status === 'trialing' ? '#FEF9C3' : '#F0FDF4', color: selectedTenant.subscription_status === 'trialing' ? '#854D0E' : '#16a34a' }}>
+                          {selectedTenant.subscription_status}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600', background: selectedTenant.stripe_onboarded ? '#F0FDF4' : '#FFF5F5', color: selectedTenant.stripe_onboarded ? '#16a34a' : '#dc2626' }}>
+                          {selectedTenant.stripe_onboarded ? '✓ Stripe connected' : '✗ Stripe not connected'}
+                        </span>
                       </div>
                     </div>
-                  ))}
+                    <a href={`/?creator=${selectedTenant.subdomain}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#C4622D', fontWeight: '600', textDecoration: 'none' }}>
+                      View tenant page →
+                    </a>
+                  </div>
+                  <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                    {[
+                      { label: 'Users', value: selectedTenant.user_count, icon: '👥' },
+                      { label: 'Recipes', value: selectedTenant.recipe_count, icon: '📖' },
+                      { label: 'Recipe Packs', value: selectedTenant.pack_count, icon: '📦' },
+                      { label: 'Menus Generated', value: selectedTenant.menu_count, icon: '📋' },
+                      { label: 'Gross Revenue', value: `$${(selectedTenant.gross_cents / 100).toFixed(2)}`, icon: '💵' },
+                      { label: 'Their Earnings (80%)', value: `$${(selectedTenant.gross_cents * 0.8 / 100).toFixed(2)}`, icon: '💰' },
+                    ].map(stat => (
+                      <div key={stat.label} style={{ background: '#FDF6EE', borderRadius: '10px', padding: '1rem', border: '1px solid #E8D5B7' }}>
+                        <div style={{ fontSize: '1.25rem', marginBottom: '0.3rem' }}>{stat.icon}</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
+                        <div style={{ color: '#9B8B82', fontSize: '0.8rem' }}>{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ background: '#FFF8EC', border: '1px solid #F5A623', borderRadius: '12px', padding: '1.25rem 1.5rem' }}>
+                  <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#2C1810', fontSize: '0.9rem' }}>⚙️ Tenant ID</p>
+                  <code style={{ fontSize: '0.85rem', color: '#6B5C52', background: 'rgba(0,0,0,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>{selectedTenant.id}</code>
+                  <p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>Use this ID with the Recipe Scraper to import recipes directly into this tenant.</p>
                 </div>
               </>
             )}

@@ -95,7 +95,7 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -445,6 +445,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const TAB_LABELS: Record<string, string> = {
     overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs', shopping: 'Shopping',
     earnings: 'Earnings', analytics: 'Analytics', branding: 'Branding', mealplan: 'My Meal Plan',
+    settings: 'Settings',
   }
 
   return (
@@ -467,7 +468,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         </div>
         {menuOpen && (
           <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '200px', zIndex: 50, overflow: 'hidden' }}>
-            {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding'] as const).map((v, i, arr) => (
+            {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'settings'] as const).map((v, i, arr) => (
               <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '0.8rem 1.25rem',
@@ -1178,10 +1179,24 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <CreatorAnalytics tenantId={tenantId} primaryColor={color} />
         )}
 
+        {view === 'settings' && familyId && (
+          <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} />
+        )}
+        {view === 'settings' && !familyId && (
+          <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #E8D5B7', textAlign: 'center', color: '#6B5C52' }}>
+            <p>Set up your meal plan first to access profile settings.</p>
+          </div>
+        )}
+
       </div>
-      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${color}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${color}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Plate</strong></span>
-        <button onClick={() => setShowSupport(true)} style={{ background: 'none', border: 'none', fontSize: '0.78rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: '500', padding: 0, fontFamily: 'var(--font-sans)' }}>Help &amp; Support</button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <a href="/terms" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
+          <a href="/privacy" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
+          <a href="/cookies" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
+          <button onClick={() => setShowSupport(true)} style={{ background: 'none', border: 'none', fontSize: '0.75rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: '500', padding: 0, fontFamily: 'var(--font-sans)' }}>Help &amp; Support</button>
+        </div>
       </footer>
       {showSupport && <SupportModal primaryColor={color} onClose={() => setShowSupport(false)} />}
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}

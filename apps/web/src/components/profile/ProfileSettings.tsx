@@ -7,6 +7,25 @@ import StepFamilySize from '../onboarding/StepFamilySize'
 import FamilyMembers from '../FamilyMembers'
 import { supabase } from '../../lib/supabase'
 
+async function deleteAccount(): Promise<{ error?: string }> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { error: 'Not authenticated' }
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+    }
+  )
+  const result = await response.json()
+  if (!response.ok) return { error: result.error || 'Failed to delete account' }
+  return {}
+}
+
 interface Props {
   user: User
   familyId: string
@@ -22,6 +41,10 @@ export default function ProfileSettings({ user, familyId, tenantId }: Props) {
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushLoading, setPushLoading] = useState(false)
   const [pushError, setPushError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   const VAPID_PUBLIC_KEY = 'BN0xS6vCnCqTvPOFvPJpJL4paVaQkaSEKOfjRiK7QoKsvDC1psctCWD3nWPXbGWyOaa8qp3ND_XqQNGs0vYQqNc'
 
@@ -104,6 +127,19 @@ export default function ProfileSettings({ user, familyId, tenantId }: Props) {
     setTimeout(() => { setSaved(false); setSection('overview') }, 1500)
   }
 
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true)
+    setDeleteError('')
+    const { error } = await deleteAccount()
+    if (error) {
+      setDeleteError(error)
+      setDeleteLoading(false)
+      return
+    }
+    // Sign out locally — auth user is already deleted on server
+    await supabase.auth.signOut()
+  }
+
   const sectionBtn = (label: string, s: Section, icon: string) => (
     <button onClick={() => setSection(s)} style={{
       display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -144,6 +180,66 @@ export default function ProfileSettings({ user, familyId, tenantId }: Props) {
           {sectionBtn('Weekly Schedule', 'schedule', '📅')}
           {sectionBtn('Meal Preferences', 'preferences', '❤️')}
           {sectionBtn('Notifications', 'notifications', '🔔')}
+
+          {/* Delete Account */}
+          {!showDeleteConfirm ? (
+            <div style={{ marginTop: '1rem' }}>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: '0.85rem', cursor: 'pointer', padding: '0.5rem 0', fontFamily: 'var(--font-sans)', fontWeight: '500', textDecoration: 'underline' }}
+              >
+                Delete my account
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginTop: '1rem', background: '#FFF5F5', border: '1.5px solid #FCA5A5', borderRadius: '12px', padding: '1.25rem 1.5rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem', color: '#991B1B', fontFamily: 'var(--font-serif)', fontSize: '1rem' }}>Delete your account?</h4>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.6 }}>
+                This will permanently delete your account and all associated data including your family profile, meal plans, shopping lists, and preferences. This action cannot be undone.
+              </p>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: '#6B5C52' }}>
+                Type <strong>DELETE</strong> to confirm:
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                style={{ width: '100%', padding: '0.65rem 1rem', fontSize: '0.95rem', borderRadius: '8px', border: '1.5px solid #FCA5A5', background: 'white', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const, marginBottom: '1rem' }}
+              />
+              {deleteError && (
+                <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: '#dc2626', fontWeight: '500' }}>{deleteError}</p>
+              )}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                  style={{ background: deleteConfirmText === 'DELETE' ? '#dc2626' : '#E8D5B7', color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: deleteConfirmText === 'DELETE' && !deleteLoading ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-sans)', opacity: deleteLoading ? 0.7 : 1 }}
+                >
+                  {deleteLoading ? 'Deleting...' : 'Delete my account'}
+                </button>
+                <button
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); setDeleteError('') }}
+                  style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '1.5rem', background: '#FDF6EE', borderRadius: '12px', padding: '1.25rem 1.5rem', border: '1px solid #E8D5B7' }}>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#9B8B82', textTransform: 'uppercase', letterSpacing: '0.05em' }}>About AI Meal Planning</p>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.6 }}>
+              Your weekly meal plans are generated by Plate's AI system. The AI selects from recipes in your library, filtered by your household dietary constraints and preferences. Meal plans are suggestions — you can always swap, regenerate, or skip any meal.
+            </p>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.6 }}>
+              Your personal information is not shared with external AI providers as part of meal plan generation.
+            </p>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#9B8B82', fontStyle: 'italic' }}>
+              AI-generated content is not medical or nutritional advice.
+            </p>
+          </div>
         </div>
       )}
 

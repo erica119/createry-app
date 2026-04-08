@@ -15,12 +15,14 @@ interface Props {
   brandColor?: string
 }
 
-const STEPS = ['Family Size', 'Dietary Restrictions', 'Weekly Schedule', 'Grocery Schedule', 'Meal Preferences']
+const STEPS = ['Family Size', 'Dietary Restrictions', 'Weekly Schedule', 'Grocery Schedule', 'Meal Preferences', 'AI Disclosure']
 
 export default function OnboardingWizard({ user, tenantId, onComplete }: Props) {
   const [currentStep, setCurrentStep] = useState(0)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [aiConsented, setAiConsented] = useState(false)
+  const [aiConsentError, setAiConsentError] = useState(false)
 
   useEffect(() => {
     const fetchFamily = async () => {
@@ -34,6 +36,23 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
     }
     fetchFamily()
   }, [user.id])
+
+  const handleAiConsent = async () => {
+    if (!aiConsented) {
+      setAiConsentError(true)
+      return
+    }
+    if (familyId) {
+      await supabase.from('family_profiles').update({
+        ai_consent_acknowledged_at: new Date().toISOString(),
+      }).eq('id', familyId)
+    }
+    await supabase.from('user_profiles').upsert({
+      user_id: user.id,
+      ai_consent_acknowledged_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    onComplete()
+  }
 
   const handleNext = (newFamilyId?: string) => {
     if (newFamilyId && typeof newFamilyId === 'string') setFamilyId(newFamilyId)
@@ -54,7 +73,6 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
     <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ width: '100%', maxWidth: '560px' }}>
 
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🍽️</div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.25rem' }}>
@@ -65,7 +83,6 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           </p>
         </div>
 
-        {/* Progress bar */}
         <div style={{ background: 'var(--color-border)', borderRadius: '4px', height: '6px', marginBottom: '2rem', overflow: 'hidden' }}>
           <div style={{
             background: 'var(--color-primary)',
@@ -76,7 +93,6 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           }} />
         </div>
 
-        {/* Step dots */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
           {STEPS.map((_, i) => (
             <div key={i} style={{
@@ -89,7 +105,6 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           ))}
         </div>
 
-        {/* Card */}
         <div className="card onboarding-card" style={{ padding: '2rem' }}>
           {currentStep === 0 && (
             <StepFamilySize user={user} tenantId={tenantId} familyId={familyId} onNext={(id: string) => handleNext(id)} />
@@ -105,6 +120,51 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           )}
           {currentStep === 4 && familyId && (
             <StepMealPreferences familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
+          )}
+          {currentStep === 5 && (
+            <div>
+              <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>&#10022;</div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--espresso)', textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.4rem' }}>How your meal plans are made</h2>
+              <p style={{ color: 'var(--text-light)', textAlign: 'center', margin: '0 0 1.5rem', fontSize: '0.9rem', lineHeight: 1.6 }}>Before we generate your first plan, here is what you should know.</p>
+              <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {[
+                  "Your family dietary needs and preferences are used to filter and select from the recipe library",
+                  "An AI system builds a personalized weekly plan from that filtered set",
+                  "Your personal information stays within Plate systems and is not sent to external AI services",
+                  "You can regenerate, swap, or modify any meal at any time",
+                  "AI-generated plans are not medical or nutritional advice",
+                ].map((point, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.5 }}>
+                    <span style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: '1px' }}>&#10003;</span>
+                    <span>{point}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', marginBottom: aiConsentError ? '0.5rem' : '1.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="ai-consent"
+                  checked={aiConsented}
+                  onChange={e => { setAiConsented(e.target.checked); setAiConsentError(false) }}
+                  style={{ marginTop: '2px', flexShrink: 0, width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                />
+                <label htmlFor="ai-consent" style={{ fontSize: '0.82rem', color: '#4A3728', lineHeight: 1.5, cursor: 'pointer' }}>
+                  I understand that Plate uses AI to generate my weekly meal plans based on my household preferences, and that this is not a substitute for professional dietary or medical advice.
+                </label>
+              </div>
+              {aiConsentError && (
+                <p style={{ color: '#dc2626', fontSize: '0.82rem', margin: '0 0 1rem' }}>Please check the box above to continue.</p>
+              )}
+              <button
+                onClick={handleAiConsent}
+                style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+              >
+                Got it - show me my first plan
+              </button>
+              <button onClick={handleBack} style={{ width: '100%', background: 'none', border: 'none', color: 'var(--text-light)', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.25rem' }}>
+                Back
+              </button>
+            </div>
           )}
         </div>
 

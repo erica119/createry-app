@@ -49,6 +49,8 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
     }
     await supabase.from('user_profiles').upsert({
       user_id: user.id,
+      tenant_id: tenantId,
+      role: 'user',
       ai_consent_acknowledged_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
     onComplete()

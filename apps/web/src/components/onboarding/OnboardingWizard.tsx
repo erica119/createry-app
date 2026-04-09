@@ -47,12 +47,13 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
         ai_consent_acknowledged_at: new Date().toISOString(),
       }).eq('id', familyId)
     }
-    await supabase.from('user_profiles').upsert({
+    const { error: upsertError } = await supabase.from('user_profiles').upsert({
       user_id: user.id,
       tenant_id: tenantId,
       role: 'user',
       ai_consent_acknowledged_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
+    if (upsertError) console.error('user_profiles upsert error:', upsertError)
     onComplete()
   }
 

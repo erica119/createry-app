@@ -30,11 +30,12 @@ interface Props {
   user: User
   familyId: string
   tenantId: string
+  isCreator?: boolean
 }
 
 type Section = 'overview' | 'family' | 'dietary' | 'schedule' | 'preferences' | 'members' | 'notifications'
 
-export default function ProfileSettings({ user, familyId, tenantId }: Props) {
+export default function ProfileSettings({ user, familyId, tenantId, isCreator = false }: Props) {
   const [section, setSection] = useState<Section>('overview')
   const [saved, setSaved] = useState(false)
   const [pushSupported, setPushSupported] = useState(false)
@@ -182,6 +183,8 @@ export default function ProfileSettings({ user, familyId, tenantId }: Props) {
           {sectionBtn('Notifications', 'notifications', '🔔')}
 
           {/* Delete Account */}
+          {!isCreator && (
+          <>
           {!showDeleteConfirm ? (
             <div style={{ marginTop: '1rem' }}>
               <button
@@ -226,6 +229,8 @@ export default function ProfileSettings({ user, familyId, tenantId }: Props) {
                 </button>
               </div>
             </div>
+          )}
+          </>
           )}
 
           <div style={{ marginTop: '1.5rem', background: '#FDF6EE', borderRadius: '12px', padding: '1.25rem 1.5rem', border: '1px solid #E8D5B7' }}>

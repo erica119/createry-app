@@ -29,13 +29,15 @@ interface Tenant {
   stripe_onboarded: boolean
 }
 
-function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdated }: {
+function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdated, isFavorite, onToggleFavorite }: {
   recipe: any
   color: string
   tenantId: string
   onSelect: () => void
   onDelete: () => void
   onImageUpdated: () => void
+  isFavorite?: boolean
+  onToggleFavorite?: (recipeId: string) => void
 }) {
   const [uploadingImage, setUploadingImage] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -69,7 +71,7 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
           <h3 onClick={onSelect} style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3, cursor: 'pointer' }}>{recipe.title}</h3>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
-            <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color, padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+            <button onClick={e => { e.stopPropagation(); onToggleFavorite?.(recipe.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem', lineHeight: 1 }} title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>{isFavorite ? '❤️' : '🤍'}</button>
             <button onClick={onDelete} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }}>✕</button>
           </div>
         </div>
@@ -79,6 +81,11 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
           {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
           {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
         </div>
+        {recipe.complexity && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.65rem', background: '#F5EFE6', color, padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+          </div>
+        )}
         <button
           onClick={() => imageInputRef.current?.click()}
           disabled={uploadingImage}
@@ -95,7 +102,7 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings' | 'sharing'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -106,6 +113,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [payouts, setPayouts] = useState<any[]>([])
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
+  const [creatorFavorites, setCreatorFavorites] = useState<Set<string>>(new Set())
+  const [copied, setCopied] = useState<string | null>(null)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -157,6 +166,53 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [creatorMenuRecipes, setCreatorMenuRecipes] = useState<any[]>([])
   const [homeActiveUsers, setHomeActiveUsers] = useState(0)
   const [homeMenusThisWeek, setHomeMenusThisWeek] = useState(0)
+  const [subscription, setSubscription] = useState<any>(null)
+  const [subLoading, setSubLoading] = useState(true)
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly')
+  const [startingCheckout, setStartingCheckout] = useState(false)
+  const [subError, setSubError] = useState<string | null>(null)
+
+  const fetchSubscription = async () => {
+    setSubLoading(true)
+    const { data } = await supabase
+      .from('creator_subscriptions')
+      .select('*')
+      .eq('creator_id', user.id)
+      .maybeSingle()
+    setSubscription(data)
+    setSubLoading(false)
+  }
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('subscription') === 'success') {
+      // Give webhook a few seconds to fire, then re-fetch
+      window.history.replaceState({}, '', window.location.pathname)
+      setTimeout(() => fetchSubscription(), 3000)
+    }
+  }, [])
+
+  const startSubscription = async () => {
+    setStartingCheckout(true)
+    setSubError(null)
+    try {
+      const priceId = selectedPlan === 'monthly'
+        ? 'price_1TNdqeJzNLT19Phao9z7oH4u'
+        : 'price_1TNdwNJzNLT19PhaZF15La1v'
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/creator-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({ price_id: priceId, creator_id: user.id, tenant_id: tenantId })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to start checkout')
+      window.location.href = result.url
+    } catch (err: any) {
+      setSubError(err.message)
+      setStartingCheckout(false)
+    }
+  }
 
   useEffect(() => {
     fetchTenant()
@@ -164,6 +220,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     fetchFamilyProfile()
     fetchPacks()
     fetchHomeStats()
+    fetchCreatorFavorites()
+    fetchSubscription()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) { fetchEarnings(); fetchPayouts() }
     })
@@ -252,6 +310,21 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       setEditColor(data.primary_color || '#C4622D')
     }
     setLoading(false)
+  }
+
+  const fetchCreatorFavorites = async () => {
+    const { data } = await supabase.from('recipe_favorites').select('recipe_id').eq('user_id', user.id)
+    if (data) setCreatorFavorites(new Set(data.map((f: any) => f.recipe_id)))
+  }
+
+  const toggleCreatorFavorite = async (recipeId: string) => {
+    if (creatorFavorites.has(recipeId)) {
+      await supabase.from('recipe_favorites').delete().eq('user_id', user.id).eq('recipe_id', recipeId)
+      setCreatorFavorites(prev => { const next = new Set(prev); next.delete(recipeId); return next })
+    } else {
+      await supabase.from('recipe_favorites').insert({ user_id: user.id, tenant_id: tenantId, recipe_id: recipeId })
+      setCreatorFavorites(prev => new Set(prev).add(recipeId))
+    }
   }
 
   const fetchRecipes = async () => {
@@ -471,8 +544,110 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const TAB_LABELS: Record<string, string> = {
     overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs', shopping: 'Shopping',
     earnings: 'Earnings', analytics: 'Analytics', branding: 'Branding', mealplan: 'My Meal Plan',
-    settings: 'Settings',
+    settings: 'Settings', sharing: 'Share Your App',
   }
+
+  // Subscription loading
+  if (subLoading) return (
+    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <p style={{ color: '#6B5C52', fontFamily: 'var(--font-sans)' }}>Loading...</p>
+    </div>
+  )
+
+  // No subscription or pending — show plan selection
+  const needsPlan = !subscription || subscription.status === 'pending'
+  const isPastDue = subscription?.status === 'past_due'
+  const isCancelled = subscription?.status === 'cancelled' || subscription?.status === 'unpaid'
+
+  if (needsPlan) return (
+    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ maxWidth: '520px', width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🍽️</div>
+          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', fontSize: '2rem', margin: '0 0 0.5rem' }}>Choose your plan</h1>
+          <p style={{ color: '#6B5C52', margin: 0 }}>Start with a 7-day free trial. Cancel anytime.</p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          {([
+            { plan: 'monthly' as const, label: 'Monthly', price: '$199', period: '/month', savings: null },
+            { plan: 'annual' as const, label: 'Annual', price: '$1,999', period: '/year', savings: 'Save $389' },
+          ]).map(({ plan, label, price, period, savings }) => (
+            <div
+              key={plan}
+              onClick={() => setSelectedPlan(plan)}
+              style={{ background: 'white', borderRadius: '16px', border: selectedPlan === plan ? `2px solid ${color}` : '1px solid #E8D5B7', padding: '1.5rem', cursor: 'pointer', position: 'relative', transition: 'border 0.15s' }}
+            >
+              {savings && (
+                <span style={{ position: 'absolute', top: '-0.75rem', right: '1rem', background: '#16a34a', color: 'white', fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px' }}>{savings}</span>
+              )}
+              <p style={{ margin: '0 0 0.25rem', fontWeight: '700', color: '#2C1810', fontSize: '1rem' }}>{label}</p>
+              <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: color, fontWeight: '700', lineHeight: 1 }}>{price}</p>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>{period}</p>
+              {selectedPlan === plan && (
+                <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', width: '18px', height: '18px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: 'white', fontSize: '0.65rem' }}>✓</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={startSubscription}
+          disabled={startingCheckout}
+          style={{ width: '100%', background: color, color: 'white', border: 'none', padding: '1rem', borderRadius: '12px', fontSize: '1rem', fontWeight: '700', cursor: startingCheckout ? 'not-allowed' : 'pointer', opacity: startingCheckout ? 0.7 : 1, fontFamily: 'var(--font-sans)', marginBottom: '0.75rem' }}
+        >
+          {startingCheckout ? 'Redirecting to checkout...' : 'Start 7-Day Free Trial →'}
+        </button>
+
+        {subError && <p style={{ color: '#dc2626', fontSize: '0.875rem', textAlign: 'center', margin: '0.5rem 0' }}>{subError}</p>}
+
+        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#9B8B82', margin: '0.5rem 0 0' }}>
+          Have a promo code? You'll enter it at checkout. No charge during your trial.
+        </p>
+
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#9B8B82', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Past due — soft lock
+  if (isPastDue) return (
+    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
+        <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem' }}>Payment issue</h2>
+        <p style={{ color: '#6B5C52', marginBottom: '1.5rem' }}>There was a problem with your last payment. Please update your billing info to restore access.</p>
+        <a href="https://billing.stripe.com/p/login/aFa9AU7GkaUJbPr7VM1RC00" target="_blank" rel="noopener noreferrer"
+          style={{ display: 'inline-block', background: color, color: 'white', padding: '0.75rem 2rem', borderRadius: '10px', fontWeight: '600', textDecoration: 'none', fontSize: '0.95rem' }}>
+          Update Billing →
+        </a>
+        <div style={{ marginTop: '1rem' }}>
+          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#9B8B82', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Cancelled — hard lock
+  if (isCancelled) return (
+    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔒</div>
+        <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem' }}>Subscription ended</h2>
+        <p style={{ color: '#6B5C52', marginBottom: '1.5rem' }}>Your Plate creator subscription has ended. Reactivate to access your dashboard.</p>
+        <button onClick={() => setSubscription(null)} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '0.95rem', fontFamily: 'var(--font-sans)' }}>
+          Reactivate Plan →
+        </button>
+        <div style={{ marginTop: '1rem' }}>
+          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#9B8B82', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
@@ -494,7 +669,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         </div>
         {menuOpen && (
           <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '200px', zIndex: 50, overflow: 'hidden' }}>
-            {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'settings'] as const).map((v, i, arr) => (
+            {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'sharing', 'settings'] as const).map((v, i, arr) => (
               <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '0.8rem 1.25rem',
@@ -510,7 +685,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         )}
       </div>
 
-      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem', paddingBottom: '5rem' }}>
 
         {/* OVERVIEW */}
         {view === 'overview' && (
@@ -578,6 +753,59 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               </div>
             )}
 
+            {/* Tonight's Recipe Hero Card */}
+            {creatorMenuData?.days && creatorMenuStatus === 'approved' && (() => {
+              const now = new Date()
+              const today = now.getDay()
+              const hour = now.getHours()
+              const todayMeals = (creatorMenuData.days as Record<string, any>)[String(today)]
+              if (!todayMeals) return null
+              let mealOrder: string[]
+              if (hour < 12) mealOrder = ['breakfast', 'lunch', 'dinner']
+              else if (hour < 17) mealOrder = ['lunch', 'dinner', 'breakfast']
+              else mealOrder = ['dinner', 'lunch', 'breakfast']
+              const nextMeal = mealOrder.find(m => todayMeals[m])
+              if (!nextMeal) return null
+              const recipeId = todayMeals[nextMeal]
+              const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
+              if (!recipe) return null
+              let mealLabel = 'Tonight'
+              if (nextMeal === 'breakfast') mealLabel = 'This Morning'
+              else if (nextMeal === 'lunch') mealLabel = 'Lunchtime'
+              return (
+                <div
+                  style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(44,24,16,0.10)', marginBottom: '1.5rem' }}
+                  onClick={() => setSelectedRecipe(recipe)}
+                >
+                  {recipe.image_url && (
+                    <img
+                      src={recipe.image_url}
+                      alt={recipe.title}
+                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  )}
+                  <div style={{ padding: '1.25rem 1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.75rem', borderRadius: '20px', background: color, color: 'white', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{mealLabel}</span>
+                      {recipe.cuisine_tags && (
+                        <span style={{ fontSize: '0.75rem', color: '#9B8B82', fontWeight: '500' }}>{Array.isArray(recipe.cuisine_tags) ? recipe.cuisine_tags[0] : recipe.cuisine_tags}</span>
+                      )}
+                    </div>
+                    <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.5rem', color: '#2C1810', fontSize: '1.3rem', lineHeight: 1.2 }}>{recipe.title}</h3>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      {recipe.cook_time_minutes && (
+                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>🕐 {recipe.cook_time_minutes} min</span>
+                      )}
+                      {recipe.servings && (
+                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>👥 {recipe.servings} servings</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '2rem 0' }}>
               <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
@@ -620,7 +848,21 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 <button onClick={() => setView('branding')} style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
                   🎨 Edit Branding
                 </button>
+                <button onClick={() => setView('sharing')} style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
+                  📣 Share Your App
+                </button>
               </div>
+              {subscription && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#9B8B82' }}>
+                    Plan: <strong style={{ color: '#2C1810', textTransform: 'capitalize' }}>{subscription.plan}</strong> · Status: <strong style={{ color: subscription.status === 'active' || subscription.status === 'trialing' ? '#16a34a' : '#dc2626', textTransform: 'capitalize' }}>{subscription.status}</strong>
+                  </p>
+                  <a href="https://billing.stripe.com/p/login/aFa9AU7GkaUJbPr7VM1RC00" target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: '0.8rem', color: color, fontWeight: '600', textDecoration: 'none' }}>
+                    Manage Billing →
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Getting started checklist */}
@@ -734,6 +976,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   onSelect={() => setSelectedRecipe(recipe)}
                   onDelete={async () => { if (confirm('Delete this recipe?')) { const { error } = await supabase.from('recipes').delete().eq('id', recipe.id).eq('tenant_id', tenantId); if (error) { alert('Delete failed: ' + error.message); } else { fetchRecipes(); } } }}
                   onImageUpdated={fetchRecipes}
+                  isFavorite={creatorFavorites.has(recipe.id)}
+                  onToggleFavorite={toggleCreatorFavorite}
                 />
               ))}
             </div>
@@ -802,7 +1046,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} />
                 )}
                 {menuView === 'settings' && familyId && (
-                  <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} />
+                  <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} isCreator={true} />
                 )}
               </div>
             )}
@@ -1224,8 +1468,57 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <CreatorAnalytics tenantId={tenantId} primaryColor={color} />
         )}
 
+        {view === 'sharing' && (() => {
+          const appUrl = `${window.location.origin}?creator=${tenant?.subdomain || ''}`
+          const brandName = tenant?.brand_name || 'my meal planning app'
+          const captions = {
+            instagram: `✨ I just launched my own meal planning app — ${brandName}! Get personalized weekly meal plans based on YOUR family's dietary needs, with a built-in shopping list. It's totally free to join! 🥘🛒\n\nSign up here 👇\n${appUrl}\n\n#mealplanning #familymeals #mealprep #easydinners #weeknightdinners`,
+            tiktok: `POV: You finally have a meal planning app made just for your family 🙌 I built ${brandName} so you can get personalized weekly menus, auto-generated shopping lists, and actually enjoy dinner time again. Link in bio or sign up at: ${appUrl}`,
+            facebook: `Hey friends! I'm so excited to share something I've been working on — ${brandName}, my very own meal planning app! 🎉\n\nIt creates personalized weekly meal plans for your family based on your dietary needs and preferences, then automatically builds your shopping list. And it's FREE to join!\n\nSign up here: ${appUrl}\n\nWould love for you to try it and let me know what you think! 💬`,
+          }
+          const copy = (key: string, text: string) => {
+            navigator.clipboard.writeText(text)
+            setCopied(key)
+            setTimeout(() => setCopied(null), 2000)
+          }
+          return (
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Share Your App 📣</h2>
+              <p style={{ color: '#6B5C52', margin: '0 0 2rem' }}>Drive your audience to {brandName} with these ready-to-post captions.</p>
+
+              {/* Signup link */}
+              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🔗 Your Signup Link</h3>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <code style={{ flex: 1, background: '#F5EFE6', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.875rem', color: '#2C1810', wordBreak: 'break-all' }}>{appUrl}</code>
+                  <button onClick={() => copy('link', appUrl)} style={{ background: color, color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)' }}>
+                    {copied === 'link' ? '✓ Copied!' : 'Copy Link'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Caption cards */}
+              {([
+                { key: 'instagram', platform: 'Instagram', icon: '📸' },
+                { key: 'tiktok', platform: 'TikTok', icon: '🎵' },
+                { key: 'facebook', platform: 'Facebook', icon: '👥' },
+              ] as const).map(({ key, platform, icon }) => (
+                <div key={key} style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.5rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: 0, fontSize: '1.1rem' }}>{icon} {platform}</h3>
+                    <button onClick={() => copy(key, captions[key])} style={{ background: copied === key ? '#16a34a' : color, color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.825rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'background 0.2s' }}>
+                      {copied === key ? '✓ Copied!' : 'Copy Caption'}
+                    </button>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.7, whiteSpace: 'pre-line', background: '#FDF6EE', padding: '1rem', borderRadius: '8px' }}>{captions[key]}</p>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+
         {view === 'settings' && familyId && (
-          <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} />
+          <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} isCreator={true} />
         )}
         {view === 'settings' && !familyId && (
           <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #E8D5B7', textAlign: 'center', color: '#6B5C52' }}>
@@ -1245,6 +1538,48 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       </footer>
       {showSupport && <SupportModal primaryColor={color} onClose={() => setShowSupport(false)} />}
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
+
+      {/* Bottom Tab Navigation — mobile only */}
+      <nav className="bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: 'white',
+        borderTop: '1px solid #E8D5B7',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        padding: '0.5rem 0',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        zIndex: 100,
+        boxShadow: '0 -2px 12px rgba(44,24,16,0.08)',
+      }}>
+        {[
+          { v: 'overview' as const, label: 'Home', icon: '🏠' },
+          { v: 'mealplan' as const, label: 'Menu', icon: '📅' },
+          { v: 'shopping' as const, label: 'Shop', icon: '🛒' },
+          { v: 'sharing' as const, label: 'Share', icon: '📣' },
+          { v: 'settings' as const, label: 'Profile', icon: '👤' },
+        ].map(({ v, label, icon }) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: '0.2rem', background: 'none', border: 'none',
+              padding: '0.4rem 0.75rem',
+              cursor: 'pointer',
+              minWidth: '60px',
+            }}
+          >
+            <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</span>
+            <span style={{
+              fontSize: '0.65rem', fontWeight: view === v ? '700' : '500',
+              color: view === v ? color : '#9B8B82',
+              fontFamily: 'var(--font-sans)',
+              letterSpacing: '0.02em',
+            }}>{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

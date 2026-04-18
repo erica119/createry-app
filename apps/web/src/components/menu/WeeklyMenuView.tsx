@@ -19,6 +19,7 @@ interface Recipe {
   complexity: string
   prep_time_minutes: number
   cook_time_minutes: number
+  image_url: string | null
   is_premium: boolean
   recipe_pack_id: string | null
 }
@@ -87,7 +88,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     if (ids.length === 0) return
     const { data } = await supabase
       .from('recipes')
-      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, is_premium, recipe_pack_id')
+      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id')
       .in('id', ids)
     if (data) {
       const map: Record<string, Recipe> = {}
@@ -114,7 +115,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
   const fetchAllRecipes = async () => {
     const { data } = await supabase
       .from('recipes')
-      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, is_premium, recipe_pack_id')
+      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id')
       .eq('tenant_id', tenantId)
     if (data) setAllRecipes(data)
   }
@@ -328,66 +329,93 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         </div>
       )}
 
-      {/* Calendar grid */}
-      <div className="menu-calendar" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '2rem' }}>
+      {/* Mobile-first vertical menu scroll */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
         {Array.from({ length: 7 }, (_, i) => {
           const dayData = menu.menu_data.days[String(i)] || {}
           const meals = [
-            { key: 'breakfast', label: 'BREAKFAST' },
-            { key: 'lunch', label: 'LUNCH' },
-            { key: 'dinner', label: 'DINNER' },
+            { key: 'breakfast', label: 'Breakfast' },
+            { key: 'lunch', label: 'Lunch' },
+            { key: 'dinner', label: 'Dinner' },
           ] as const
           const hasMeals = meals.some(m => dayData[m.key])
+          const today = new Date().getDay()
+          const isToday = i === today
 
           return (
-            <div key={i} style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', background: 'white' }}>
-              <div style={{ background: 'var(--color-primary)', padding: '0.5rem 0.25rem', textAlign: 'center' }}>
-                <span style={{ color: 'white', fontWeight: '700', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  {DAY_NAMES[i]}
+            <div key={i}>
+              {/* Day header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{
+                  fontSize: '0.75rem', fontWeight: '700', padding: '0.2rem 0.75rem',
+                  borderRadius: '20px', letterSpacing: '0.05em',
+                  background: isToday ? 'var(--color-primary)' : '#F5EFE6',
+                  color: isToday ? 'white' : '#9B8B82',
+                }}>
+                  {FULL_DAY_NAMES[i]}{isToday ? ' · Today' : ''}
                 </span>
+                {!hasMeals && (
+                  <span style={{ fontSize: '0.75rem', color: '#C8BAB2', fontStyle: 'italic' }}>Rest day</span>
+                )}
               </div>
-              <div style={{ padding: '0.5rem 0.4rem', minHeight: '80px' }}>
-                {!hasMeals ? (
-                  <p style={{ color: '#C8BAB2', fontSize: '0.7rem', textAlign: 'center', margin: '0.75rem 0', fontStyle: 'italic' }}>Rest day</p>
-                ) : (
-                  meals.map(({ key, label }) => {
+
+              {/* Meal cards for this day */}
+              {hasMeals && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {meals.map(({ key, label }) => {
                     const recipeId = dayData[key]
                     if (!recipeId) return null
                     const recipe = recipes[recipeId]
                     const locked = recipe ? isLocked(recipe) : false
                     const pack = recipe?.recipe_pack_id ? packs[recipe.recipe_pack_id] : null
 
+                    if (locked && pack) {
+                      return (
+                        <div key={key}
+                          onClick={() => handleUnlockClick(pack, recipe?.title || '')}
+                          style={{ background: '#F0EAEA', borderRadius: '12px', border: '1px dashed #D4B0B0', padding: '0.875rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', opacity: 0.85 }}
+                        >
+                          <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#E8D5B7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '1.25rem' }}>🔒</span>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#9B8B82', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.9rem', fontWeight: '600', color: '#9B8B82', filter: 'blur(3px)', userSelect: 'none' }}>{recipe?.title || 'Premium Recipe'}</p>
+                            <span style={{ fontSize: '0.75rem', color: '#C4622D' }}>🔒 ${(pack.price_cents / 100).toFixed(0)} to unlock</span>
+                          </div>
+                        </div>
+                      )
+                    }
+
                     return (
-                      <div key={key} style={{ marginBottom: '0.4rem' }}>
-                        <p style={{ margin: '0 0 0.2rem', fontSize: '0.6rem', fontWeight: '700', color: '#9B8B82', letterSpacing: '0.05em' }}>{label}</p>
-                        {locked && pack ? (
-                          <div
-                            style={{ background: '#F0EAEA', borderRadius: '6px', padding: '0.3rem 0.4rem', cursor: 'pointer', border: '1px dashed #D4B0B0', opacity: 0.85 }}
-                            onClick={() => handleUnlockClick(pack, recipe?.title || '')}
-                          >
-                            <p style={{ margin: '0 0 0.1rem', fontSize: '0.72rem', color: '#9B8B82', fontWeight: '500', lineHeight: 1.3, filter: 'blur(3px)', userSelect: 'none' }}>
-                              {recipe?.title || 'Premium Recipe'}
-                            </p>
-                            <span style={{ fontSize: '0.6rem', color: '#C4622D', display: 'block' }}>🔒 ${(pack.price_cents / 100).toFixed(0)} to unlock</span>
-                          </div>
+                      <div key={key}
+                        onClick={() => !isApproved && !locked && setSwapDay({ day: String(i), meal: key })}
+                        style={{ background: 'white', borderRadius: '12px', border: isToday ? '1.5px solid var(--color-primary)' : '1px solid #E8D5B7', padding: '0.875rem 1rem', cursor: isApproved ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.875rem', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}
+                      >
+                        {(recipe as any)?.image_url ? (
+                          <img src={(recipe as any).image_url} alt={recipe?.title} style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         ) : (
-                          <div
-                            style={{ background: '#F5EFE6', borderRadius: '6px', padding: '0.3rem 0.4rem', cursor: isApproved ? 'default' : 'pointer', position: 'relative' }}
-                            onClick={() => !isApproved && !locked && setSwapDay({ day: String(i), meal: key })}
-                          >
-                            <p style={{ margin: 0, fontSize: '0.72rem', color: '#2C1810', fontWeight: '500', lineHeight: 1.3 }}>
-                              {recipe?.title || 'Recipe Not Found'}
-                            </p>
-                            {!isApproved && (
-                              <span style={{ fontSize: '0.6rem', color: 'var(--color-primary)', display: 'block', marginTop: '0.15rem' }}>tap to swap</span>
-                            )}
+                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '1.5rem' }}>🍽️</span>
                           </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#9B8B82', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+                          <p style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {recipe?.title || 'Recipe Not Found'}
+                          </p>
+                          {recipe?.cook_time_minutes && (
+                            <span style={{ fontSize: '0.75rem', color: '#9B8B82' }}>🕐 {recipe.cook_time_minutes} min</span>
+                          )}
+                        </div>
+                        {!isApproved && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '500', flexShrink: 0 }}>swap →</span>
                         )}
                       </div>
                     )
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              )}
             </div>
           )
         })}

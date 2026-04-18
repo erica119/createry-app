@@ -1,3 +1,4 @@
+import './App.css'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { resolveTenant, clearCreatorSession } from './lib/tenant'
@@ -52,6 +53,7 @@ export default function App() {
   const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
   const [showSupport, setShowSupport] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const navRef = useRef<HTMLDivElement>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
@@ -110,6 +112,7 @@ export default function App() {
       if (user && tenant) {
         fetchUnlockedPacks(user.id, tenant.id)
         fetchRecipes(tenant.id)
+        fetchFavorites()
       }
       setTimeout(() => setPurchaseSuccess(false), 6000)
     }
@@ -214,6 +217,12 @@ export default function App() {
       setView('dashboard')
     }
     // Brand new user with no context - show role select
+  }
+
+  const fetchFavorites = async () => {
+    if (!user) return
+    const { data } = await supabase.from('recipe_favorites').select('recipe_id').eq('user_id', user.id)
+    if (data) setFavorites(new Set(data.map((f: any) => f.recipe_id)))
   }
 
   const fetchRecipes = async (overrideTenantId?: string) => {
@@ -488,6 +497,19 @@ export default function App() {
     )
   }
 
+  const toggleFavorite = async (e: React.MouseEvent, recipeId: string) => {
+    e.stopPropagation()
+    if (!user || !tenant) return
+    if (favorites.has(recipeId)) {
+      await supabase.from('recipe_favorites').delete().eq('user_id', user.id).eq('recipe_id', recipeId)
+      setFavorites(prev => { const next = new Set(prev); next.delete(recipeId); return next })
+    } else {
+      const { error } = await supabase.from('recipe_favorites').insert({ user_id: user.id, tenant_id: tenant.id, recipe_id: recipeId })
+      if (error) { console.error('Favorite insert error:', error); return }
+      setFavorites(prev => new Set(prev).add(recipeId))
+    }
+  }
+
   const NAV_LABELS: { view: typeof view; label: string; enabled: boolean }[] = [
     { view: 'dashboard', label: 'Home', enabled: true },
     { view: 'recipes', label: 'My Recipes', enabled: true },
@@ -535,7 +557,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem' }}>
+      <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem', paddingBottom: '5rem' }}>
         {view === 'menu' && generatingMenu && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✨</div>
@@ -612,8 +634,8 @@ export default function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
-                      <span style={{ fontSize: '0.7rem', background: '#F5EFE6', color: 'var(--brand-color)', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
                       <button onClick={async () => { if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }} title="Delete recipe">✕</button>
+                      <button onClick={e => toggleFavorite(e, recipe.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem', lineHeight: 1 }} title={favorites.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}>{favorites.has(recipe.id) ? '❤️' : '🤍'}</button>
                     </div>
                   </div>
                   {recipe.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
@@ -629,6 +651,16 @@ export default function App() {
                       ))}
                     </div>
                   )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem' }}>
+                    {tenant?.brand_name && (
+                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#9B8B82', fontStyle: 'italic' }}>
+                        {tenant.brand_name}'s Recipe
+                      </p>
+                    )}
+                    {recipe.complexity && (
+                      <span style={{ fontSize: '0.65rem', background: '#F5EFE6', color: 'var(--brand-color)', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+                    )}
+                  </div>
                   {isLocked && pack && (
                     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F0E0E0' }}>
                       <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#9B8B82' }}>🔒 {pack.name}</p>
@@ -719,6 +751,60 @@ export default function App() {
                     <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
                     <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
                     <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>{shoppingLabel}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Tonight's Recipe Hero Card */}
+            {menuData?.days && currentMenuStatus === 'approved' && (() => {
+              const now = new Date()
+              const today = now.getDay()
+              const hour = now.getHours()
+              const todayMeals = (menuData.days as Record<string, any>)[String(today)]
+              if (!todayMeals) return null
+              // Pick next upcoming meal based on time of day
+              let mealOrder: string[]
+              if (hour < 12) mealOrder = ['breakfast', 'lunch', 'dinner']
+              else if (hour < 17) mealOrder = ['lunch', 'dinner', 'breakfast']
+              else mealOrder = ['dinner', 'lunch', 'breakfast']
+              const nextMeal = mealOrder.find(m => todayMeals[m])
+              if (!nextMeal) return null
+              const tonightRecipeId = todayMeals[nextMeal]
+              const tonightRecipe = tonightRecipeId ? recipes.find((r: any) => r.id === tonightRecipeId) : null
+              if (!tonightRecipe) return null
+              let mealLabel = 'Tonight'
+              if (nextMeal === 'breakfast') mealLabel = 'This Morning'
+              else if (nextMeal === 'lunch') mealLabel = 'Lunchtime'
+              return (
+                <div
+                  onClick={() => setSelectedRecipe(tonightRecipe)}
+                  style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(44,24,16,0.10)', marginBottom: '2rem' }}
+                >
+                  {tonightRecipe.image_url && (
+                    <img
+                      src={tonightRecipe.image_url}
+                      alt={tonightRecipe.title}
+                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  )}
+                  <div style={{ padding: '1.25rem 1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.75rem', borderRadius: '20px', background: brandColor, color: 'white', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{mealLabel}</span>
+                      {tonightRecipe.cuisine_tags && (
+                        <span style={{ fontSize: '0.75rem', color: '#9B8B82', fontWeight: '500' }}>{Array.isArray(tonightRecipe.cuisine_tags) ? tonightRecipe.cuisine_tags[0] : tonightRecipe.cuisine_tags}</span>
+                      )}
+                    </div>
+                    <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.5rem', color: '#2C1810', fontSize: '1.3rem', lineHeight: 1.2 }}>{tonightRecipe.title}</h3>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      {tonightRecipe.cook_time_minutes && (
+                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>🕐 {tonightRecipe.cook_time_minutes} min</span>
+                      )}
+                      {tonightRecipe.servings && (
+                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>👥 {tonightRecipe.servings} servings</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
@@ -815,6 +901,56 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Bottom Tab Navigation */}
+      <nav className="bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: 'white',
+        borderTop: '1px solid #E8D5B7',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        padding: '0.5rem 0',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        zIndex: 100,
+        boxShadow: '0 -2px 12px rgba(44,24,16,0.08)',
+      }}>
+        {[
+          { v: 'dashboard' as const, label: 'Home', icon: '🏠', enabled: true },
+          { v: 'menu' as const, label: 'Menu', icon: '📅', enabled: !!currentMenuId },
+          { v: 'recipes' as const, label: 'Recipes', icon: '📖', enabled: true },
+          { v: 'shopping' as const, label: 'Shop', icon: '🛒', enabled: !!currentMenuId },
+          { v: 'settings' as const, label: 'Profile', icon: '👤', enabled: true },
+        ].map(({ v, label, icon, enabled }) => (
+          <button
+            key={v}
+            onClick={() => { if (enabled) setView(v) }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: '0.2rem', background: 'none', border: 'none',
+              padding: '0.4rem 0.75rem',
+              cursor: enabled ? 'pointer' : 'not-allowed',
+              opacity: enabled ? 1 : 0.35,
+              minWidth: '60px',
+            }}
+          >
+            <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</span>
+            <span style={{
+              fontSize: '0.65rem', fontWeight: view === v ? '700' : '500',
+              color: view === v ? brandColor : '#9B8B82',
+              fontFamily: 'var(--font-sans)',
+              letterSpacing: '0.02em',
+            }}>{label}</span>
+            {view === v && (
+              <span style={{
+                position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom) + 0px)',
+                width: '4px', height: '4px', borderRadius: '50%',
+                background: brandColor,
+              }} />
+            )}
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

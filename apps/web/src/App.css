@@ -1,1 +1,13 @@
 
+
+
+/* Bottom nav — mobile only */
+.bottom-nav {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none !important;
+  }
+}

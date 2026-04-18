@@ -132,13 +132,22 @@ serve(async (req) => {
       return true;
     });
 
-    // 9. Get last 3 weeks of recipe history to avoid repeats
+    // 9. Get favorites for this user
+    const { data: favData } = await supabase
+      .from("recipe_favorites")
+      .select("recipe_id")
+      .eq("user_id", family.user_id);
+    const favoriteIds = new Set<string>((favData || []).map((f: any) => f.recipe_id));
+
+    // Get last 3 weeks of recipe history (2 weeks for favorites, 3 for others)
     const threeWeeksAgo = new Date();
     threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
     const { data: recentMenus } = await supabase
       .from("weekly_menus")
-      .select("menu_data")
+      .select("menu_data, week_start_date")
       .eq("family_id", family_id)
       .gte("week_start_date", threeWeeksAgo.toISOString().split("T")[0])
       .order("week_start_date", { ascending: false })
@@ -146,11 +155,16 @@ serve(async (req) => {
 
     const recentRecipeIds = new Set<string>();
     (recentMenus || []).forEach(menu => {
+      const menuDate = new Date(menu.week_start_date);
+      const isTwoWeekWindow = menuDate >= twoWeeksAgo;
       const days = menu.menu_data?.days || {};
       Object.values(days).forEach((day: any) => {
-        if (day.breakfast) recentRecipeIds.add(day.breakfast);
-        if (day.lunch) recentRecipeIds.add(day.lunch);
-        if (day.dinner) recentRecipeIds.add(day.dinner);
+        ['breakfast', 'lunch', 'dinner'].forEach(meal => {
+          const recipeId = day[meal];
+          if (!recipeId) return;
+          if (favoriteIds.has(recipeId) && isTwoWeekWindow) recentRecipeIds.add(recipeId);
+          if (!favoriteIds.has(recipeId)) recentRecipeIds.add(recipeId);
+        });
       });
     });
 
@@ -185,6 +199,7 @@ serve(async (req) => {
       complexity: r.complexity,
       cuisine: r.cuisine_tags,
       recent: recentRecipeIds.has(r.id),
+      favorite: favoriteIds.has(r.id),
     }));
 
     const prompt = `You are a meal planning assistant. Generate a weekly meal plan for a family.
@@ -223,9 +238,11 @@ INSTRUCTIONS:
 1. Create a meal plan for the week starting ${week_start_date}${feedback ? `\n\nUSER FEEDBACK FOR THIS REGENERATION: ${feedback}\nPlease take this feedback into account when selecting recipes.` : ''}
 2. Only use recipes from the AVAILABLE RECIPES list
 3. Prefer recipes NOT marked as "recent: true" to avoid repetition
-4. Match meal_type appropriately (breakfast recipes for breakfast slots, etc)
-5. Consider family preferences for cuisine and complexity
-6. Return ONLY valid JSON, no prose
+4. Prioritize recipes marked as "favorite: true" — these are the user's favorites and should appear more often when not recent
+5. Match meal_type appropriately (breakfast recipes for breakfast slots, etc)
+6. Consider family preferences for cuisine and complexity
+7. Return ONLY valid JSON, no prose
+
 
 Return this exact JSON structure:
 {

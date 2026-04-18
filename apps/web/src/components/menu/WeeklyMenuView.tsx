@@ -41,7 +41,6 @@ interface WeeklyMenu {
   menu_data: MenuData
 }
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onWeekChange, onRegenerate }: Props) {

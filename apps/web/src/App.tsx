@@ -462,9 +462,6 @@ export default function App() {
   if (appMode === 'creator' && !creatorTenantId) {
     return <CreatorOnboarding
       user={user}
-      onComplete={(tenantId) => {
-        setCreatorTenantId(tenantId)
-      }}
     />
   }
 

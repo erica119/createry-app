@@ -4,7 +4,7 @@ import type { User } from '@supabase/supabase-js'
 
 interface Props {
   user: User
-  onComplete: (tenantId: string) => void
+  onComplete?: (tenantId: string) => void
 }
 
 const PCLA_VERSION = '2025-07-01'

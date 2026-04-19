@@ -181,6 +181,17 @@ export default function ProfileSettings({ user, familyId, tenantId, isCreator = 
           {sectionBtn('Weekly Schedule', 'schedule', '📅')}
           {sectionBtn('Meal Preferences', 'preferences', '❤️')}
           {sectionBtn('Notifications', 'notifications', '🔔')}
+          {isCreator && (
+            <a
+              href="https://billing.stripe.com/p/login/aFa9AU7GkaUJbPr7VM1RC00"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', border: '1.5px solid #E8D5B7', borderRadius: '12px', padding: '1rem 1.25rem', textDecoration: 'none', color: '#2C1810', fontFamily: 'var(--font-sans)', fontWeight: '600', fontSize: '1rem' }}
+            >
+              <span>💳 Manage Plan and Billing</span>
+              <span style={{ color: '#9B8B82' }}>→</span>
+            </a>
+          )}
 
           {/* Delete Account */}
           {!isCreator && (

@@ -47,6 +47,10 @@ Deno.serve(async (req) => {
     if (creator_id && tenant_id && session.mode === 'subscription') {
       const subscriptionId = session.subscription as string
       const customerId = session.customer as string
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const trialEnd = stripeSubscription.trial_end
+        ? new Date(stripeSubscription.trial_end * 1000).toISOString()
+        : null
       const { error } = await supabase.from('creator_subscriptions').upsert({
         creator_id,
         tenant_id,
@@ -54,6 +58,7 @@ Deno.serve(async (req) => {
         stripe_subscription_id: subscriptionId,
         status: 'trialing',
         plan: plan || 'monthly',
+        trial_ends_at: trialEnd,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'creator_id' })
       console.log('Creator subscription upsert error:', JSON.stringify(error))

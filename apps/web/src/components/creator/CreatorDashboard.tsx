@@ -1516,7 +1516,6 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             </div>
           )
         })()}
-
         {view === 'settings' && familyId && (
           <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} isCreator={true} />
         )}

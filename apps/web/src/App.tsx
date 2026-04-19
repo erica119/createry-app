@@ -48,6 +48,7 @@ export default function App() {
     return null
   })
   const [tenantLoading, setTenantLoading] = useState(true)
+  const [familyTenantId, setFamilyTenantId] = useState<string | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
@@ -174,6 +175,23 @@ export default function App() {
       }
     }
 
+    // Handle return from Stripe creator subscription checkout
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('subscription') === 'success') {
+      window.history.replaceState({}, '', '/')
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tenant_id')
+        .eq('user_id', user!.id)
+        .eq('role', 'creator')
+        .maybeSingle()
+      if (profile?.tenant_id) {
+        setCreatorTenantId(profile.tenant_id)
+        setAppMode('creator')
+        return
+      }
+    }
+
     // Check family profile for regular user
     const { data } = await supabase
       .from('family_profiles')
@@ -182,6 +200,7 @@ export default function App() {
       .maybeSingle()
     if (data?.id) {
       setFamilyId(data.id)
+      setFamilyTenantId(data.tenant_id)
       setAppMode('user')
       setView('dashboard')
       // Use the tenant from their family profile, not the URL
@@ -472,7 +491,7 @@ export default function App() {
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <RecipeImport
           user={user}
-          tenantId={tenant?.id || FALLBACK_TENANT_ID}
+          tenantId={familyTenantId || tenant?.id || FALLBACK_TENANT_ID}
           onComplete={() => { setShowRecipeImport(false); fetchRecipes() }}
           onCancel={() => setShowRecipeImport(false)}
         />

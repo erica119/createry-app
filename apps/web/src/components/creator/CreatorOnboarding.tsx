@@ -22,6 +22,9 @@ export default function CreatorOnboarding({ user, onComplete }: Props) {
   const [pclaError, setPclaError] = useState(false)
   const [aiAccepted, setAiAccepted] = useState(false)
   const [aiError, setAiError] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly')
+  const [subscribing, setSubscribing] = useState(false)
+  const [subscribeError, setSubscribeError] = useState<string | null>(null)
 
   const handleSubdomain = (val: string) => {
     setSubdomain(val.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-'))
@@ -93,7 +96,36 @@ export default function CreatorOnboarding({ user, onComplete }: Props) {
     await supabase.from('tenants').update({
       creator_ai_consent_acknowledged_at: new Date().toISOString(),
     }).eq('id', tenantId)
-    onComplete(tenantId)
+    setStep(3)
+  }
+
+  const handleSubscribe = async () => {
+    if (!tenantId || !user) return
+    setSubscribing(true)
+    setSubscribeError(null)
+    try {
+      const MONTHLY_PRICE = 'price_1TNdqeJzNLT19Phao9z7oH4u'
+      const ANNUAL_PRICE = 'price_1TNdwNJzNLT19PhaZF15La1v'
+      const price_id = selectedPlan === 'monthly' ? MONTHLY_PRICE : ANNUAL_PRICE
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/creator-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ price_id, creator_id: user.id, tenant_id: tenantId }),
+      })
+      const { url, error } = await res.json()
+      if (error) throw new Error(error)
+      if (!url) throw new Error('No checkout URL returned')
+      window.location.href = url
+    } catch (err: any) {
+      setSubscribeError(err.message)
+      setSubscribing(false)
+    }
   }
 
   const inputStyle = {
@@ -118,10 +150,10 @@ export default function CreatorOnboarding({ user, onComplete }: Props) {
             Set up your creator account
           </h1>
           <p style={{ color: '#6B5C52', margin: '0 0 1rem', fontSize: '0.95rem' }}>
-            Step {step + 1} of 3 — {['Brand Setup', 'Content License Agreement', 'AI Disclosure'][step]}
+            Step {step + 1} of 4 — {['Brand Setup', 'Content License Agreement', 'AI Disclosure', 'Choose Your Plan'][step]}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-            {[0,1,2].map(i => (
+            {[0,1,2,3].map(i => (
               <div key={i} style={{ width: i === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: i <= step ? '#C4622D' : '#E8D5B7', transition: 'all 0.3s ease' }} />
             ))}
           </div>
@@ -205,6 +237,56 @@ export default function CreatorOnboarding({ user, onComplete }: Props) {
                 Accept and continue →
               </button>
               <button onClick={() => setStep(0)} style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.25rem' }}>
+                Back
+              </button>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1.3rem' }}>Choose your plan</h2>
+              <p style={{ color: '#6B5C52', fontSize: '0.875rem', margin: '0 0 1.5rem', lineHeight: 1.6 }}>Start with a 7-day free trial. Cancel anytime.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div
+                  onClick={() => setSelectedPlan('monthly')}
+                  style={{ border: selectedPlan === 'monthly' ? '2px solid #C4622D' : '2px solid #E8D5B7', borderRadius: '12px', padding: '1.25rem 1.5rem', cursor: 'pointer', background: selectedPlan === 'monthly' ? '#FFF9F5' : 'white', transition: 'all 0.2s' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ margin: '0 0 0.25rem', fontWeight: '700', color: '#2C1810', fontSize: '1rem' }}>Monthly</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#6B5C52' }}>Flexible, cancel anytime</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#2C1810', fontWeight: '700' }}>$199</p>
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#9B8B82' }}>per month</p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setSelectedPlan('annual')}
+                  style={{ border: selectedPlan === 'annual' ? '2px solid #C4622D' : '2px solid #E8D5B7', borderRadius: '12px', padding: '1.25rem 1.5rem', cursor: 'pointer', background: selectedPlan === 'annual' ? '#FFF9F5' : 'white', transition: 'all 0.2s', position: 'relative' }}
+                >
+                  <div style={{ position: 'absolute', top: '-10px', right: '1rem', background: '#16a34a', color: 'white', fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px', letterSpacing: '0.04em' }}>SAVE 16%</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ margin: '0 0 0.25rem', fontWeight: '700', color: '#2C1810', fontSize: '1rem' }}>Annual</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#6B5C52' }}>2 months free vs monthly</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#2C1810', fontWeight: '700' }}>$1,999</p>
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#9B8B82' }}>per year</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: '#9B8B82', textAlign: 'center', margin: '0 0 1.25rem', lineHeight: 1.5 }}>
+                🔒 Secure checkout via Stripe · 7-day free trial · No charge today
+              </p>
+              {subscribeError && <p style={{ color: '#dc2626', fontSize: '0.82rem', margin: '0 0 1rem' }}>{subscribeError}</p>}
+              <button onClick={handleSubscribe} disabled={subscribing} style={{ width: '100%', background: '#C4622D', color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: subscribing ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: subscribing ? 0.7 : 1 }}>
+                {subscribing ? 'Redirecting to checkout...' : 'Start free trial →'}
+              </button>
+              <button onClick={() => setStep(2)} style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.25rem' }}>
                 Back
               </button>
             </div>

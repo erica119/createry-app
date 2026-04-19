@@ -690,25 +690,6 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {/* OVERVIEW */}
         {view === 'overview' && (
           <>
-            {/* ── Quick stats ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
-                <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>in your library</p>
-              </div>
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Users</p>
-                <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{homeActiveUsers}</p>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>subscribers with meal plans</p>
-              </div>
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Menus This Week</p>
-                <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{homeMenusThisWeek}</p>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>generated this week</p>
-              </div>
-            </div>
-
             {/* ── Creator's own meal plan status ── */}
             {!creatorMenuId ? (
               <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -824,8 +805,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
               {[
                 { label: 'Recipes', value: recipes.length, icon: '📖' },
-                { label: 'Subdomain', value: tenant?.subdomain ? `${tenant.subdomain}.plate.app` : '—', icon: '🌐' },
-
+                { label: 'Active Users', value: homeActiveUsers, icon: '👥' },
+                { label: 'Menus This Week', value: homeMenusThisWeek, icon: '📅' },
               ].map(stat => (
                 <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
@@ -834,7 +815,6 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 </div>
               ))}
             </div>
-
             {/* Quick actions */}
             <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.1rem' }}>Quick actions</h3>

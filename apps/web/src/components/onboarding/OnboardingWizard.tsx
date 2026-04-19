@@ -6,6 +6,7 @@ import StepDietaryConstraints from './StepDietaryConstraints'
 import StepWeeklySchedule from './StepWeeklySchedule'
 import StepGrocerySchedule from './StepGrocerySchedule'
 import StepMealPreferences from './StepMealPreferences'
+import SubscriptionPlanSelector from '../shared/SubscriptionPlanSelector'
 
 interface Props {
   user: User
@@ -15,7 +16,7 @@ interface Props {
   brandColor?: string
 }
 
-const STEPS = ['Family Size', 'Dietary Restrictions', 'Weekly Schedule', 'Grocery Schedule', 'Meal Preferences', 'AI Disclosure']
+const STEPS = ['Family Size', 'Dietary Restrictions', 'Weekly Schedule', 'Grocery Schedule', 'Meal Preferences', 'AI Disclosure', 'Choose Your Plan']
 
 export default function OnboardingWizard({ user, tenantId, onComplete }: Props) {
   const [currentStep, setCurrentStep] = useState(0)
@@ -54,7 +55,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
       ai_consent_acknowledged_at: new Date().toISOString(),
     })
     if (upsertError) console.error('user_profiles insert error:', upsertError)
-    onComplete()
+    setCurrentStep(6)
   }
 
   const handleNext = (newFamilyId?: string) => {
@@ -123,6 +124,23 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           )}
           {currentStep === 4 && familyId && (
             <StepMealPreferences familyId={familyId} tenantId={tenantId} onNext={() => handleNext()} onBack={handleBack} />
+          )}
+          {currentStep === 6 && (
+            <div>
+              <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>🥗</div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--espresso)', textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.4rem' }}>
+                Choose your plan
+              </h2>
+              <p style={{ color: 'var(--text-light)', textAlign: 'center', margin: '0 0 1.5rem', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                Start with a free 7-day trial. Cancel anytime.
+              </p>
+              <SubscriptionPlanSelector
+                userId={user.id}
+                tenantId={tenantId}
+                tenantName=""
+                onSuccess={onComplete}
+              />
+            </div>
           )}
           {currentStep === 5 && (
             <div>

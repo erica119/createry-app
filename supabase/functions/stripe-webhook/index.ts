@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
     return new Response(`Webhook error: ${err.message}`, { status: 400 })
   }
   console.log('Webhook event type:', event.type)
+
   if (event.type === 'account.updated') {
     const account = event.data.object as Stripe.Account
     if (account.charges_enabled && account.details_submitted) {
@@ -38,6 +39,7 @@ Deno.serve(async (req) => {
         .eq('stripe_account_id', account.id)
     }
   }
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     const { recipe_pack_id, user_id, tenant_id, creator_id, plan } = session.metadata || {}
@@ -64,6 +66,27 @@ Deno.serve(async (req) => {
       console.log('Creator subscription upsert error:', JSON.stringify(error))
     }
 
+    // User subscription checkout
+    if (user_id && tenant_id && !creator_id && !recipe_pack_id && session.mode === 'subscription') {
+      const subscriptionId = session.subscription as string
+      const customerId = session.customer as string
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const trialEnd = stripeSubscription.trial_end
+        ? new Date(stripeSubscription.trial_end * 1000).toISOString()
+        : null
+      const { error } = await supabase.from('user_subscriptions').upsert({
+        user_id,
+        tenant_id,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        status: 'trialing',
+        plan: plan || 'monthly',
+        trial_ends_at: trialEnd,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+      console.log('User subscription upsert error:', JSON.stringify(error))
+    }
+
     // Recipe pack purchase
     if (recipe_pack_id && user_id && tenant_id) {
       const { error } = await supabase.from('user_purchases').upsert({
@@ -80,29 +103,56 @@ Deno.serve(async (req) => {
       console.log('Upsert error:', JSON.stringify(error))
     }
   }
-  // Handle subscription events
+
+  // Handle subscription lifecycle events — route to correct table via metadata
   if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object as Stripe.Subscription
     const status = event.type === 'customer.subscription.deleted' ? 'cancelled' : subscription.status
-    const { error } = await supabase
-      .from('creator_subscriptions')
-      .update({
-        status,
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('stripe_subscription_id', subscription.id)
-    if (error) console.error('Subscription update error:', error)
+    const meta = subscription.metadata || {}
+
+    if (meta.creator_id) {
+      // Creator subscription
+      const { error } = await supabase
+        .from('creator_subscriptions')
+        .update({
+          status,
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stripe_subscription_id', subscription.id)
+      if (error) console.error('Creator subscription update error:', error)
+    } else if (meta.user_id) {
+      // User subscription
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status,
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stripe_subscription_id', subscription.id)
+      if (error) console.error('User subscription update error:', error)
+    }
   }
 
   if (event.type === 'invoice.payment_failed') {
     const invoice = event.data.object as Stripe.Invoice
     const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
     if (subscriptionId) {
-      await supabase
-        .from('creator_subscriptions')
-        .update({ status: 'past_due', updated_at: new Date().toISOString() })
-        .eq('stripe_subscription_id', subscriptionId)
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const meta = stripeSubscription.metadata || {}
+
+      if (meta.creator_id) {
+        await supabase
+          .from('creator_subscriptions')
+          .update({ status: 'past_due', updated_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscriptionId)
+      } else if (meta.user_id) {
+        await supabase
+          .from('user_subscriptions')
+          .update({ status: 'past_due', updated_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscriptionId)
+      }
     }
   }
 
@@ -110,10 +160,20 @@ Deno.serve(async (req) => {
     const invoice = event.data.object as Stripe.Invoice
     const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
     if (subscriptionId) {
-      await supabase
-        .from('creator_subscriptions')
-        .update({ status: 'active', updated_at: new Date().toISOString() })
-        .eq('stripe_subscription_id', subscriptionId)
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const meta = stripeSubscription.metadata || {}
+
+      if (meta.creator_id) {
+        await supabase
+          .from('creator_subscriptions')
+          .update({ status: 'active', updated_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscriptionId)
+      } else if (meta.user_id) {
+        await supabase
+          .from('user_subscriptions')
+          .update({ status: 'active', updated_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscriptionId)
+      }
     }
   }
 

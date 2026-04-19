@@ -43,6 +43,7 @@ export default function ProfileSettings({ user, familyId, tenantId, isCreator = 
   const [pushLoading, setPushLoading] = useState(false)
   const [pushError, setPushError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [userSub, setUserSub] = useState<{ status: string, plan: string } | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -52,6 +53,12 @@ export default function ProfileSettings({ user, familyId, tenantId, isCreator = 
   useEffect(() => {
     setPushSupported('serviceWorker' in navigator && 'PushManager' in window)
     checkPushStatus()
+    supabase
+      .from('user_subscriptions')
+      .select('status, plan')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setUserSub(data) })
   }, [])
 
   async function checkPushStatus() {
@@ -190,6 +197,27 @@ export default function ProfileSettings({ user, familyId, tenantId, isCreator = 
             >
               <span>💳 Manage Plan and Billing</span>
               <span style={{ color: '#9B8B82' }}>→</span>
+            </a>
+          )}
+
+          {/* Billing — non-creator users */}
+          {!isCreator && userSub && (
+            <a
+              href="https://billing.stripe.com/p/login/aFa9AU7GkaUJbPr7VM1RC00"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '1rem 1.25rem', borderRadius: '12px',
+                border: '1.5px solid #E8D5B7',
+                background: 'white',
+                cursor: 'pointer', width: '100%', textDecoration: 'none',
+                fontFamily: 'var(--font-sans)', transition: 'all 0.15s ease',
+              }}
+            >
+              <span style={{ fontSize: '1.25rem' }}>💳</span>
+              <span style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.95rem' }}>Manage Plan and Billing</span>
+              <span style={{ marginLeft: 'auto', color: '#C8BAB2' }}>→</span>
             </a>
           )}
 

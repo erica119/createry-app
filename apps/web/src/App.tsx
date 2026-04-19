@@ -17,6 +17,7 @@ import CreatorDashboard from './components/creator/CreatorDashboard'
 import ProfileSettings from './components/profile/ProfileSettings'
 import OperatorDashboard from './components/creator/OperatorDashboard'
 import SupportModal from './components/shared/SupportModal'
+import SubscriptionPlanSelector from './components/shared/SubscriptionPlanSelector'
 
 const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
@@ -58,6 +59,7 @@ export default function App() {
   const navRef = useRef<HTMLDivElement>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
+  const [userSubStatus, setUserSubStatus] = useState<string | null>(null)
   const [recipePacks, setRecipePacks] = useState<Record<string, { id: string; name: string; price_cents: number }>>({})
   // const [menuHistory, setMenuHistory] = useState<{ id: string; week_start_date: string; status: string }[]>([])
   const [menuData, setMenuData] = useState<any>(null)
@@ -116,6 +118,10 @@ export default function App() {
         fetchFavorites()
       }
       setTimeout(() => setPurchaseSuccess(false), 6000)
+    }
+    if (params.get('user_subscription') === 'success') {
+      window.history.replaceState({}, '', '/')
+      checkOnboarding()
     }
   }, [user, tenant])
 
@@ -201,6 +207,24 @@ export default function App() {
     if (data?.id) {
       setFamilyId(data.id)
       setFamilyTenantId(data.tenant_id)
+
+      // Check user subscription status
+      const { data: subData } = await supabase
+        .from('user_subscriptions')
+        .select('status')
+        .eq('user_id', user!.id)
+        .maybeSingle()
+
+      const validStatuses = ['trialing', 'active', 'grandfathered']
+      if (!subData || !validStatuses.includes(subData.status)) {
+        // No valid subscription — send to plan selection
+        setUserSubStatus(subData?.status || 'none')
+        setAppMode('user')
+        setView('dashboard')
+        return
+      }
+
+      setUserSubStatus(subData.status)
       setAppMode('user')
       setView('dashboard')
       // Use the tenant from their family profile, not the URL
@@ -479,6 +503,42 @@ export default function App() {
           brandName={activeTenant?.brand_name}
           brandColor={activeTenant?.primary_color}
         />
+      </div>
+    )
+  }
+
+  // User has completed onboarding but has no valid subscription
+  const validStatuses = ['trialing', 'active', 'grandfathered']
+  if (familyId && userSubStatus !== null && !validStatuses.includes(userSubStatus)) {
+    return (
+      <div style={{ fontFamily: 'var(--font-sans)' }}>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
+          <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
+        </div>
+        <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ width: '100%', maxWidth: '480px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🥗</div>
+              <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.5rem' }}>
+                {userSubStatus === 'past_due' ? 'Payment issue' : 'Choose your plan'}
+              </h1>
+              <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.95rem' }}>
+                {userSubStatus === 'past_due'
+                  ? 'There was a problem with your payment. Please update your billing info to continue.'
+                  : 'Start with a free 7-day trial. Cancel anytime.'}
+              </p>
+            </div>
+            <div className="card" style={{ padding: '2rem' }}>
+              <SubscriptionPlanSelector
+                userId={user!.id}
+                tenantId={tenant?.id || FALLBACK_TENANT_ID}
+                tenantName={tenant?.brand_name || 'Plate'}
+                onSuccess={() => checkOnboarding()}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

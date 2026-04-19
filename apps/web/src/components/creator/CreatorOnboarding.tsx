@@ -4,12 +4,11 @@ import type { User } from '@supabase/supabase-js'
 
 interface Props {
   user: User
-  onComplete?: (tenantId: string) => void
 }
 
 const PCLA_VERSION = '2025-07-01'
 
-export default function CreatorOnboarding({ user, onComplete }: Props) {
+export default function CreatorOnboarding({ user }: Props) {
   const [step, setStep] = useState(0)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [brandName, setBrandName] = useState('')

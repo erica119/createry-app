@@ -132,13 +132,15 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         </div>
         <div className="shopping-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {list.instacart_cart_url ? (
+            // Instacart-approved CTA: Dark theme spec (exact text, colors, sizing required for IDP review)
             <a
               href={list.instacart_cart_url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ background: '#0AAD0A', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', fontFamily: 'sans-serif' }}
+              style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '23px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif' }}
             >
-              🛒 Order on Instacart
+              <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />
+              Shop on Instacart
             </a>
           ) : (
             <button

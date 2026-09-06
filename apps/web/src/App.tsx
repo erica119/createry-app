@@ -21,6 +21,14 @@ import SubscriptionPlanSelector from './components/shared/SubscriptionPlanSelect
 
 const FALLBACK_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
+// Sunday-anchored week start (matches how weekly_menus.week_start_date is stored),
+// formatted as YYYY-MM-DD.
+function getWeekStartString(from: Date = new Date()): string {
+  const d = new Date(from)
+  d.setDate(d.getDate() - d.getDay())
+  return d.toISOString().split('T')[0]
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
@@ -31,6 +39,8 @@ export default function App() {
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
   const [menuRefreshKey, setMenuRefreshKey] = useState(0)
+  const [nextWeekMenuId, setNextWeekMenuId] = useState<string | null>(null)
+  const [nextWeekStart, setNextWeekStart] = useState<string | null>(null)
   const [menuError, setMenuError] = useState<string | null>(null)
   const [view, setView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings' | 'recipes'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
@@ -323,12 +333,12 @@ export default function App() {
   }
 
   const fetchCurrentMenu = async (fid: string) => {
+    const currentWeekStart = getWeekStartString()
     const { data } = await supabase
       .from('weekly_menus')
       .select('id, menu_data, status')
       .eq('family_id', fid)
-      .order('week_start_date', { ascending: false })
-      .limit(1)
+      .eq('week_start_date', currentWeekStart)
       .maybeSingle()
     if (data?.id) {
       setCurrentMenuId(data.id)
@@ -342,20 +352,42 @@ export default function App() {
         .maybeSingle()
       setShoppingListBuilt(!!shoppingData?.id)
       setShoppingComplete(shoppingData?.status === 'complete')
+
+      // Current week is handled — see whether next week has already been planned ahead.
+      const nextWeekDate = new Date(currentWeekStart)
+      nextWeekDate.setDate(nextWeekDate.getDate() + 7)
+      const nextWeekStr = nextWeekDate.toISOString().split('T')[0]
+      setNextWeekStart(nextWeekStr)
+      const { data: nextWeekData } = await supabase
+        .from('weekly_menus')
+        .select('id')
+        .eq('family_id', fid)
+        .eq('week_start_date', nextWeekStr)
+        .maybeSingle()
+      setNextWeekMenuId(nextWeekData?.id || null)
+    } else {
+      // No menu exists for the current week yet. Rather than waiting on a manual
+      // click, generate it now that the user has actually logged in this week —
+      // this only spends AI compute on accounts that are actively using the app.
+      setCurrentMenuId(null)
+      setMenuData(null)
+      setCurrentMenuStatus(null)
+      setShoppingListBuilt(false)
+      setShoppingComplete(false)
+      setNextWeekMenuId(null)
+      setNextWeekStart(null)
+      generateMenu(undefined, undefined, true)
     }
   }
 
 
 
-  const generateMenu = async (feedback?: string) => {
+  const generateMenu = async (feedback?: string, weekStartDateOverride?: string, skipNavigate?: boolean) => {
     if (!familyId) return
     setGeneratingMenu(true)
     setMenuError(null)
     try {
-      const weekStartDate = new Date()
-      const day = weekStartDate.getDay()
-      weekStartDate.setDate(weekStartDate.getDate() - day)
-      const weekStr = weekStartDate.toISOString().split('T')[0]
+      const weekStr = weekStartDateOverride || getWeekStartString()
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-weekly-menu`,
         {
@@ -370,9 +402,16 @@ export default function App() {
       )
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Generation failed')
-      setCurrentMenuId(result.menu.id)
+      // Only reflect the freshly generated menu as "current" if it's for the
+      // current week — a "plan ahead" generation for next week shouldn't
+      // hijack what the dashboard is showing right now.
+      if (!weekStartDateOverride || weekStartDateOverride === getWeekStartString()) {
+        setCurrentMenuId(result.menu.id)
+      } else {
+        setNextWeekMenuId(result.menu.id)
+      }
       setMenuRefreshKey(k => k + 1)
-      setView('menu')
+      if (!skipNavigate) setView('menu')
     } catch (err: any) {
       setMenuError(err.message)
     } finally {
@@ -763,13 +802,15 @@ export default function App() {
               <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👩‍🍳</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>Let's get started</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Generate a personalized weekly meal plan from your recipes.</p>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>{generatingMenu ? "Building this week's menu…" : "Let's get started"}</h2>
+                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>{generatingMenu ? 'Personalizing your meal plan from your recipes. This only takes a moment.' : 'Generate a personalized weekly meal plan from your recipes.'}</p>
                   {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
                 </div>
-                <button onClick={() => generateMenu()} disabled={generatingMenu} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: generatingMenu ? 'not-allowed' : 'pointer', opacity: generatingMenu ? 0.7 : 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                  {generatingMenu ? 'Generating...' : '✨ Generate Menu'}
-                </button>
+                {!generatingMenu && (
+                  <button onClick={() => generateMenu()} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    {menuError ? '↺ Try Again' : '✨ Generate Menu'}
+                  </button>
+                )}
               </div>
             ) : currentMenuStatus !== 'approved' ? (
               <div style={{ background: '#FFF9F0', borderRadius: '16px', border: '1.5px solid var(--brand-color)', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -794,12 +835,23 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1px solid #86efac', padding: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: '2rem' }}>✅</span>
-                <div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>You're all set this week</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals!</p>
+              <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1px solid #86efac', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <span style={{ fontSize: '2rem' }}>✅</span>
+                  <div>
+                    <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>You're all set this week</h2>
+                    <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals!</p>
+                  </div>
                 </div>
+                {nextWeekMenuId ? (
+                  <button onClick={() => { setCurrentMenuId(nextWeekMenuId); setMenuRefreshKey(k => k + 1); setView('menu') }} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.25rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    Next week is planned →
+                  </button>
+                ) : (
+                  <button onClick={() => nextWeekStart && generateMenu(undefined, nextWeekStart, true)} disabled={generatingMenu || !nextWeekStart} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.25rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '600', cursor: generatingMenu ? 'not-allowed' : 'pointer', opacity: generatingMenu ? 0.7 : 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    {generatingMenu ? 'Planning...' : '📅 Plan Next Week'}
+                  </button>
+                )}
               </div>
             )}
 

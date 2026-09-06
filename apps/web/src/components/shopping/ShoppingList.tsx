@@ -131,12 +131,23 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           </p>
         </div>
         <div className="shopping-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            disabled
-            style={{ background: '#a0a0a0', color: '#e0e0e0', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'not-allowed', opacity: 0.7 }}
-          >
-            🛒 Instacart Shopping Coming Soon
-          </button>
+          {list.instacart_cart_url ? (
+            <a
+              href={list.instacart_cart_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ background: '#0AAD0A', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', fontFamily: 'sans-serif' }}
+            >
+              🛒 Order on Instacart
+            </a>
+          ) : (
+            <button
+              disabled
+              style={{ background: '#a0a0a0', color: '#e0e0e0', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'not-allowed', opacity: 0.7 }}
+            >
+              🛒 Instacart Unavailable
+            </button>
+          )}
           <button onClick={() => window.print()} style={{ background: "#C4622D", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
 
           <button

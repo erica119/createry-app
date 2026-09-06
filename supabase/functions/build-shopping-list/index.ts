@@ -6,8 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Instacart affiliate ID - replace with real ID when IDP key arrives
-const INSTACART_AFFILIATE_ID = Deno.env.get("INSTACART_AFFILIATE_ID") || "placeholder_affiliate_id";
+// Instacart Developer Platform (IDP) credentials
+const INSTACART_API_KEY = Deno.env.get("INSTACART_API_KEY");
+const INSTACART_ENV = Deno.env.get("INSTACART_ENV") || "production"; // "production" or "development"
+const INSTACART_BASE_URL = INSTACART_ENV === "development"
+  ? "https://connect.dev.instacart.tools"
+  : "https://connect.instacart.com";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -120,9 +124,8 @@ serve(async (req) => {
         aisle: guessAisle(item.name),
       }));
 
-    // 6. Build Instacart URL (placeholder format)
-    // When real IDP key arrives, replace with actual API call
-    const instacartUrl = buildInstacartUrl(items, INSTACART_AFFILIATE_ID);
+    // 6. Build Instacart shopping list link via the Instacart Developer Platform API
+    const instacartUrl = await buildInstacartUrl(items, menu.week_start_date);
 
     // 7. Fetch grocery schedule
     const { data: grocerySchedule } = await supabase
@@ -176,18 +179,45 @@ serve(async (req) => {
   }
 });
 
-function buildInstacartUrl(items: any[], affiliateId: string): string {
-  // Instacart shoppable recipe URL format
-  // When IDP key arrives, this becomes a proper API call
-  // For now, we build a search URL with the main ingredients
-  const topItems = items
-    .filter(i => ['Meat & Seafood', 'Produce', 'Dairy & Eggs'].includes(i.aisle))
-    .slice(0, 10)
-    .map(i => encodeURIComponent(i.name))
-    .join(',');
+async function buildInstacartUrl(items: any[], weekStartDate: string): Promise<string | null> {
+  if (!INSTACART_API_KEY) {
+    console.error("INSTACART_API_KEY is not set; skipping Instacart link generation");
+    return null;
+  }
 
-  // Placeholder URL - swap for real IDP endpoint when key arrives
-  return `https://www.instacart.com/store/account/create?affiliate_id=${affiliateId}&items=${topItems}`;
+  const lineItems = items.map(item => ({
+    name: item.name,
+    quantity: item.quantity > 0 ? item.quantity : 1,
+    unit: item.unit || "each",
+  }));
+
+  try {
+    const response = await fetch(`${INSTACART_BASE_URL}/idp/v1/products/products_link`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${INSTACART_API_KEY}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        title: `Plate Shopping List - Week of ${weekStartDate}`,
+        link_type: "shopping_list",
+        line_items: lineItems,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Instacart API error (${response.status}): ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.products_link_url ?? null;
+  } catch (err) {
+    console.error("Failed to build Instacart link:", err);
+    return null;
+  }
 }
 
 function guessAisle(name: string): string {

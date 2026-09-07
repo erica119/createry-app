@@ -200,7 +200,7 @@ async function buildInstacartUrl(items: any[], weekStartDate: string): Promise<s
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        title: `Plate Shopping List - Week of ${weekStartDate}`,
+        title: `Createry Shopping List - Week of ${weekStartDate}`,
         link_type: "shopping_list",
         line_items: lineItems,
       }),

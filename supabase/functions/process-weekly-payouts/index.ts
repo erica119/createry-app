@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
             amount: creatorCents,
             currency: 'usd',
             destination: data.stripe_account_id,
-            description: `Plate payout for ${data.brand_name} — ${periodStartStr} to ${periodEndStr}`,
+            description: `Createry payout for ${data.brand_name} — ${periodStartStr} to ${periodEndStr}`,
           })
           stripeTransferId = transfer.id
           status = 'paid'

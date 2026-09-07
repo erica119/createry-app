@@ -264,7 +264,7 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
       <div ref={menuRef} style={{ position: 'relative' }}>
         <div className="op-nav-bar" style={{ padding: '0 2rem', background: '#2C1810', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', whiteSpace: 'nowrap' }}>
-            🍽️ Plate <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Operator</span>
+            🍽️ Createry <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Operator</span>
             <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {{ overview: 'Overview', revenue: 'Revenue', tenants: 'Tenants', payouts: 'Payouts', scraper: 'Scraper' }[view]}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -457,7 +457,7 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
                       <div key={t.id} onClick={() => setSelectedTenant(t)} style={{ background: 'white', borderRadius: '16px', padding: '1.25rem 1.5rem', border: '1px solid #E8D5B7', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr auto', alignItems: 'center', gap: '1rem', cursor: 'pointer', transition: 'box-shadow 0.15s' }}>
                         <div>
                           <div style={{ fontWeight: '700', color: '#2C1810', fontSize: '1rem', marginBottom: '0.2rem' }}>{t.brand_name}</div>
-                          <div style={{ color: '#9B8B82', fontSize: '0.8rem' }}>{t.subdomain}.plate.app</div>
+                          <div style={{ color: '#9B8B82', fontSize: '0.8rem' }}>{t.subdomain}.createry.app</div>
                           <div style={{ marginTop: '0.4rem' }}>
                             <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600', background: t.subscription_status === 'trialing' ? '#FEF9C3' : '#F0FDF4', color: t.subscription_status === 'trialing' ? '#854D0E' : '#16a34a' }}>
                               {t.subscription_status}
@@ -501,7 +501,7 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div>
                       <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>{selectedTenant.brand_name}</h2>
-                      <div style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{selectedTenant.subdomain}.plate.app · ID: {selectedTenant.id}</div>
+                      <div style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{selectedTenant.subdomain}.createry.app · ID: {selectedTenant.id}</div>
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600', background: selectedTenant.subscription_status === 'trialing' ? '#FEF9C3' : '#F0FDF4', color: selectedTenant.subscription_status === 'trialing' ? '#854D0E' : '#16a34a' }}>
                           {selectedTenant.subscription_status}

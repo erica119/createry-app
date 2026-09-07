@@ -13,7 +13,7 @@ const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
 const DEFAULT_TENANT: TenantConfig = {
   id: TEST_TENANT_ID,
-  brand_name: 'Plate',
+  brand_name: 'Createry',
   primary_color: '#C4622D',
   tagline: 'Personalized meal plans for your family.',
   logo_url: null,
@@ -47,7 +47,7 @@ export async function resolveTenant(): Promise<TenantConfig> {
 
   return {
     id: data.id,
-    brand_name: data.brand_name || 'Plate',
+    brand_name: data.brand_name || 'Createry',
     primary_color: data.primary_color || '#C4622D',
     tagline: data.tagline,
     logo_url: data.logo_url,

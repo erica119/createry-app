@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
         to: 'erica@momentummasteryhq.com',
-        subject: `[Plate Support] ${subject}`,
+        subject: `[Createry Support] ${subject}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2C1810;">New Support Request</h2>

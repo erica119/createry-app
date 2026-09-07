@@ -5,7 +5,7 @@ self.addEventListener('push', function(event) {
     body: data.body,
     icon: '/favicon.svg',
     badge: '/favicon.svg',
-    tag: data.tag || 'plate-notification',
+    tag: data.tag || 'createry-notification',
     renotify: true,
     data: { url: data.url || '/' },
   };

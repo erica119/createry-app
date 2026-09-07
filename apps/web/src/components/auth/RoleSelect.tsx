@@ -16,7 +16,7 @@ export default function RoleSelect({ user, onSelectUser, onSelectCreator }: Prop
             Welcome, {user.email?.split('@')[0]}!
           </h1>
           <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.95rem' }}>
-            How will you be using Plate?
+            How will you be using Createry?
           </p>
         </div>
 

@@ -151,7 +151,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
                 {[
                   "Your family dietary needs and preferences are used to filter and select from the recipe library",
                   "An AI system builds a personalized weekly plan from that filtered set",
-                  "Your personal information stays within Plate systems and is not sent to external AI services",
+                  "Your personal information stays within Createry systems and is not sent to external AI services",
                   "You can regenerate, swap, or modify any meal at any time",
                   "AI-generated plans are not medical or nutritional advice",
                 ].map((point, i) => (
@@ -170,7 +170,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
                   style={{ marginTop: '2px', flexShrink: 0, width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
                 />
                 <label htmlFor="ai-consent" style={{ fontSize: '0.82rem', color: '#4A3728', lineHeight: 1.5, cursor: 'pointer' }}>
-                  I understand that Plate uses AI to generate my weekly meal plans based on my household preferences, and that this is not a substitute for professional dietary or medical advice.
+                  I understand that Createry uses AI to generate my weekly meal plans based on my household preferences, and that this is not a substitute for professional dietary or medical advice.
                 </label>
               </div>
               {aiConsentError && (

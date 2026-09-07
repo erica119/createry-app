@@ -249,7 +249,7 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
   return (
     <div style={s.page}>
       <div style={s.header}>
-        <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Plate</span>
+        <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Createry</span>
         <button onClick={onCancel} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
       </div>
 

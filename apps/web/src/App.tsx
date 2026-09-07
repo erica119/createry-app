@@ -182,7 +182,7 @@ export default function App() {
       if (tenantData) {
         setTenant({
           id: tenantData.id,
-          brand_name: tenantData.brand_name || 'Plate',
+          brand_name: tenantData.brand_name || 'Createry',
           primary_color: tenantData.primary_color || '#C4622D',
           tagline: tenantData.tagline,
           logo_url: tenantData.logo_url,
@@ -247,7 +247,7 @@ export default function App() {
         if (tenantData) {
           const resolvedTenant = {
             id: tenantData.id,
-            brand_name: tenantData.brand_name || 'Plate',
+            brand_name: tenantData.brand_name || 'Createry',
             primary_color: tenantData.primary_color || '#C4622D',
             tagline: tenantData.tagline,
             logo_url: tenantData.logo_url,
@@ -532,7 +532,7 @@ export default function App() {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <OnboardingWizard
@@ -552,7 +552,7 @@ export default function App() {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -572,7 +572,7 @@ export default function App() {
               <SubscriptionPlanSelector
                 userId={user!.id}
                 tenantId={tenant?.id || FALLBACK_TENANT_ID}
-                tenantName={tenant?.brand_name || 'Plate'}
+                tenantName={tenant?.brand_name || 'Createry'}
                 onSuccess={() => checkOnboarding()}
               />
             </div>
@@ -599,7 +599,7 @@ export default function App() {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <RecipeForm
@@ -640,7 +640,7 @@ export default function App() {
       <div ref={navRef} style={{ position: 'relative' }}>
         <div className="nav-bar" style={{ padding: '0 2rem', background: brandColor, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
-            🍽️ {tenant?.brand_name || 'Plate'}
+            🍽️ {tenant?.brand_name || 'Createry'}
             <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {activeLabel}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -983,7 +983,7 @@ export default function App() {
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
 
       <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C4622D'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Plate</strong></span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Createry</strong></span>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <a href="/terms" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
           <a href="/privacy" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
@@ -1000,7 +1000,7 @@ export default function App() {
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
               <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>{unlockModal.pack.name}</h2>
               <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.875rem' }}>Unlock this recipe pack to access all premium recipes</p>
-              <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0.5rem 0 0', fontSize: '0.75rem', fontStyle: 'italic' }}>Recipes provided by Creator. Plate AI may include these recipes in your generated meal plans based on your preferences.</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0.5rem 0 0', fontSize: '0.75rem', fontStyle: 'italic' }}>Recipes provided by Creator. Createry AI may include these recipes in your generated meal plans based on your preferences.</p>
             </div>
             <div style={{ padding: '1.5rem 2rem' }}>
               <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>

@@ -169,10 +169,10 @@ export default function CreatorOnboarding({ user }: Props) {
               </div>
               <div>
                 <label style={labelStyle}>Subdomain *</label>
-                <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>Your app will live at <strong>{subdomain || 'yourname'}.plate.app</strong></p>
+                <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>Your app will live at <strong>{subdomain || 'yourname'}.createry.app</strong></p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <input type="text" value={subdomain} onChange={e => handleSubdomain(e.target.value)} placeholder="yourname" style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: '#6B5C52', fontWeight: '500', whiteSpace: 'nowrap' }}>.plate.app</span>
+                  <span style={{ color: '#6B5C52', fontWeight: '500', whiteSpace: 'nowrap' }}>.createry.app</span>
                 </div>
               </div>
               <div>
@@ -206,13 +206,13 @@ export default function CreatorOnboarding({ user }: Props) {
           {step === 1 && (
             <div>
               <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1.3rem' }}>Platform Content License Agreement</h2>
-              <p style={{ color: '#6B5C52', fontSize: '0.875rem', margin: '0 0 1.25rem', lineHeight: 1.6 }}>Before activating your creator dashboard, please review and accept the Platform Content License Agreement. This governs how your recipe content is hosted, displayed, and monetized on Plate.</p>
+              <p style={{ color: '#6B5C52', fontSize: '0.875rem', margin: '0 0 1.25rem', lineHeight: 1.6 }}>Before activating your creator dashboard, please review and accept the Platform Content License Agreement. This governs how your recipe content is hosted, displayed, and monetized on Createry.</p>
               <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {[
                   "You retain full ownership of all recipe content you upload",
-                  "Plate receives a limited license to host and display your content to your audience only",
+                  "Createry receives a limited license to host and display your content to your audience only",
                   "Your content will never be shared with other creator tenants or used to train AI models without your consent",
-                  "Plate takes a 20% platform fee on Recipe Pack sales — you receive 80% as Net Revenue",
+                  "Createry takes a 20% platform fee on Recipe Pack sales — you receive 80% as Net Revenue",
                   "Upon termination, you can export your content within 30 days",
                 ].map((point, i) => (
                   <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.5 }}>
@@ -294,14 +294,14 @@ export default function CreatorOnboarding({ user }: Props) {
           {step === 2 && (
             <div>
               <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1.3rem' }}>AI Features Disclosure</h2>
-              <p style={{ color: '#6B5C52', fontSize: '0.875rem', margin: '0 0 1.25rem', lineHeight: 1.6 }}>Plate uses AI to generate meal plans for your audience and to parse recipe URLs. Here is what you need to know.</p>
+              <p style={{ color: '#6B5C52', fontSize: '0.875rem', margin: '0 0 1.25rem', lineHeight: 1.6 }}>Createry uses AI to generate meal plans for your audience and to parse recipe URLs. Here is what you need to know.</p>
               <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {[
                   "AI-generated meal plans are created from your recipe library, filtered by each end user dietary constraints",
                   "End user personal data is not sent to external AI providers for meal plan generation",
                   "The recipe URL scraper uses Anthropic AI to extract and structure recipe data from web pages",
                   "You may not use the platform to generate content that violates applicable law or third-party IP rights",
-                  "Plate will not use your recipe content to train AI models without your written consent",
+                  "Createry will not use your recipe content to train AI models without your written consent",
                 ].map((point, i) => (
                   <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.5 }}>
                     <span style={{ color: '#C4622D', flexShrink: 0 }}>&#10003;</span>
@@ -312,7 +312,7 @@ export default function CreatorOnboarding({ user }: Props) {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', marginBottom: aiError ? '0.5rem' : '1.25rem' }}>
                 <input type="checkbox" id="ai-accept" checked={aiAccepted} onChange={e => { setAiAccepted(e.target.checked); setAiError(false) }} style={{ marginTop: '2px', flexShrink: 0, width: '16px', height: '16px', cursor: 'pointer', accentColor: '#C4622D' }} />
                 <label htmlFor="ai-accept" style={{ fontSize: '0.82rem', color: '#4A3728', lineHeight: 1.5, cursor: 'pointer' }}>
-                  I understand how Plate uses AI for meal plan generation and recipe parsing, and I agree to the AI usage terms described above.
+                  I understand how Createry uses AI for meal plan generation and recipe parsing, and I agree to the AI usage terms described above.
                 </label>
               </div>
               {aiError && <p style={{ color: '#dc2626', fontSize: '0.82rem', margin: '0 0 1rem' }}>Please accept the AI disclosure to continue.</p>}

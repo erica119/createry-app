@@ -510,7 +510,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
         <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#C4622D' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Plate'}</span>
+          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
           <button onClick={() => setShowRecipeForm(false)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>← Back</button>
         </div>
         <RecipeForm user={user} tenantId={tenantId} onSaved={() => { setShowRecipeForm(false); fetchRecipes() }} onCancel={() => setShowRecipeForm(false)} />
@@ -638,7 +638,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       <div style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔒</div>
         <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem' }}>Subscription ended</h2>
-        <p style={{ color: '#6B5C52', marginBottom: '1.5rem' }}>Your Plate creator subscription has ended. Reactivate to access your dashboard.</p>
+        <p style={{ color: '#6B5C52', marginBottom: '1.5rem' }}>Your Createry creator subscription has ended. Reactivate to access your dashboard.</p>
         <button onClick={() => setSubscription(null)} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '0.95rem', fontFamily: 'var(--font-sans)' }}>
           Reactivate Plan →
         </button>
@@ -658,7 +658,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             {logoUrl
               ? <img src={logoUrl} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }} />
               : <span>🍽️</span>}
-            {tenant?.brand_name || 'Plate'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
+            {tenant?.brand_name || 'Createry'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
             <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {TAB_LABELS[view]}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -1386,7 +1386,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Your subdomain</label>
                   <div style={{ padding: '0.75rem 1rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#F5EFE6', color: '#6B5C52', fontSize: '0.95rem' }}>
-                    {tenant?.subdomain}.plate.app
+                    {tenant?.subdomain}.createry.app
                   </div>
                   <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>Subdomain cannot be changed after setup.</p>
                 </div>
@@ -1507,7 +1507,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
       </div>
       <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${color}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Plate</strong></span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Createry</strong></span>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <a href="/terms" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
           <a href="/privacy" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>

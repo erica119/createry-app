@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props) {
-  const brandName = tenant?.brand_name || 'Plate'
+  const brandName = tenant?.brand_name || 'Createry'
   const brandColor = tenant?.primary_color || '#C4622D'
   const tagline = tenant?.tagline || 'Personalized weekly meal plans built from recipes you love. Shopping lists ready to go.'
   const isCreatorBranded = !!tenant && tenant.id !== 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'

@@ -74,7 +74,12 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
 
   const markShoppingComplete = async () => {
     if (!list) return
-    await supabase.from('grocery_lists').update({ status: 'complete' }).eq('id', list.id)
+    const { error } = await supabase.from('grocery_lists').update({ status: 'complete' }).eq('id', list.id)
+    if (error) {
+      console.error('Failed to mark shopping complete:', error)
+      setError('Could not save shopping status — please try again.')
+      return
+    }
     setList({ ...list, status: 'complete' })
     if (onShoppingComplete) onShoppingComplete()
   }
@@ -133,10 +138,13 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         <div className="shopping-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {list.instacart_cart_url ? (
             // Instacart-approved CTA: Dark theme spec (exact text, colors, sizing required for IDP review)
+            // Clicking through to Instacart means shopping is underway, so mark the list complete here too —
+            // the DB write is best-effort and never blocks the navigation.
             <a
               href={list.instacart_cart_url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => { if (list.status !== 'complete') markShoppingComplete() }}
               style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '23px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif' }}
             >
               <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />

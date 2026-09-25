@@ -160,7 +160,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               href={list.instacart_cart_url!}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '23px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif' }}
+              style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '29.5px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif' }}
             >
               <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />
               Shop on Instacart

@@ -706,7 +706,7 @@ export default function App() {
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
-          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onShoppingComplete={() => { setShoppingListBuilt(true); setShoppingComplete(true) }} />
+          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} creatorPreview={profile?.role === 'creator'} onShoppingComplete={() => { setShoppingListBuilt(true); setShoppingComplete(true) }} />
         )}
 
         {view === 'settings' && familyId && (

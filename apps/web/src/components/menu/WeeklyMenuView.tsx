@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import WeekCalendarPicker from './WeekCalendarPicker'
 
+type Meal = 'breakfast' | 'lunch' | 'dinner'
+
 interface Props {
   menuId: string
   tenantId: string
@@ -22,6 +24,8 @@ interface Recipe {
   image_url: string | null
   is_premium: boolean
   recipe_pack_id: string | null
+  meal_type: string[]
+  is_active: boolean
 }
 
 interface RecipePack {
@@ -32,6 +36,7 @@ interface RecipePack {
 
 interface MenuData {
   days: Record<string, { breakfast: string | null; lunch: string | null; dinner: string | null }>
+  schedule_override?: Record<string, Record<Meal, boolean>>
 }
 
 interface WeeklyMenu {
@@ -42,6 +47,9 @@ interface WeeklyMenu {
 }
 
 const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const MEALS: { key: Meal; label: string }[] = [
+  { key: 'breakfast', label: 'Breakfast' }, { key: 'lunch', label: 'Lunch' }, { key: 'dinner', label: 'Dinner' },
+]
 
 export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onWeekChange, onRegenerate }: Props) {
   const [menu, setMenu] = useState<WeeklyMenu | null>(null)
@@ -50,7 +58,9 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState(false)
-  const [swapDay, setSwapDay] = useState<{ day: string; meal: string } | null>(null)
+  const [swapDay, setSwapDay] = useState<{ day: string; meal: Meal } | null>(null)
+  const [savingSlot, setSavingSlot] = useState(false)
+  const [slotError, setSlotError] = useState<string | null>(null)
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
   const [justApproved, setJustApproved] = useState(false)
   const [unlockModal, setUnlockModal] = useState<{ pack: RecipePack; recipeTitle: string } | null>(null)
@@ -87,7 +97,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     if (ids.length === 0) return
     const { data } = await supabase
       .from('recipes')
-      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id')
+      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id, meal_type, is_active')
       .in('id', ids)
     if (data) {
       const map: Record<string, Recipe> = {}
@@ -114,7 +124,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
   const fetchAllRecipes = async () => {
     const { data } = await supabase
       .from('recipes')
-      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id')
+      .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id, meal_type, is_active')
       .eq('tenant_id', tenantId)
     if (data) setAllRecipes(data)
   }
@@ -149,6 +159,10 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
 
   const handleApprove = async () => {
     if (!menu) return
+    if (!Object.values(menu.menu_data.days).some(day => MEALS.some(({ key }) => day[key]))) {
+      setSlotError('Add at least one meal before approving this menu.')
+      return
+    }
     setApproving(true)
     const { error } = await supabase
       .from('weekly_menus')
@@ -162,26 +176,43 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     setApproving(false)
   }
 
-  const handleSwap = async (recipeId: string) => {
-    if (!swapDay || !menu) return
-    const updatedDays = {
+  const saveSlot = async (day: string, meal: Meal, recipeId: string | null) => {
+    if (!menu || savingSlot) return false
+    setSavingSlot(true)
+    setSlotError(null)
+    const updatedDays: MenuData['days'] = {
       ...menu.menu_data.days,
-      [swapDay.day]: {
-        ...menu.menu_data.days[swapDay.day],
-        [swapDay.meal]: recipeId,
+      [day]: { ...menu.menu_data.days[day], [meal]: recipeId },
+    }
+    // This snapshot belongs only to this menu. The recurring weekly_schedule is untouched.
+    const scheduleOverride: Record<string, Record<Meal, boolean>> = {}
+    for (let i = 0; i < 7; i++) {
+      const slots = updatedDays[String(i)]
+      scheduleOverride[String(i)] = {
+        breakfast: !!slots?.breakfast,
+        lunch: !!slots?.lunch,
+        dinner: !!slots?.dinner,
       }
     }
-    const updatedMenuData = { ...menu.menu_data, days: updatedDays }
-    const { error } = await supabase
-      .from('weekly_menus')
+    const updatedMenuData = { ...menu.menu_data, days: updatedDays, schedule_override: scheduleOverride }
+    const { error } = await supabase.from('weekly_menus')
       .update({ menu_data: updatedMenuData, status: 'pending_approval' })
       .eq('id', menu.id)
-    if (!error) {
-      setMenu({ ...menu, menu_data: updatedMenuData, status: 'pending_approval' })
-      await fetchRecipesForMenu(updatedMenuData)
-      setJustApproved(false)
+    if (error) {
+      setSlotError('Could not save this week’s schedule. Please try again.')
+      setSavingSlot(false)
+      return false
     }
-    setSwapDay(null)
+    setMenu({ ...menu, menu_data: updatedMenuData, status: 'pending_approval' })
+    setJustApproved(false)
+    if (recipeId) await fetchRecipesForMenu(updatedMenuData)
+    setSavingSlot(false)
+    return true
+  }
+
+  const handleSwap = async (recipeId: string) => {
+    if (!swapDay) return
+    if (await saveSlot(swapDay.day, swapDay.meal, recipeId)) setSwapDay(null)
   }
 
   const handleUnlockClick = (pack: RecipePack, recipeTitle: string) => {
@@ -328,15 +359,19 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         </div>
       )}
 
+      {!isApproved && (
+        <div style={{ background: '#FDF6EE', border: '1px solid #E8D5B7', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+          <strong style={{ color: '#2C1810' }}>Adjust this week’s meals</strong>
+          <p style={{ color: '#6B5C52', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>Add a meal or remove one below before approving. Your regular weekly schedule will not change.</p>
+          {slotError && <p role="alert" style={{ color: '#dc2626', margin: '0.5rem 0 0' }}>{slotError}</p>}
+        </div>
+      )}
+
       {/* Mobile-first vertical menu scroll */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
         {Array.from({ length: 7 }, (_, i) => {
           const dayData = menu.menu_data.days[String(i)] || {}
-          const meals = [
-            { key: 'breakfast', label: 'Breakfast' },
-            { key: 'lunch', label: 'Lunch' },
-            { key: 'dinner', label: 'Dinner' },
-          ] as const
+          const meals = MEALS
           const hasMeals = meals.some(m => dayData[m.key])
           const dayDate = new Date(`${menu.week_start_date}T12:00:00`)
           dayDate.setDate(dayDate.getDate() + i)
@@ -358,6 +393,26 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                   <span style={{ fontSize: '0.75rem', color: '#C8BAB2', fontStyle: 'italic' }}>Rest day</span>
                 )}
               </div>
+
+              {!isApproved && (
+                <div aria-label={`Meals for ${FULL_DAY_NAMES[i]}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                  {meals.map(({ key, label }) => {
+                    const planned = !!dayData[key]
+                    return (
+                      <button key={key} type="button" disabled={savingSlot}
+                        aria-label={`${planned ? 'Remove' : 'Add'} ${label} on ${FULL_DAY_NAMES[i]}`}
+                        aria-pressed={planned}
+                        onClick={() => {
+                          if (planned) void saveSlot(String(i), key, null)
+                          else { setSlotError(null); setSwapDay({ day: String(i), meal: key }) }
+                        }}
+                        style={{ minHeight: '40px', borderRadius: '20px', padding: '0.4rem 0.75rem', cursor: savingSlot ? 'wait' : 'pointer', border: `1.5px solid ${planned ? 'var(--color-primary)' : '#E8D5B7'}`, background: planned ? 'var(--color-primary)' : 'white', color: planned ? 'white' : '#6B5C52', fontSize: '0.78rem', fontWeight: '600' }}>
+                        {planned ? '✓' : '+'} {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
 
               {/* Meal cards for this day */}
               {hasMeals && (
@@ -427,12 +482,12 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
           <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', width: '100%', maxHeight: '80vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-serif)', color: '#2C1810' }}>
-                Swap {swapDay.meal} on {FULL_DAY_NAMES[parseInt(swapDay.day)]}
+                {menu.menu_data.days[swapDay.day]?.[swapDay.meal] ? 'Swap' : 'Add'} {swapDay.meal} on {FULL_DAY_NAMES[parseInt(swapDay.day)]}
               </h3>
               <button onClick={() => setSwapDay(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6B5C52' }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {allRecipes.filter(r => !isLocked(r)).map(recipe => (
+              {allRecipes.filter(r => r.is_active && !isLocked(r) && r.meal_type?.includes(swapDay?.meal || '')).map(recipe => (
                 <button
                   key={recipe.id}
                   onClick={() => handleSwap(recipe.id)}
@@ -444,6 +499,8 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                   </p>
                 </button>
               ))}
+              {!allRecipes.some(r => r.is_active && !isLocked(r) && r.meal_type?.includes(swapDay?.meal || '')) && <p>No {swapDay.meal} recipes are available. Add one to your recipe library first.</p>}
+              {slotError && <p role="alert" style={{ color: '#dc2626' }}>{slotError}</p>}
             </div>
           </div>
         </div>

@@ -1030,7 +1030,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   />
                 )}
                 {menuView === 'shopping' && currentMenuId && familyId && (
-                  <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} />
+                  <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} creatorPreview />
                 )}
                 {menuView === 'settings' && familyId && (
                   <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} isCreator={true} />
@@ -1235,6 +1235,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 menuId={creatorMenuId}
                 familyId={creatorFamilyId}
                 tenantId={tenantId}
+                creatorPreview
                 onShoppingComplete={() => setCreatorShoppingStatus('complete')}
               />
             ) : (

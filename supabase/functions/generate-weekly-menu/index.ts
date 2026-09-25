@@ -26,6 +26,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const token = req.headers.get("Authorization")?.match(/^Bearer (.+)$/i)?.[1];
+    if (!token) return new Response(JSON.stringify({ error: "Sign in required" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
     const { data: family, error: familyError } = await supabase
       .from("family_profiles")
       .select("*")
@@ -37,6 +46,13 @@ serve(async (req) => {
         JSON.stringify({ error: "Family profile not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // The service-role client bypasses RLS; verify every caller-supplied ID.
+    if (family.user_id !== user.id || family.tenant_id !== tenant_id) {
+      return new Response(JSON.stringify({ error: "This household is not available to your account" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { data: constraints } = await supabase

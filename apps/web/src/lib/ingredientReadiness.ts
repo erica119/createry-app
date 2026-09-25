@@ -1,6 +1,6 @@
 export interface ShoppingIngredient {
   name: string
-  quantity: string | number
+  quantity: string
   unit?: string
 }
 

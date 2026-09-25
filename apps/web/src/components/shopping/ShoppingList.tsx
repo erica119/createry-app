@@ -23,6 +23,7 @@ interface GroceryList {
   items: GroceryItem[]
   status: string
   instacart_cart_url: string | null
+  created_at: string
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -33,19 +34,22 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [stale, setStale] = useState(false)
 
   useEffect(() => { fetchList() }, [menuId])
 
   const fetchList = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('grocery_lists')
-      .select('*')
-      .eq('weekly_menu_id', menuId)
-      .order('shopping_date')
-      .limit(1)
-      .maybeSingle()
-    setList(data)
+    const [{ data: menu, error: menuError }, { data, error: listError }] = await Promise.all([
+      supabase.from('weekly_menus').select('updated_at').eq('id', menuId).single(),
+      supabase.from('grocery_lists').select('*').eq('weekly_menu_id', menuId)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    ])
+    if (menuError || listError) setError('Could not load the current shopping list. Please retry.')
+    const listIsStale = !!(menu?.updated_at && data?.created_at &&
+      new Date(menu.updated_at).getTime() > new Date(data.created_at).getTime())
+    setStale(listIsStale)
+    setList(listIsStale ? null : data)
     setLoading(false)
   }
 
@@ -53,11 +57,13 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     setGenerating(true)
     setError(null)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Please sign in again to build your list.')
       const response = await fetch(`${SUPABASE_URL}/functions/v1/build-shopping-list`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'apikey': ANON_KEY,
         },
         body: JSON.stringify({ menu_id: menuId, family_id: familyId, tenant_id: tenantId }),
@@ -65,6 +71,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to generate list')
       setList(result.grocery_list)
+      setStale(false)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -111,7 +118,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛒</div>
         <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Ready to shop?</h3>
         <p style={{ color: '#6B5C52', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
-          We'll build your list from this week's approved menu.
+          {stale ? 'Your menu changed after this list was made. Rebuild it before shopping.' : "We'll build your list from this week's approved menu."}
         </p>
         <button
           onClick={generateList}
@@ -138,13 +145,10 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         <div className="shopping-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {list.instacart_cart_url ? (
             // Instacart-approved CTA: Dark theme spec (exact text, colors, sizing required for IDP review)
-            // Clicking through to Instacart means shopping is underway, so mark the list complete here too —
-            // the DB write is best-effort and never blocks the navigation.
             <a
               href={list.instacart_cart_url}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => { if (list.status !== 'complete') markShoppingComplete() }}
               style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '23px', fontSize: '0.875rem', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif' }}
             >
               <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />

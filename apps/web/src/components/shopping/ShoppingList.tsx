@@ -109,6 +109,10 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
 
   const checkedCount = list?.items.filter(i => i.checked).length || 0
   const totalCount = list?.items.length || 0
+  const reviewItems = list?.items.filter(item =>
+    item.quantity <= 0 || /\b(?:or|and|optional|enough|to taste|for serving)\b/i.test(item.name) ||
+    /^(?:arge|rilled|emon|reen|alt)\b/i.test(item.name)
+  ) || []
 
   if (loading) return <p style={{ color: '#6B5C52' }}>Loading shopping list...</p>
 
@@ -159,7 +163,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               disabled
               style={{ background: '#a0a0a0', color: '#e0e0e0', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'not-allowed', opacity: 0.7 }}
             >
-              🛒 Instacart Unavailable
+              🛒 Instacart needs ingredient review
             </button>
           )}
           <button onClick={() => window.print()} style={{ background: "#C4622D", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
@@ -173,6 +177,13 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           </button>
         </div>
       </div>
+
+      {reviewItems.length > 0 && !list.instacart_cart_url && (
+        <p role="alert" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
+          {reviewItems.length} ingredient lines need a clear quantity or choice before Instacart can build a reliable cart.
+          Review the source recipes, then rebuild this list.
+        </p>
+      )}
 
       {/* Progress bar */}
       {totalCount > 0 && (

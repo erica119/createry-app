@@ -61,6 +61,28 @@ serve(async (req) => {
       .eq("family_id", family_id)
       .order("day_of_week");
 
+    // A menu can carry a one-week schedule snapshot edited during review.
+    // Use it on regeneration without changing the household's recurring schedule.
+    const { data: existingMenu } = await supabase.from("weekly_menus")
+      .select("menu_data").eq("family_id", family_id)
+      .eq("week_start_date", week_start_date).maybeSingle();
+    const savedOverride = existingMenu?.menu_data?.schedule_override;
+    const hasOverride = savedOverride && typeof savedOverride === "object" &&
+      [0, 1, 2, 3, 4, 5, 6].every(day => {
+        const slots = savedOverride[String(day)];
+        return slots && ["breakfast", "lunch", "dinner"]
+          .every(meal => typeof slots[meal] === "boolean");
+      });
+    const effectiveSchedule = hasOverride
+      ? Array.from({ length: 7 }, (_, day) => ({
+          day_of_week: day,
+          is_home: ["breakfast", "lunch", "dinner"].some(meal => savedOverride[String(day)][meal]),
+          breakfast: savedOverride[String(day)].breakfast,
+          lunch: savedOverride[String(day)].lunch,
+          dinner: savedOverride[String(day)].dinner,
+        }))
+      : (schedule || []);
+
     const { data: recurringAnchors } = await supabase
       .from("recurring_meal_anchors")
       .select("day_of_week, meal_type, recipe_id")
@@ -158,7 +180,7 @@ serve(async (req) => {
       });
     });
 
-    const scheduleDescription = (schedule || [])
+    const scheduleDescription = effectiveSchedule
       .filter(d => d.is_home)
       .map(d => {
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -286,7 +308,7 @@ Use actual recipe IDs from the list, not titles.`;
     // Recurring meal anchors are deterministic household rules, not AI suggestions.
     // Apply them after generation so regeneration/feedback cannot accidentally drop them.
     const safeRecipeIds = new Set<string>(safeRecipes.map((r: any) => r.id));
-    const scheduleByDay = new Map<number, any>((schedule || []).map((d: any) => [d.day_of_week, d]));
+    const scheduleByDay = new Map<number, any>(effectiveSchedule.map((d: any) => [d.day_of_week, d]));
     if (!menuData.days) menuData.days = {};
 
     for (const anchor of (recurringAnchors || [])) {
@@ -299,6 +321,31 @@ Use actual recipe IDs from the list, not titles.`;
         menuData.days[dayKey] = { breakfast: null, lunch: null, dinner: null };
       }
       menuData.days[dayKey][anchor.meal_type] = anchor.recipe_id;
+    }
+
+    // The model may ignore the schedule. Enforce the edited week's slots after
+    // applying recurring anchors, including meals intentionally removed.
+    if (hasOverride) {
+      for (let day = 0; day < 7; day++) {
+        const dayKey = String(day);
+        const slots = savedOverride[dayKey];
+        const generated = menuData.days[dayKey] || {};
+        for (const meal of ["breakfast", "lunch", "dinner"]) {
+          if (!slots[meal]) {
+            generated[meal] = null;
+          } else if (!safeRecipeIds.has(generated[meal]) || !safeRecipes.some((r: any) => r.id === generated[meal] && r.meal_type?.includes(meal))) {
+            const replacement = safeRecipes.find((r: any) => r.meal_type?.includes(meal));
+            if (!replacement) {
+              return new Response(JSON.stringify({ error: `No eligible ${meal} recipes for this week's schedule. Add a recipe before regenerating.` }), {
+                status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+            generated[meal] = replacement.id;
+          }
+        }
+        menuData.days[dayKey] = generated;
+      }
+      menuData.schedule_override = savedOverride;
     }
 
     const { data: savedMenu, error: saveError } = await supabase

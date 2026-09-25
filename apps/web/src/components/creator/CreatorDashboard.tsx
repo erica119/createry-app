@@ -10,6 +10,7 @@ import RecipeModal from '../recipes/RecipeModal'
 import ProfileSettings from '../profile/ProfileSettings'
 import CreatorAnalytics from './CreatorAnalytics'
 import SupportModal from '../shared/SupportModal'
+import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingredientReadiness'
 
 interface Props {
   user: User
@@ -1086,6 +1087,33 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                       setSavingPack(true)
                       setPackSaveError(null)
                       try {
+                        // Check the CSV before creating the pack so invalid recipes cannot
+                        // leave behind an empty paid pack or reach household shopping lists.
+                        if (newPackCsvFile) {
+                          const csvText = await newPackCsvFile.text()
+                          const parseRow = (line: string): string[] => {
+                            const cells: string[] = []
+                            let current = ''
+                            let quoted = false
+                            for (let i = 0; i < line.length; i++) {
+                              if (line[i] === '"') quoted = !quoted
+                              else if (line[i] === ',' && !quoted) { cells.push(current.trim()); current = '' }
+                              else current += line[i]
+                            }
+                            cells.push(current.trim())
+                            return cells
+                          }
+                          const rows = csvText.trim().split('\n')
+                          const headers = parseRow(rows[0]).map(h => h.replace(/\r/g, ''))
+                          const ingredientColumn = headers.indexOf('ingredients')
+                          if (ingredientColumn < 0) throw new Error('Recipe pack CSV needs an ingredients column.')
+                          for (let i = 1; i < rows.length; i++) {
+                            const raw = parseRow(rows[i])[ingredientColumn]?.replace(/^"|"$/g, '') || ''
+                            const ingredients = raw.split('|').map(x => x.trim()).filter(Boolean).map(parseShoppingIngredient)
+                            const issues = ingredients.length ? recipeIngredientIssues(ingredients) : ['Add ingredients with amounts.']
+                            if (issues.length) throw new Error(`CSV row ${i + 1}: ${issues.join(' ')}`)
+                          }
+                        }
                         const priceCents = Math.round(parseFloat(newPackPrice) * 100)
                         const { data: pack, error: packError } = await supabase.from('recipe_packs').insert({
                           tenant_id: tenantId,
@@ -1129,7 +1157,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                               tenant_id: tenantId,
                               title: get('title'),
                               description: get('description') || null,
-                              ingredients: get('ingredients') ? get('ingredients').split('|') : [],
+                              ingredients: get('ingredients') ? get('ingredients').split('|').map(line => parseShoppingIngredient(line.trim())) : [],
                               instructions: get('instructions') || null,
                               prep_time_minutes: get('prep_time_minutes') ? parseInt(get('prep_time_minutes')) : null,
                               cook_time_minutes: get('cook_time_minutes') ? parseInt(get('cook_time_minutes')) : null,

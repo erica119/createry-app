@@ -209,8 +209,9 @@ serve(async (req) => {
         const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
 
         ingredients.forEach((rawIng: any) => {
-          if (!rawIng) return;
+          if (!rawIng || rawIng.shopping_exclude === true) return;
           const ing = typeof rawIng === 'string' ? normalizeIngredient({ name: rawIng }) : normalizeIngredient(rawIng);
+          if (rawIng.shopping_name) ing.name = String(rawIng.shopping_name).trim();
           if (!ing.name) return;
 
           const key = `${ing.name.toLowerCase()}__${ing.unit.toLowerCase()}`;

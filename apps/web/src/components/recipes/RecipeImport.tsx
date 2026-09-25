@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingredientReadiness'
 
 interface Props {
   user: User
@@ -115,25 +116,8 @@ function splitIngredientItems(raw: string): string[] {
     .filter(Boolean)
 }
 
-function parseIngredientLine(line: string): { name: string; quantity: string } {
-  const trimmed = line.trim()
-
-  // Supports common quantities including ranges (2-3), decimals (2.5),
-  // fractions (1/2), and mixed fractions (1 1/2). Units are optional.
-  const match = trimmed.match(
-    /^(\d+(?:\.\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+|\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?)(?:\s+((?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|pinches?|cloves?|slices?|cans?|bunch(?:es)?|heads?|pkgs?|packages?|pieces?))\b)?\s+(.+)$/i
-  )
-
-  if (!match) return { quantity: '', name: trimmed }
-
-  const amount = match[1].replace(/\s*[-–]\s*/g, '-')
-  const unit = match[2] || ''
-  const name = match[3].trim()
-  return { quantity: [amount, unit].filter(Boolean).join(' '), name }
-}
-
 function parseIngredients(raw: string): { name: string; quantity: string }[] {
-  return splitIngredientItems(raw).map(parseIngredientLine).filter(item => item.name)
+  return splitIngredientItems(raw).map(parseShoppingIngredient).filter(item => item.name)
 }
 
 function parseBoolean(value: string): boolean {
@@ -199,6 +183,7 @@ function validateAndParseRows(rows: string[][]): ParsedRecipe[] {
 
     if (!title) errors.push('Missing title')
     if (!ingredients.length) errors.push('Missing ingredients')
+    errors.push(...recipeIngredientIssues(ingredients))
     if (!instructions) errors.push('Missing instructions')
     if (!VALID_COMPLEXITY.includes(complexity)) errors.push(`Invalid complexity: "${complexity}"`)
     mealType.forEach(type => {
@@ -387,7 +372,7 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
 
   const downloadTemplate = () => {
     const headers = 'Title,Complexity,Meal Type,Cuisine,Dietary,Prep,Cook,Servings,Ingredients,Instructions'
-    const example = 'Lemon Herb Chicken,simple,dinner,american,"gluten-free, dairy-free",15,60,4,"2 lbs chicken; 2 lemons; 3 tbsp olive oil; salt and pepper","Preheat oven to 425F. Season chicken. Roast until cooked through."'
+    const example = 'Lemon Herb Chicken,simple,dinner,american,"gluten-free, dairy-free",15,60,4,"2 lbs chicken; 2 lemons; 3 tbsp olive oil; 1 tsp salt; 1 tsp black pepper","Preheat oven to 425F. Season chicken. Roast until cooked through."'
     const blob = new Blob([`${headers}\n${example}`], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -452,7 +437,7 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
             <div style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#F5EFE6', borderRadius: '10px', border: '1px solid #E8D5B7' }}>
               <p style={{ margin: '0 0 0.4rem', fontWeight: '600', color: '#2C1810', fontSize: '0.85rem' }}>📋 Import notes</p>
               <p style={{ margin: 0, color: '#6B5C52', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                Required: Title, Ingredients, Instructions. Ingredients can be separated by semicolons, pipes, or line breaks. Complexity accepts simple/moderate/complex and automatically maps easy/medium/hard.
+                Required: Title, Ingredients, Instructions. Each ingredient needs a numeric amount and one clear grocery item. Put alternatives, optional garnishes, and serving notes in Instructions. Separate ingredient lines with semicolons, pipes, or line breaks.
               </p>
             </div>
           </div>

@@ -6,7 +6,7 @@ export interface ShoppingIngredient {
 
 // Match complete unit words. A single-letter unit must never eat the first
 // letter of "grilled", "large", "lemon", or similar ingredient names.
-const UNIT = '(?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|pinches?|cloves?|slices?|cans?|bunch(?:es)?|heads?|pkgs?|packages?|packets?|pieces?|jars?|bottles?|bags?|containers?|sticks?|pints?|quarts?|gallons?)'
+const UNIT = '(?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|pinches?|cloves?|slices?|cans?|bunch(?:es)?|heads?|pkgs?|packages?|packets?|pieces?|jars?|bottles?|bags?|containers?|cartons?|sticks?|pints?|quarts?|gallons?)'
 const AMOUNT = '(?:\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)'
 const LINE = new RegExp(`^(${AMOUNT})(?:\\s+(${UNIT})\\b)?\\s+(.+)$`, 'i')
 const QUANTITY = new RegExp(`^(${AMOUNT})(?:\\s+(${UNIT})\\b)?$`, 'i')

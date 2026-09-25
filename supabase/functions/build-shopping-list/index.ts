@@ -8,10 +8,111 @@ const corsHeaders = {
 
 // Instacart Developer Platform (IDP) credentials
 const INSTACART_API_KEY = Deno.env.get("INSTACART_API_KEY");
-const INSTACART_ENV = Deno.env.get("INSTACART_ENV") || "production"; // "production" or "development"
+const INSTACART_ENV = Deno.env.get("INSTACART_ENV") || "production";
 const INSTACART_BASE_URL = INSTACART_ENV === "development"
   ? "https://connect.dev.instacart.tools"
   : "https://connect.instacart.com";
+
+const UNIT_PATTERN = '(?:cups?|c|tbsp|tablespoons?|tbs|tsp|teaspoons?|tspn|oz|ounces?|lbs?|pounds?|grams?|g|kgs?|kilograms?|mls?|millilit(?:er|re)s?|liters?|litres?|l|pints?|pt|quarts?|qt|gallons?|gal|cans?|bunch(?:es)?|heads?|pkgs?|packages?|packets?|pieces?|slices?|cloves?)';
+
+function parseNumber(value: string | number | null | undefined): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (!value) return 0;
+  const raw = String(value).trim().replace(/–/g, '-');
+  if (!raw) return 0;
+
+  // For ranges, buy the upper end so the list does not under-buy.
+  if (/^\d+(?:\.\d+)?\s*-\s*\d+(?:\.\d+)?$/.test(raw)) {
+    return parseFloat(raw.split('-')[1].trim()) || 0;
+  }
+
+  // Mixed fraction, e.g. 1 1/2
+  const mixed = raw.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+
+  // Simple fraction, e.g. 1/2
+  const fraction = raw.match(/^(\d+)\/(\d+)$/);
+  if (fraction) return Number(fraction[1]) / Number(fraction[2]);
+
+  return parseFloat(raw) || 0;
+}
+
+function normalizeUnit(rawUnit: string): string {
+  const unit = (rawUnit || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!unit) return '';
+
+  const aliases: Record<string, string> = {
+    c: 'cup', cup: 'cup', cups: 'cup',
+    tbsp: 'tablespoon', tbs: 'tablespoon', tablespoon: 'tablespoon', tablespoons: 'tablespoon',
+    tsp: 'teaspoon', tspn: 'teaspoon', teaspoon: 'teaspoon', teaspoons: 'teaspoon',
+    oz: 'ounce', ounce: 'ounce', ounces: 'ounce',
+    lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb',
+    g: 'g', gram: 'g', grams: 'g',
+    kg: 'kg', kgs: 'kg', kilogram: 'kg', kilograms: 'kg',
+    ml: 'ml', mls: 'ml', milliliter: 'ml', milliliters: 'ml', millilitre: 'ml', millilitres: 'ml',
+    l: 'liter', liter: 'liter', liters: 'liter', litre: 'liter', litres: 'liter',
+    pint: 'pint', pints: 'pint', pt: 'pint',
+    quart: 'quart', quarts: 'quart', qt: 'quart',
+    gallon: 'gallon', gallons: 'gallon', gal: 'gallon',
+    can: 'can', cans: 'can',
+    bunch: 'bunch', bunches: 'bunch',
+    head: 'head', heads: 'head',
+    package: 'package', packages: 'package', pkg: 'package', pkgs: 'package', packet: 'packet', packets: 'packet',
+    each: 'each', ea: 'each',
+    piece: 'each', pieces: 'each', slice: 'each', slices: 'each', clove: 'each', cloves: 'each',
+  };
+  return aliases[unit] || '';
+}
+
+function normalizeIngredient(ing: any): { name: string; quantity: number; unit: string } {
+  let name = String(ing?.name || '').trim();
+  let quantity = 0;
+  let unit = normalizeUnit(String(ing?.unit || ''));
+
+  // Newer imports may store "2 lbs" in quantity while older/manual recipes may
+  // put the entire ingredient line in name. Support both representations.
+  const rawQty = ing?.quantity;
+  if (rawQty !== undefined && rawQty !== null && String(rawQty).trim()) {
+    const qtyText = String(rawQty).trim();
+    const qtyMatch = qtyText.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)(?:\\s+(${UNIT_PATTERN}))?$`, 'i'));
+    if (qtyMatch) {
+      quantity = parseNumber(qtyMatch[1]);
+      if (!unit && qtyMatch[2]) unit = normalizeUnit(qtyMatch[2]);
+    } else {
+      quantity = parseNumber(qtyText);
+    }
+  }
+
+  // Legacy fallback: parse a leading amount/unit out of the ingredient name.
+  // Example: "3 cups basmati rice" -> { name: "basmati rice", quantity: 3, unit: "cup" }
+  if (!quantity && name) {
+    const withUnit = name.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)\\s+(${UNIT_PATTERN})\\s+(.+)$`, 'i'));
+    if (withUnit) {
+      quantity = parseNumber(withUnit[1]);
+      unit = normalizeUnit(withUnit[2]);
+      name = withUnit[3].trim();
+    } else {
+      const amountOnly = name.match(/^(\d+(?:\.\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+|\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?)\s+(.+)$/);
+      if (amountOnly) {
+        quantity = parseNumber(amountOnly[1]);
+        name = amountOnly[2].trim();
+      }
+    }
+  }
+
+  return { name, quantity, unit };
+}
+
+function instacartSearchName(name: string): string {
+  return name
+    .replace(/^\d+(?:\.\d+)?(?:\s+\d+\/\d+)?\s+/, '')
+    .replace(/\b(cut into strips|cut into pieces|diced|finely diced|chopped|minced|sliced|cubed|shredded|grated|drained|rinsed|divided)\b/gi, '')
+    .replace(/\boptional\b/gi, '')
+    .replace(/\bfor serving\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[,\s]+|[,\s]+$/g, '')
+    .trim();
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -87,26 +188,24 @@ serve(async (req) => {
         const recipeId = day[meal];
         if (!recipeId || !recipeMap[recipeId]) return;
         const recipe = recipeMap[recipeId];
-        const ingredients = recipe.ingredients as Array<{ name: string; quantity: string; unit: string }>;
+        const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
 
-        ingredients.forEach((ing: any) => {
-          if (!ing || !ing.name) return;
-          const ingName = (ing.name || '').trim()
-          const ingUnit = (ing.unit || '').trim()
-          const ingQty = ing.quantity || ''
-          const key = `${ingName.toLowerCase()}__${ingUnit.toLowerCase()}`;
-          const qty = parseFloat(ingQty) || 0;
+        ingredients.forEach((rawIng: any) => {
+          if (!rawIng) return;
+          const ing = typeof rawIng === 'string' ? normalizeIngredient({ name: rawIng }) : normalizeIngredient(rawIng);
+          if (!ing.name) return;
 
+          const key = `${ing.name.toLowerCase()}__${ing.unit.toLowerCase()}`;
           if (ingredientMap[key]) {
-            ingredientMap[key].quantity += qty;
+            ingredientMap[key].quantity += ing.quantity;
             if (!ingredientMap[key].recipe_sources.includes(recipe.title)) {
               ingredientMap[key].recipe_sources.push(recipe.title);
             }
           } else {
             ingredientMap[key] = {
-              name: ingName,
-              quantity: qty,
-              unit: ingUnit,
+              name: ing.name,
+              quantity: ing.quantity,
+              unit: ing.unit,
               recipe_sources: [recipe.title],
             };
           }
@@ -185,11 +284,22 @@ async function buildInstacartUrl(items: any[], weekStartDate: string): Promise<s
     return null;
   }
 
-  const lineItems = items.map(item => ({
-    name: item.name,
-    quantity: item.quantity > 0 ? item.quantity : 1,
-    unit: item.unit || "each",
-  }));
+  const lineItems = items
+    .map(item => {
+      const searchName = instacartSearchName(item.name);
+      if (!searchName) return null;
+      const quantity = item.quantity > 0 ? item.quantity : 1;
+      const unit = normalizeUnit(item.unit) || 'each';
+
+      return {
+        // Instacart uses name as the search query. Keep quantity, weight,
+        // preparation notes, and other noise out of this field.
+        name: searchName,
+        display_text: searchName,
+        line_item_measurements: [{ quantity, unit }],
+      };
+    })
+    .filter(Boolean);
 
   try {
     const response = await fetch(`${INSTACART_BASE_URL}/idp/v1/products/products_link`, {

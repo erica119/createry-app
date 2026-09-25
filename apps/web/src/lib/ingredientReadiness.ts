@@ -10,7 +10,7 @@ const UNIT = '(?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|
 const AMOUNT = '(?:\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)'
 const LINE = new RegExp(`^(${AMOUNT})(?:\\s+(${UNIT})\\b)?\\s+(.+)$`, 'i')
 const QUANTITY = new RegExp(`^(${AMOUNT})(?:\\s+(${UNIT})\\b)?$`, 'i')
-const AMBIGUOUS = /\\b(?:or|and|optional|enough|to taste|for serving|as needed|of choice)\\b/i
+const AMBIGUOUS = /\b(?:or|and|optional|enough|to taste|for serving|as needed|of choice)\b/i
 
 export function parseShoppingIngredient(line: string): ShoppingIngredient {
   const trimmed = line.trim()

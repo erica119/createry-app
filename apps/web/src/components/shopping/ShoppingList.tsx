@@ -199,7 +199,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         <div role="note" style={{ background: '#f0f7f3', border: '1px solid #c9dfd1', borderRadius: '10px', padding: '1rem', marginBottom: '1rem', color: '#244438' }}>
           <strong>Review matches before adding to cart</strong>
           <p style={{ margin: '0.35rem 0 0', lineHeight: 1.5, fontSize: '0.9rem' }}>
-            We sent {totalCount} ingredient lines to Instacart. After choosing a store, compare its suggested products and package amounts with this list. Search for missing items or choose alternatives there. Availability and quantities depend on the store; this link does not confirm a complete cart.
+            This list has {totalCount} ingredient lines. After choosing a store on Instacart, compare its suggested products and package amounts with this list. Search for missing items or choose alternatives there. Availability and quantities depend on the store; this link does not confirm a complete cart.
           </p>
         </div>
       )}

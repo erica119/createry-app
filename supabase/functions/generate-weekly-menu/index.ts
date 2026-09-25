@@ -21,13 +21,11 @@ serve(async (req) => {
       );
     }
 
-    // Use service role key to bypass RLS
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Fetch family profile
     const { data: family, error: familyError } = await supabase
       .from("family_profiles")
       .select("*")
@@ -41,33 +39,34 @@ serve(async (req) => {
       );
     }
 
-    // 2. Fetch dietary constraints
     const { data: constraints } = await supabase
       .from("dietary_constraints")
       .select("*")
       .eq("family_id", family_id);
 
-    // 3. Fetch meal preferences
     const { data: preferences } = await supabase
       .from("meal_preferences")
       .select("*")
       .eq("family_id", family_id);
 
-    // 4. Fetch family members
     const { data: familyMembers } = await supabase
       .from("family_members")
       .select("name, age_range, dietary_restrictions, notes")
       .eq("family_id", family_id)
       .order("created_at");
 
-    // 4b. Fetch weekly schedule (which days/meals need planning)
     const { data: schedule } = await supabase
       .from("weekly_schedule")
       .select("*")
       .eq("family_id", family_id)
       .order("day_of_week");
 
-    // 5b. Parse all constraints by type
+    const { data: recurringAnchors } = await supabase
+      .from("recurring_meal_anchors")
+      .select("day_of_week, meal_type, recipe_id")
+      .eq("family_id", family_id)
+      .eq("tenant_id", tenant_id);
+
     const allergyValues = (constraints || [])
       .filter(c => c.severity === "allergy" || c.severity === "intolerance")
       .map(c => c.value);
@@ -76,15 +75,12 @@ serve(async (req) => {
       .filter(c => c.constraint_type === "lifestyle" || c.constraint_type === "preference" || c.constraint_type === "religious")
       .map(c => c.value);
 
-    // 6. Get max cook time preference
     const cookTimePref = (preferences || []).find(p => p.preference_type === "cook_time_max_minutes");
     const maxCookTime = cookTimePref ? parseInt(cookTimePref.value) : 999;
 
-    // 7. Get complexity preference
     const complexityPref = (preferences || []).find(p => p.preference_type === "complexity");
     const preferredComplexity = complexityPref?.value || "moderate";
 
-    // 8. Fetch recipes (pre-filtered at SQL level)
     let recipeQuery = supabase
       .from("recipes")
       .select("id, title, description, ingredients, cook_time_minutes, prep_time_minutes, cuisine_tags, meal_type, dietary_tags, complexity, servings")
@@ -98,7 +94,6 @@ serve(async (req) => {
 
     const { data: allRecipes } = await recipeQuery.limit(60);
 
-    // Diet tag mapping — maps constraint value to required dietary_tag
     const dietTagMap: Record<string, string> = {
       vegetarian: "vegetarian",
       vegan: "vegan",
@@ -110,20 +105,17 @@ serve(async (req) => {
       dairy: "dairy-free",
     };
 
-    // Filter recipes: must pass allergy check AND lifestyle diet check
     const safeRecipes = (allRecipes || []).filter(recipe => {
       const recipeTags = (recipe.dietary_tags || []).map((t: string) => t.toLowerCase());
       const ingredientsStr = JSON.stringify(recipe.ingredients).toLowerCase();
       const titleStr = recipe.title.toLowerCase();
 
-      // Hard exclude: allergy/intolerance ingredient match
       const hasAllergen = allergyValues.some(allergen =>
         titleStr.includes(allergen.toLowerCase()) ||
         ingredientsStr.includes(allergen.toLowerCase())
       );
       if (hasAllergen) return false;
 
-      // Hard exclude: lifestyle diet — recipe must have matching dietary tag
       for (const diet of lifestyleDiets) {
         const requiredTag = dietTagMap[diet];
         if (requiredTag && !recipeTags.includes(requiredTag)) return false;
@@ -132,14 +124,12 @@ serve(async (req) => {
       return true;
     });
 
-    // 9. Get favorites for this user
     const { data: favData } = await supabase
       .from("recipe_favorites")
       .select("recipe_id")
       .eq("user_id", family.user_id);
     const favoriteIds = new Set<string>((favData || []).map((f: any) => f.recipe_id));
 
-    // Get last 3 weeks of recipe history (2 weeks for favorites, 3 for others)
     const threeWeeksAgo = new Date();
     threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
     const twoWeeksAgo = new Date();
@@ -168,7 +158,6 @@ serve(async (req) => {
       });
     });
 
-    // 10. Build the prompt for Claude
     const scheduleDescription = (schedule || [])
       .filter(d => d.is_home)
       .map(d => {
@@ -243,7 +232,6 @@ INSTRUCTIONS:
 6. Consider family preferences for cuisine and complexity
 7. Return ONLY valid JSON, no prose
 
-
 Return this exact JSON structure:
 {
   "days": {
@@ -261,7 +249,6 @@ Where day 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
 Only include recipe IDs for meals in the cooking schedule. Use null for meals not being planned.
 Use actual recipe IDs from the list, not titles.`;
 
-    // 11. Call Claude Haiku
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -284,12 +271,10 @@ Use actual recipe IDs from the list, not titles.`;
     const anthropicData = await anthropicResponse.json();
     const menuText = anthropicData.content[0].text;
 
-    // 12. Parse Claude's response
     let menuData;
     try {
       menuData = JSON.parse(menuText);
     } catch {
-      // Try to extract JSON if Claude added any prose
       const jsonMatch = menuText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         menuData = JSON.parse(jsonMatch[0]);
@@ -298,7 +283,24 @@ Use actual recipe IDs from the list, not titles.`;
       }
     }
 
-    // 13. Save to weekly_menus table
+    // Recurring meal anchors are deterministic household rules, not AI suggestions.
+    // Apply them after generation so regeneration/feedback cannot accidentally drop them.
+    const safeRecipeIds = new Set<string>(safeRecipes.map((r: any) => r.id));
+    const scheduleByDay = new Map<number, any>((schedule || []).map((d: any) => [d.day_of_week, d]));
+    if (!menuData.days) menuData.days = {};
+
+    for (const anchor of (recurringAnchors || [])) {
+      const scheduledDay = scheduleByDay.get(anchor.day_of_week);
+      const slotIsEnabled = scheduledDay?.is_home && scheduledDay?.[anchor.meal_type] === true;
+      if (!slotIsEnabled || !safeRecipeIds.has(anchor.recipe_id)) continue;
+
+      const dayKey = String(anchor.day_of_week);
+      if (!menuData.days[dayKey]) {
+        menuData.days[dayKey] = { breakfast: null, lunch: null, dinner: null };
+      }
+      menuData.days[dayKey][anchor.meal_type] = anchor.recipe_id;
+    }
+
     const { data: savedMenu, error: saveError } = await supabase
       .from("weekly_menus")
       .upsert({
@@ -312,6 +314,7 @@ Use actual recipe IDs from the list, not titles.`;
           input_tokens: anthropicData.usage?.input_tokens,
           output_tokens: anthropicData.usage?.output_tokens,
           recipes_considered: safeRecipes.length,
+          recurring_anchors_applied: (recurringAnchors || []).length,
           generated_at: new Date().toISOString(),
         },
       }, { onConflict: "family_id,week_start_date" })

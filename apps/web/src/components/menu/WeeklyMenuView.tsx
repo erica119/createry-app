@@ -226,7 +226,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
   if (!menu) return <p style={{ color: '#6B5C52' }}>Menu not found.</p>
 
   const isApproved = menu.status === 'approved'
-  const weekDate = new Date(menu.week_start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const weekDate = new Date(`${menu.week_start_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
     <div>

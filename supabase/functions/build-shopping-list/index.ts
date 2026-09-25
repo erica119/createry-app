@@ -86,7 +86,95 @@ function normalizeIngredient(ing: any): { name: string; quantity: number; unit: 
   // Legacy fallback: parse a leading amount/unit out of the ingredient name.
   // Example: "3 cups basmati rice" -> { name: "basmati rice", quantity: 3, unit: "cup" }
   if (!quantity && name) {
-    const withUnit = name.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)\\s+(${UNIT_PATTERN})\\s+(.+)$`, 'i'));
+    const withUnit = name.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)\\s+(${UNIT_PATTERN})\\b\\s+(.+)import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Instacart Developer Platform (IDP) credentials
+const INSTACART_API_KEY = Deno.env.get("INSTACART_API_KEY");
+const INSTACART_ENV = Deno.env.get("INSTACART_ENV") || "production";
+const INSTACART_BASE_URL = INSTACART_ENV === "development"
+  ? "https://connect.dev.instacart.tools"
+  : "https://connect.instacart.com";
+
+const UNIT_PATTERN = '(?:cups?|c|tbsp|tablespoons?|tbs|tsp|teaspoons?|tspn|oz|ounces?|lbs?|pounds?|grams?|g|kgs?|kilograms?|mls?|millilit(?:er|re)s?|liters?|litres?|l|pints?|pt|quarts?|qt|gallons?|gal|cans?|bunch(?:es)?|heads?|pkgs?|packages?|packets?|pieces?|slices?|cloves?)';
+
+function parseNumber(value: string | number | null | undefined): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (!value) return 0;
+  const raw = String(value).trim().replace(/–/g, '-');
+  if (!raw) return 0;
+
+  // For ranges, buy the upper end so the list does not under-buy.
+  if (/^\d+(?:\.\d+)?\s*-\s*\d+(?:\.\d+)?$/.test(raw)) {
+    return parseFloat(raw.split('-')[1].trim()) || 0;
+  }
+
+  // Mixed fraction, e.g. 1 1/2
+  const mixed = raw.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+
+  // Simple fraction, e.g. 1/2
+  const fraction = raw.match(/^(\d+)\/(\d+)$/);
+  if (fraction) return Number(fraction[1]) / Number(fraction[2]);
+
+  return parseFloat(raw) || 0;
+}
+
+function normalizeUnit(rawUnit: string): string {
+  const unit = (rawUnit || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!unit) return '';
+
+  const aliases: Record<string, string> = {
+    c: 'cup', cup: 'cup', cups: 'cup',
+    tbsp: 'tablespoon', tbs: 'tablespoon', tablespoon: 'tablespoon', tablespoons: 'tablespoon',
+    tsp: 'teaspoon', tspn: 'teaspoon', teaspoon: 'teaspoon', teaspoons: 'teaspoon',
+    oz: 'ounce', ounce: 'ounce', ounces: 'ounce',
+    lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb',
+    g: 'g', gram: 'g', grams: 'g',
+    kg: 'kg', kgs: 'kg', kilogram: 'kg', kilograms: 'kg',
+    ml: 'ml', mls: 'ml', milliliter: 'ml', milliliters: 'ml', millilitre: 'ml', millilitres: 'ml',
+    l: 'liter', liter: 'liter', liters: 'liter', litre: 'liter', litres: 'liter',
+    pint: 'pint', pints: 'pint', pt: 'pint',
+    quart: 'quart', quarts: 'quart', qt: 'quart',
+    gallon: 'gallon', gallons: 'gallon', gal: 'gallon',
+    can: 'can', cans: 'can',
+    bunch: 'bunch', bunches: 'bunch',
+    head: 'head', heads: 'head',
+    package: 'package', packages: 'package', pkg: 'package', pkgs: 'package', packet: 'packet', packets: 'packet',
+    each: 'each', ea: 'each',
+    piece: 'each', pieces: 'each', slice: 'each', slices: 'each', clove: 'each', cloves: 'each',
+  };
+  return aliases[unit] || '';
+}
+
+function normalizeIngredient(ing: any): { name: string; quantity: number; unit: string } {
+  let name = String(ing?.name || '').trim();
+  let quantity = 0;
+  let unit = normalizeUnit(String(ing?.unit || ''));
+
+  // Newer imports may store "2 lbs" in quantity while older/manual recipes may
+  // put the entire ingredient line in name. Support both representations.
+  const rawQty = ing?.quantity;
+  if (rawQty !== undefined && rawQty !== null && String(rawQty).trim()) {
+    const qtyText = String(rawQty).trim();
+    const qtyMatch = qtyText.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:\\s+\\d+\\/\\d+)?|\\d+\\/\\d+|\\d+(?:\\.\\d+)?\\s*[-–]\\s*\\d+(?:\\.\\d+)?)(?:\\s+(${UNIT_PATTERN}))?$`, 'i'));
+    if (qtyMatch) {
+      quantity = parseNumber(qtyMatch[1]);
+      if (!unit && qtyMatch[2]) unit = normalizeUnit(qtyMatch[2]);
+    } else {
+      quantity = parseNumber(qtyText);
+    }
+  }
+
+  // Legacy fallback: parse a leading amount/unit out of the ingredient name.
+  // Example: "3 cups basmati rice" -> { name: "basmati rice", quantity: 3, unit: "cup" }
+  if (!quantity && name) {
+    const withUnit = name.match(new RegExp(, 'i'));
     if (withUnit) {
       quantity = parseNumber(withUnit[1]);
       unit = normalizeUnit(withUnit[2]);
@@ -133,6 +221,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+    const token = req.headers.get("Authorization")?.match(/^Bearer (.+)$/i)?.[1];
+    if (!token) return new Response(JSON.stringify({ error: "Sign in required" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
     // 1. Fetch the menu
     const { data: menu, error: menuError } = await supabase
@@ -146,6 +242,16 @@ serve(async (req) => {
         JSON.stringify({ error: "Menu not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Never trust IDs supplied by the browser while using a service-role client.
+    const { data: family } = await supabase.from("family_profiles")
+      .select("id, tenant_id, user_id").eq("id", family_id).single();
+    if (menu.family_id !== family_id || menu.tenant_id !== tenant_id ||
+        family?.tenant_id !== tenant_id || family?.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: "This menu does not belong to your household" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // 2. Collect all recipe IDs
@@ -223,8 +329,14 @@ serve(async (req) => {
         aisle: guessAisle(item.name),
       }));
 
-    // 6. Build Instacart shopping list link via the Instacart Developer Platform API
-    const instacartUrl = await buildInstacartUrl(items, menu.week_start_date);
+    // Withhold a retailer link if any line cannot be purchased reliably.
+    // A partial bulk cart looks complete but can leave the family without dinner.
+    const needsReview = items.some(item =>
+      item.quantity <= 0 ||
+      /\b(?:or|and|optional|enough|to taste|for serving)\b/i.test(item.name) ||
+      /^(?:arge|rilled|emon|reen|alt)\b/i.test(item.name)
+    );
+    const instacartUrl = needsReview ? null : await buildInstacartUrl(items, menu.week_start_date);
 
     // 7. Fetch grocery schedule
     const { data: grocerySchedule } = await supabase
@@ -242,12 +354,8 @@ serve(async (req) => {
     primaryShoppingDate.setDate(weekStart.getDate() + shoppingDays[0]);
     const shoppingDateStr = primaryShoppingDate.toISOString().split('T')[0];
 
-    // 8. Delete existing list for this menu
-    await supabase
-      .from("grocery_lists")
-      .delete()
-      .eq("weekly_menu_id", menu_id);
-
+    // 8. Save the replacement before removing old lists so a failed insert
+    // never destroys a household's existing list.
     // 9. Save grocery list
     const { data: savedList, error: saveError } = await supabase
       .from("grocery_lists")
@@ -264,6 +372,9 @@ serve(async (req) => {
       .single();
 
     if (saveError) throw saveError;
+    const { error: cleanupError } = await supabase.from("grocery_lists")
+      .delete().eq("weekly_menu_id", menu_id).neq("id", savedList.id);
+    if (cleanupError) console.error("Could not remove prior grocery list", cleanupError);
 
     return new Response(
       JSON.stringify({ success: true, grocery_list: savedList }),

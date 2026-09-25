@@ -394,7 +394,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
     if (allMenus) {
       const uniqueUsers = new Set(allMenus.map(m => m.family_id)).size
-      const menusThisWeek = allMenus.filter(m => m.week_start_date >= weekStartStr).length
+      const menusThisWeek = allMenus.filter(m => m.week_start_date === weekStartStr).length
       setHomeActiveUsers(uniqueUsers)
       setHomeMenusThisWeek(menusThisWeek)
     }
@@ -413,14 +413,18 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   }
 
   const fetchCurrentMenu = async (fid: string) => {
-    const { data } = await supabase
-      .from('weekly_menus')
-      .select('id')
-      .eq('family_id', fid)
-      .order('week_start_date', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (data?.id) setCurrentMenuId(data.id)
+    const now = new Date()
+    now.setDate(now.getDate() - now.getDay())
+    const weekStart = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-')
+    // Show the current menu, or the nearest upcoming one when this week has none.
+    const { data: upcoming } = await supabase.from('weekly_menus')
+      .select('id').eq('family_id', fid).gte('week_start_date', weekStart)
+      .order('week_start_date', { ascending: true }).limit(1).maybeSingle()
+    if (upcoming?.id) { setCurrentMenuId(upcoming.id); return }
+    const { data: previous } = await supabase.from('weekly_menus')
+      .select('id').eq('family_id', fid).lt('week_start_date', weekStart)
+      .order('week_start_date', { ascending: false }).limit(1).maybeSingle()
+    setCurrentMenuId(previous?.id || null)
   }
 
   const generateMenu = async (feedback?: string) => {

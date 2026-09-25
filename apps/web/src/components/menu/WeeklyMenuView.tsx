@@ -226,7 +226,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
   if (!menu) return <p style={{ color: '#6B5C52' }}>Menu not found.</p>
 
   const isApproved = menu.status === 'approved'
-  const weekDate = new Date(menu.week_start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const weekDate = new Date(`${menu.week_start_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
     <div>
@@ -338,8 +338,9 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
             { key: 'dinner', label: 'Dinner' },
           ] as const
           const hasMeals = meals.some(m => dayData[m.key])
-          const today = new Date().getDay()
-          const isToday = i === today
+          const dayDate = new Date(`${menu.week_start_date}T12:00:00`)
+          dayDate.setDate(dayDate.getDate() + i)
+          const isToday = dayDate.toDateString() === new Date().toDateString()
 
           return (
             <div key={i}>

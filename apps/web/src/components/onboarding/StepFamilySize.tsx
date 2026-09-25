@@ -14,26 +14,35 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
   const [adults, setAdults] = useState(2)
   const [children, setChildren] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(!!familyId)
+  const [profileReady, setProfileReady] = useState(!familyId)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!familyId) return
+    if (!familyId) { setProfileLoading(false); setProfileReady(true); return }
+    setProfileLoading(true)
+    setProfileReady(false)
     const fetch = async () => {
-      const { data } = await supabase
+      const { data, error: loadError } = await supabase
         .from('family_profiles')
         .select('family_name, adults, children')
         .eq('id', familyId)
         .single()
-      if (data) {
+      if (loadError || !data) {
+        setError('Could not load your family profile. Please go back and try again.')
+      } else {
         setFamilyName(data.family_name)
         setAdults(data.adults)
         setChildren(data.children)
+        setProfileReady(true)
       }
+      setProfileLoading(false)
     }
     fetch()
   }, [familyId])
 
   const handleSave = async () => {
+    if (!profileReady || profileLoading) return
     setSaving(true)
     setError(null)
     const userId = typeof user === 'string' ? user : user.id
@@ -74,6 +83,8 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
     cursor: 'pointer',
     fontFamily: 'var(--font-sans)',
   }
+
+  if (profileLoading) return <p role="status">Loading family profile...</p>
 
   return (
     <div>
@@ -144,7 +155,7 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
 
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || !profileReady}
         className="btn-primary"
         style={{ width: '100%', marginTop: '1.5rem', opacity: saving ? 0.7 : 1 }}
       >

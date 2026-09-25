@@ -121,7 +121,7 @@ function parseIngredientLine(line: string): { name: string; quantity: string } {
   // Supports common quantities including ranges (2-3), decimals (2.5),
   // fractions (1/2), and mixed fractions (1 1/2). Units are optional.
   const match = trimmed.match(
-    /^(\d+(?:\.\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+|\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?)(?:\s+((?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|pinches?|cloves?|slices?|cans?|bunch(?:es)?|heads?|pkgs?|packages?|pieces?)))?\s+(.+)$/i
+    /^(\d+(?:\.\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+|\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?)(?:\s+((?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|pinches?|cloves?|slices?|cans?|bunch(?:es)?|heads?|pkgs?|packages?|pieces?))\b)?\s+(.+)$/i
   )
 
   if (!match) return { quantity: '', name: trimmed }

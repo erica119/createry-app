@@ -180,16 +180,20 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     if (!menu || savingSlot) return false
     setSavingSlot(true)
     setSlotError(null)
-    const updatedDays = {
+    const updatedDays: MenuData['days'] = {
       ...menu.menu_data.days,
       [day]: { ...menu.menu_data.days[day], [meal]: recipeId },
     }
     // This snapshot belongs only to this menu. The recurring weekly_schedule is untouched.
-    const scheduleOverride = Object.fromEntries(
-      Array.from({ length: 7 }, (_, i) => [
-        String(i), Object.fromEntries(MEALS.map(({ key }) => [key, !!updatedDays[String(i)]?.[key]])),
-      ])
-    )
+    const scheduleOverride: Record<string, Record<Meal, boolean>> = {}
+    for (let i = 0; i < 7; i++) {
+      const slots = updatedDays[String(i)]
+      scheduleOverride[String(i)] = {
+        breakfast: !!slots?.breakfast,
+        lunch: !!slots?.lunch,
+        dinner: !!slots?.dinner,
+      }
+    }
     const updatedMenuData = { ...menu.menu_data, days: updatedDays, schedule_override: scheduleOverride }
     const { error } = await supabase.from('weekly_menus')
       .update({ menu_data: updatedMenuData, status: 'pending_approval' })

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingredientReadiness'
 
 interface Props {
   user: User
@@ -61,15 +62,14 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
     if (!title.trim()) { setError('Recipe title is required.'); return }
     if (!ingredients.trim()) { setError('Ingredients are required.'); return }
     if (!instructions.trim()) { setError('Instructions are required.'); return }
+    const parsedIngredients = ingredients.split('\n').filter(line => line.trim()).map(parseShoppingIngredient)
+    const issues = recipeIngredientIssues(parsedIngredients)
+    if (issues.length) { setError(`Fix ingredient lines before saving: ${issues.join(' ')}`); return }
 
     setSaving(true)
     setError(null)
 
     const imageUrl = await uploadImage()
-
-    const parsedIngredients = ingredients.split('\n')
-      .filter(line => line.trim())
-      .map(line => ({ name: line.trim(), quantity: '', unit: '' }))
 
     try {
       const { error } = await supabase.from('recipes').insert({
@@ -99,6 +99,10 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
       setSaving(false)
     }
   }
+
+  const ingredientIssues = ingredients.trim()
+    ? recipeIngredientIssues(ingredients.split('\n').filter(line => line.trim()).map(parseShoppingIngredient))
+    : []
 
   const inputStyle = {
     width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem',
@@ -247,7 +251,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         {/* Ingredients */}
         <div>
           <label style={labelStyle}>Ingredients *</label>
-          <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>One ingredient per line</p>
+          <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>One purchasable ingredient per line with an amount. Put alternatives and optional garnishes in the instructions.</p>
           <textarea
             value={ingredients}
             onChange={e => setIngredients(e.target.value)}
@@ -255,6 +259,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
             rows={6}
             style={{ ...inputStyle, resize: 'vertical' as const }}
           />
+          {ingredientIssues.length > 0 && <div role="alert" style={{ color: '#b45309', fontSize: '0.8rem', marginTop: '0.5rem' }}>{ingredientIssues.map(issue => <p key={issue} style={{ margin: '0.25rem 0' }}>⚠ {issue}</p>)}</div>}
         </div>
 
         {/* Instructions */}

@@ -1,3 +1,4 @@
+import BrandMark from '../shared/BrandMark'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -78,8 +79,8 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
       <div style={{ width: '100%', maxWidth: '560px' }}>
 
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🍽️</div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.25rem' }}>
+          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><BrandMark /></div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.25rem' }}>
             Let's set up your kitchen
           </h1>
           <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.95rem' }}>
@@ -128,7 +129,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           {currentStep === 6 && (
             <div>
               <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>🥗</div>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--espresso)', textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.4rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--espresso)', textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.4rem' }}>
                 Choose your plan
               </h2>
               <p style={{ color: 'var(--text-light)', textAlign: 'center', margin: '0 0 1.5rem', fontSize: '0.9rem', lineHeight: 1.6 }}>
@@ -145,9 +146,9 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
           {currentStep === 5 && (
             <div>
               <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>&#10022;</div>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--espresso)', textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.4rem' }}>How your meal plans are made</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--espresso)', textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.4rem' }}>How your meal plans are made</h2>
               <p style={{ color: 'var(--text-light)', textAlign: 'center', margin: '0 0 1.5rem', fontSize: '0.9rem', lineHeight: 1.6 }}>Before we generate your first plan, here is what you should know.</p>
-              <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ background: '#FAF3E8', borderRadius: '12px', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
                   "Your family dietary needs and preferences are used to filter and select from the recipe library",
                   "An AI system builds a personalized weekly plan from that filtered set",
@@ -155,7 +156,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
                   "You can regenerate, swap, or modify any meal at any time",
                   "AI-generated plans are not medical or nutritional advice",
                 ].map((point, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.5 }}>
+                  <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.875rem', color: '#1F3B30', lineHeight: 1.5 }}>
                     <span style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: '1px' }}>&#10003;</span>
                     <span>{point}</span>
                   </div>
@@ -169,7 +170,7 @@ export default function OnboardingWizard({ user, tenantId, onComplete }: Props) 
                   onChange={e => { setAiConsented(e.target.checked); setAiConsentError(false) }}
                   style={{ marginTop: '2px', flexShrink: 0, width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
                 />
-                <label htmlFor="ai-consent" style={{ fontSize: '0.82rem', color: '#4A3728', lineHeight: 1.5, cursor: 'pointer' }}>
+                <label htmlFor="ai-consent" style={{ fontSize: '0.82rem', color: '#1F3B30', lineHeight: 1.5, cursor: 'pointer' }}>
                   I understand that Createry uses AI to generate my weekly meal plans based on my household preferences, and that this is not a substitute for professional dietary or medical advice.
                 </label>
               </div>

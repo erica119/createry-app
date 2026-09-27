@@ -80,7 +80,7 @@ export default function StepDietaryConstraints({ familyId, tenantId, onNext, onB
 
   const ChipGroup = ({ title, options }: { title: string; options: typeof ALLERGIES }) => (
     <div style={{ marginBottom: '1.5rem' }}>
-      <p style={{ fontWeight: '600', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ fontWeight: '600', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {title}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -94,7 +94,7 @@ export default function StepDietaryConstraints({ familyId, tenantId, onNext, onB
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '20px',
-                border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+                border: `2px solid ${active ? '#C9471F' : '#DDCDBB'}`,
                 fontSize: '0.875rem',
                 cursor: 'pointer',
                 fontWeight: '500',
@@ -112,10 +112,10 @@ export default function StepDietaryConstraints({ familyId, tenantId, onNext, onB
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#1F3B30', margin: '0 0 0.5rem' }}>
         Any dietary needs?
       </h2>
-      <p style={{ color: '#6B5C52', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
+      <p style={{ color: '#52645A', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
         Select all that apply. We'll make sure every meal fits your family.
       </p>
       <ChipGroup title="Allergies & intolerances" options={ALLERGIES} />

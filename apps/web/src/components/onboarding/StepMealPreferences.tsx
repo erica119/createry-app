@@ -85,14 +85,14 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#1F3B30', margin: '0 0 0.5rem' }}>
         What does your family love to eat?
       </h2>
-      <p style={{ color: '#6B5C52', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
+      <p style={{ color: '#52645A', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
         We'll use this to personalize every menu we generate.
       </p>
 
-      <div style={{ display: 'flex', background: '#FDF6EE', borderRadius: '10px', padding: '4px', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'flex', background: '#FAF3E8', borderRadius: '10px', padding: '4px', marginBottom: '1.25rem' }}>
         {(['favorites', 'dislikes'] as const).map(m => (
           <button
             key={m}
@@ -100,7 +100,7 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
             style={{
               flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none',
               background: mode === m ? 'white' : 'transparent',
-              color: mode === m ? '#2C1810' : '#6B5C52',
+              color: mode === m ? '#1F3B30' : '#52645A',
               fontWeight: mode === m ? '600' : '400',
               fontSize: '0.875rem', cursor: 'pointer',
               transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
@@ -129,7 +129,7 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '20px',
-                border: `2px solid ${isActive ? (mode === 'favorites' ? '#C4622D' : '#dc2626') : '#E8D5B7'}`,
+                border: `2px solid ${isActive ? (mode === 'favorites' ? '#C9471F' : '#dc2626') : '#DDCDBB'}`,
                 fontSize: '0.875rem', cursor: 'pointer',
                 fontWeight: '500',
                 transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
@@ -142,7 +142,7 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
         })}
       </div>
 
-      <p style={{ fontWeight: '600', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ fontWeight: '600', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         Max weeknight cook time
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.5rem' }}>
@@ -154,9 +154,9 @@ export default function StepMealPreferences({ familyId, tenantId, onNext, onBack
               onClick={() => setMaxCookTime(ct.id)}
               style={{
                 padding: '0.75rem 1rem', borderRadius: '10px',
-                border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
-                background: active ? '#FDF6EE' : 'white',
-                color: active ? '#C4622D' : '#2C1810',
+                border: `2px solid ${active ? '#C9471F' : '#DDCDBB'}`,
+                background: active ? '#FAF3E8' : 'white',
+                color: active ? '#C9471F' : '#1F3B30',
                 fontSize: '0.9rem', cursor: 'pointer',
                 fontWeight: active ? '600' : '400',
                 transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', textAlign: 'left',

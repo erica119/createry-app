@@ -156,13 +156,13 @@ export default function RecipeModal({ recipe, onClose }: Props) {
 
   const inputStyle = {
     width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem',
-    borderRadius: '10px', border: '2px solid #E8D5B7',
-    background: '#FDF6EE', color: '#2C1810',
+    borderRadius: '10px', border: '2px solid #DDCDBB',
+    background: '#FAF3E8', color: '#1F3B30',
     fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const,
   }
 
   const labelStyle = {
-    display: 'block', fontWeight: '600', color: '#2C1810',
+    display: 'block', fontWeight: '600', color: '#1F3B30',
     marginBottom: '0.4rem', fontSize: '0.82rem',
   }
 
@@ -177,8 +177,8 @@ export default function RecipeModal({ recipe, onClose }: Props) {
             onClick={() => onToggle(option)}
             style={{
               padding: '0.35rem 0.75rem', borderRadius: '20px',
-              border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
-              background: active ? '#FFF3EA' : 'white', color: active ? '#C4622D' : '#6B5C52',
+              border: `2px solid ${active ? '#C9471F' : '#DDCDBB'}`,
+              background: active ? '#FFF3EA' : 'white', color: active ? '#C9471F' : '#52645A',
               fontSize: '0.76rem', cursor: 'pointer', fontWeight: '600',
               fontFamily: 'var(--font-sans)', textTransform: 'capitalize',
             }}
@@ -199,13 +199,13 @@ export default function RecipeModal({ recipe, onClose }: Props) {
         onClick={e => e.stopPropagation()}
         style={{ background: 'white', borderRadius: '20px', maxWidth: isEditing ? '720px' : '580px', width: '100%', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(44,24,16,0.2)' }}
       >
-        <div style={{ background: '#2C1810', borderRadius: '20px 20px 0 0', padding: '1.5rem 2rem', position: 'relative' }}>
+        <div style={{ background: '#1F3B30', borderRadius: '20px 20px 0 0', padding: '1.5rem 2rem', position: 'relative' }}>
           <button
             onClick={onClose}
             style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >✕</button>
 
-          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.5rem', fontSize: '1.5rem', paddingRight: '2rem' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', color: 'white', margin: '0 0 0.5rem', fontSize: '1.5rem', paddingRight: '2rem' }}>
             {isEditing ? 'Edit Recipe' : displayedRecipe.title}
           </h2>
           {!isEditing && displayedRecipe.description && <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.9rem' }}>{displayedRecipe.description}</p>}
@@ -258,8 +258,8 @@ export default function RecipeModal({ recipe, onClose }: Props) {
                       onClick={() => setComplexity(option)}
                       style={{
                         flex: 1, padding: '0.55rem', borderRadius: '10px',
-                        border: `2px solid ${complexity === option ? '#C4622D' : '#E8D5B7'}`,
-                        background: complexity === option ? '#FFF3EA' : 'white', color: complexity === option ? '#C4622D' : '#6B5C52',
+                        border: `2px solid ${complexity === option ? '#C9471F' : '#DDCDBB'}`,
+                        background: complexity === option ? '#FFF3EA' : 'white', color: complexity === option ? '#C9471F' : '#52645A',
                         cursor: 'pointer', fontWeight: '600', fontFamily: 'var(--font-sans)', textTransform: 'capitalize',
                       }}
                     >
@@ -286,7 +286,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
 
               <div>
                 <label style={labelStyle}>Ingredients *</label>
-                <p style={{ color: '#9B8B82', fontSize: '0.78rem', margin: '0 0 0.4rem' }}>One ingredient per line</p>
+                <p style={{ color: '#687A70', fontSize: '0.78rem', margin: '0 0 0.4rem' }}>One ingredient per line</p>
                 <textarea value={ingredients} onChange={e => setIngredients(e.target.value)} rows={8} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
 
@@ -328,7 +328,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
                     <span key={`meal-${tag}`} style={{ background: '#fff7ed', color: '#c2410c', padding: '0.25rem 0.7rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{tag}</span>
                   ))}
                   {displayedRecipe.cuisine_tags?.map(tag => (
-                    <span key={`cuisine-${tag}`} style={{ background: '#F5EFE6', color: '#C4622D', padding: '0.25rem 0.7rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{tag}</span>
+                    <span key={`cuisine-${tag}`} style={{ background: '#F5E8D7', color: '#C9471F', padding: '0.25rem 0.7rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{tag}</span>
                   ))}
                   {displayedRecipe.dietary_tags?.map(tag => (
                     <span key={`diet-${tag}`} style={{ background: '#f0fdf4', color: '#16a34a', padding: '0.25rem 0.7rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{tag}</span>
@@ -337,25 +337,25 @@ export default function RecipeModal({ recipe, onClose }: Props) {
               )}
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Ingredients</h3>
-                <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Ingredients</h3>
+                <div style={{ background: '#FAF3E8', borderRadius: '12px', padding: '1rem 1.25rem' }}>
                   {Array.isArray(displayedRecipe.ingredients) ? (
                     <ul style={{ margin: 0, padding: '0 0 0 1.25rem' }}>
                       {displayedRecipe.ingredients.map((ingredient, index) => (
-                        <li key={index} style={{ color: '#2C1810', fontSize: '0.9rem', marginBottom: '0.4rem', lineHeight: 1.5 }}>
+                        <li key={index} style={{ color: '#1F3B30', fontSize: '0.9rem', marginBottom: '0.4rem', lineHeight: 1.5 }}>
                           {ingredientToLine(ingredient)}
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p style={{ margin: 0, color: '#2C1810', fontSize: '0.9rem', whiteSpace: 'pre-line' }}>{displayedRecipe.ingredients}</p>
+                    <p style={{ margin: 0, color: '#1F3B30', fontSize: '0.9rem', whiteSpace: 'pre-line' }}>{displayedRecipe.ingredients}</p>
                   )}
                 </div>
               </div>
 
               <div>
-                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Instructions</h3>
-                <div style={{ color: '#2C1810', fontSize: '0.9rem', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Instructions</h3>
+                <div style={{ color: '#1F3B30', fontSize: '0.9rem', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
                   {displayedRecipe.instructions}
                 </div>
               </div>

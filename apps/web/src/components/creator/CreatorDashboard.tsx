@@ -1,3 +1,4 @@
+import BrandMark from '../shared/BrandMark'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -58,33 +59,33 @@ function RecipeCard({ recipe, color, tenantId, onSelect, onDelete, onImageUpdate
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+    <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #DDCDBB', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
       <div onClick={onSelect} style={{ cursor: 'pointer' }}>
         {recipe.image_url ? (
           <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
         ) : (
-          <div style={{ width: '100%', height: '120px', background: '#F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#C8BAB2', fontSize: '2rem' }}>🍽️</span>
+          <div style={{ width: '100%', height: '120px', background: '#F5E8D7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#8A9A8F', fontSize: '2rem' }}>🍽️</span>
           </div>
         )}
       </div>
       <div style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-          <h3 onClick={onSelect} style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3, cursor: 'pointer' }}>{recipe.title}</h3>
+          <h3 onClick={onSelect} style={{ margin: 0, fontSize: '1rem', color: '#1F3B30', fontWeight: '600', lineHeight: 1.3, cursor: 'pointer' }}>{recipe.title}</h3>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
             <button onClick={e => { e.stopPropagation(); onToggleFavorite?.(recipe.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem', lineHeight: 1 }} title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>{isFavorite ? '❤️' : '🤍'}</button>
-            <button onClick={onDelete} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }}>✕</button>
+            <button onClick={onDelete} style={{ background: 'none', border: 'none', color: '#8A9A8F', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }}>✕</button>
           </div>
         </div>
-        {recipe.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
-        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#9B8B82', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        {recipe.description && <p style={{ color: '#52645A', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
+        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#687A70', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}
           {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
           {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
         </div>
         {recipe.complexity && (
           <div style={{ marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.65rem', background: '#F5EFE6', color, padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+            <span style={{ fontSize: '0.65rem', background: '#F5E8D7', color, padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
           </div>
         )}
         <button
@@ -123,7 +124,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   // Branding edit state
   const [editBrandName, setEditBrandName] = useState('')
   const [editTagline, setEditTagline] = useState('')
-  const [editColor, setEditColor] = useState('#C4622D')
+  const [editColor, setEditColor] = useState('#C9471F')
   const [savingBranding, setSavingBranding] = useState(false)
   const [brandingSaved, setBrandingSaved] = useState(false)
   const [connectingStripe, setConnectingStripe] = useState(false)
@@ -230,7 +231,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
   useEffect(() => {
     if (!tenant) return
-    const color = tenant.primary_color || '#C4622D'
+    const color = tenant.primary_color || '#C9471F'
     const hex = color.replace('#', '')
     const r = parseInt(hex.substring(0,2), 16)
     const g = parseInt(hex.substring(2,4), 16)
@@ -308,7 +309,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       setTenant(data)
       setEditBrandName(data.brand_name || '')
       setEditTagline(data.tagline || '')
-      setEditColor(data.primary_color || '#C4622D')
+      setEditColor(data.primary_color || '#C9471F')
     }
     setLoading(false)
   }
@@ -511,13 +512,13 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     setUploadingLogo(false)
   }
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FAF3E8' }}><p>Loading...</p></div>
 
   if (showRecipeForm) {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
-        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#C4622D' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #DDCDBB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#C9471F' }}>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}><BrandMark tenant={tenant} onDark creator /></span>
           <button onClick={() => setShowRecipeForm(false)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>← Back</button>
         </div>
         <RecipeForm user={user} tenantId={tenantId} onSaved={() => { setShowRecipeForm(false); fetchRecipes() }} onCancel={() => setShowRecipeForm(false)} />
@@ -541,12 +542,12 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
   const inputStyle = {
     width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem',
-    borderRadius: '10px', border: '2px solid #E8D5B7',
-    background: '#FDF6EE', color: '#2C1810',
+    borderRadius: '10px', border: '2px solid #DDCDBB',
+    background: '#FAF3E8', color: '#1F3B30',
     fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const,
   }
 
-  const color = tenant?.primary_color || '#C4622D'
+  const color = tenant?.primary_color || '#C9471F'
 
   const TAB_LABELS: Record<string, string> = {
     overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs', shopping: 'Shopping',
@@ -556,8 +557,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
   // Subscription loading
   if (subLoading) return (
-    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: '#6B5C52', fontFamily: 'var(--font-sans)' }}>Loading...</p>
+    <div style={{ minHeight: '100vh', background: '#FAF3E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <p style={{ color: '#52645A', fontFamily: 'var(--font-sans)' }}>Loading...</p>
     </div>
   )
 
@@ -567,12 +568,12 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const isCancelled = subscription?.status === 'cancelled' || subscription?.status === 'unpaid'
 
   if (needsPlan) return (
-    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', background: '#FAF3E8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: '520px', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🍽️</div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', fontSize: '2rem', margin: '0 0 0.5rem' }}>Choose your plan</h1>
-          <p style={{ color: '#6B5C52', margin: 0 }}>Start with a 7-day free trial. Cancel anytime.</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', fontSize: '2rem', margin: '0 0 0.5rem' }}>Choose your plan</h1>
+          <p style={{ color: '#52645A', margin: 0 }}>Start with a 7-day free trial. Cancel anytime.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -583,14 +584,14 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             <div
               key={plan}
               onClick={() => setSelectedPlan(plan)}
-              style={{ background: 'white', borderRadius: '16px', border: selectedPlan === plan ? `2px solid ${color}` : '1px solid #E8D5B7', padding: '1.5rem', cursor: 'pointer', position: 'relative', transition: 'border 0.15s' }}
+              style={{ background: 'white', borderRadius: '16px', border: selectedPlan === plan ? `2px solid ${color}` : '1px solid #DDCDBB', padding: '1.5rem', cursor: 'pointer', position: 'relative', transition: 'border 0.15s' }}
             >
               {savings && (
                 <span style={{ position: 'absolute', top: '-0.75rem', right: '1rem', background: '#16a34a', color: 'white', fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px' }}>{savings}</span>
               )}
-              <p style={{ margin: '0 0 0.25rem', fontWeight: '700', color: '#2C1810', fontSize: '1rem' }}>{label}</p>
-              <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: color, fontWeight: '700', lineHeight: 1 }}>{price}</p>
-              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>{period}</p>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: '700', color: '#1F3B30', fontSize: '1rem' }}>{label}</p>
+              <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: color, fontWeight: '700', lineHeight: 1 }}>{price}</p>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>{period}</p>
               {selectedPlan === plan && (
                 <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', width: '18px', height: '18px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ color: 'white', fontSize: '0.65rem' }}>✓</span>
@@ -610,12 +611,12 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
         {subError && <p style={{ color: '#dc2626', fontSize: '0.875rem', textAlign: 'center', margin: '0.5rem 0' }}>{subError}</p>}
 
-        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#9B8B82', margin: '0.5rem 0 0' }}>
+        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#687A70', margin: '0.5rem 0 0' }}>
           Have a promo code? You'll enter it at checkout. No charge during your trial.
         </p>
 
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#9B8B82', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
+          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#687A70', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
         </div>
       </div>
     </div>
@@ -623,17 +624,17 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
   // Past due — soft lock
   if (isPastDue) return (
-    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', background: '#FAF3E8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
-        <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem' }}>Payment issue</h2>
-        <p style={{ color: '#6B5C52', marginBottom: '1.5rem' }}>There was a problem with your last payment. Please update your billing info to restore access.</p>
+        <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem' }}>Payment issue</h2>
+        <p style={{ color: '#52645A', marginBottom: '1.5rem' }}>There was a problem with your last payment. Please update your billing info to restore access.</p>
         <a href="https://billing.stripe.com/p/login/aFa9AU7GkaUJbPr7VM1RC00" target="_blank" rel="noopener noreferrer"
           style={{ display: 'inline-block', background: color, color: 'white', padding: '0.75rem 2rem', borderRadius: '10px', fontWeight: '600', textDecoration: 'none', fontSize: '0.95rem' }}>
           Update Billing →
         </a>
         <div style={{ marginTop: '1rem' }}>
-          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#9B8B82', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
+          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#687A70', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
         </div>
       </div>
     </div>
@@ -641,31 +642,28 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
   // Cancelled — hard lock
   if (isCancelled) return (
-    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', background: '#FAF3E8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔒</div>
-        <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem' }}>Subscription ended</h2>
-        <p style={{ color: '#6B5C52', marginBottom: '1.5rem' }}>Your Createry creator subscription has ended. Reactivate to access your dashboard.</p>
+        <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem' }}>Subscription ended</h2>
+        <p style={{ color: '#52645A', marginBottom: '1.5rem' }}>Your Createry creator subscription has ended. Reactivate to access your dashboard.</p>
         <button onClick={() => setSubscription(null)} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '0.95rem', fontFamily: 'var(--font-sans)' }}>
           Reactivate Plan →
         </button>
         <div style={{ marginTop: '1rem' }}>
-          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#9B8B82', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
+          <button onClick={onSignOut} style={{ background: 'none', border: 'none', color: '#687A70', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>Sign out</button>
         </div>
       </div>
     </div>
   )
 
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
+    <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8' }}>
       {/* Nav */}
       <div ref={menuRef} style={{ position: 'relative' }}>
         <div className="creator-nav-bar" style={{ padding: '0 2rem', background: color, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            {logoUrl
-              ? <img src={logoUrl} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }} />
-              : <span>🍽️</span>}
-            {tenant?.brand_name || 'Createry'} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Creator</span>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <BrandMark tenant={tenant} onDark creator />
             <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {TAB_LABELS[view]}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -675,16 +673,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           </div>
         </div>
         {menuOpen && (
-          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '200px', zIndex: 50, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #DDCDBB', minWidth: '200px', zIndex: 50, overflow: 'hidden' }}>
             {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'sharing', 'settings'] as const).map((v, i, arr) => (
               <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '0.8rem 1.25rem',
-                background: view === v ? '#FDF6EE' : 'white',
-                color: view === v ? color : '#2C1810',
+                background: view === v ? '#FAF3E8' : 'white',
+                color: view === v ? color : '#1F3B30',
                 fontWeight: view === v ? '700' : '400',
                 fontSize: '0.95rem', border: 'none',
-                borderBottom: i < arr.length - 1 ? '1px solid #F5EFE6' : 'none',
+                borderBottom: i < arr.length - 1 ? '1px solid #F5E8D7' : 'none',
                 cursor: 'pointer', fontFamily: 'var(--font-sans)',
               }}>{TAB_LABELS[v]}</button>
             ))}
@@ -699,11 +697,11 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <>
             {/* ── Creator's own meal plan status ── */}
             {!creatorMenuId ? (
-              <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ background: '#F5E8D7', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>👩‍🍳</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>Let's plan your week</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Generate a meal plan for your own family from your recipe library.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.3rem' }}>Let's plan your week</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Generate a meal plan for your own family from your recipe library.</p>
                 </div>
                 <button onClick={() => setView('mealplan')} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
                   Go to Meal Plan →
@@ -713,8 +711,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               <div style={{ background: '#FFF9F0', borderRadius: '16px', border: `1.5px solid ${color}`, padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>📋</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>Your menu is ready to review</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Take a look at this week's meal plan and approve it when ready.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.3rem' }}>Your menu is ready to review</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Take a look at this week's meal plan and approve it when ready.</p>
                 </div>
                 <button onClick={() => setView('mealplan')} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
                   View Menu →
@@ -724,8 +722,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1.5px solid #16a34a', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>🛒</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>Time to build your shopping list</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your menu is approved — head to your meal plan to generate a list.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.3rem' }}>Time to build your shopping list</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Your menu is approved — head to your meal plan to generate a list.</p>
                 </div>
                 <button onClick={() => setView('mealplan')} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
                   Shopping List →
@@ -735,8 +733,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1px solid #86efac', padding: '1.75rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <span style={{ fontSize: '1.75rem' }}>✅</span>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.3rem' }}>You're all set this week!</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.3rem' }}>You're all set this week!</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals.</p>
                 </div>
               </div>
             )}
@@ -762,7 +760,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               else if (nextMeal === 'lunch') mealLabel = 'Lunchtime'
               return (
                 <div
-                  style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(44,24,16,0.10)', marginBottom: '1.5rem' }}
+                  style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(44,24,16,0.10)', marginBottom: '1.5rem' }}
                   onClick={() => setSelectedRecipe(recipe)}
                 >
                   {recipe.image_url && (
@@ -777,16 +775,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.75rem', borderRadius: '20px', background: color, color: 'white', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{mealLabel}</span>
                       {recipe.cuisine_tags && (
-                        <span style={{ fontSize: '0.75rem', color: '#9B8B82', fontWeight: '500' }}>{Array.isArray(recipe.cuisine_tags) ? recipe.cuisine_tags[0] : recipe.cuisine_tags}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#687A70', fontWeight: '500' }}>{Array.isArray(recipe.cuisine_tags) ? recipe.cuisine_tags[0] : recipe.cuisine_tags}</span>
                       )}
                     </div>
-                    <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.5rem', color: '#2C1810', fontSize: '1.3rem', lineHeight: 1.2 }}>{recipe.title}</h3>
+                    <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.5rem', color: '#1F3B30', fontSize: '1.3rem', lineHeight: 1.2 }}>{recipe.title}</h3>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                       {recipe.cook_time_minutes && (
-                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>🕐 {recipe.cook_time_minutes} min</span>
+                        <span style={{ fontSize: '0.8rem', color: '#52645A' }}>🕐 {recipe.cook_time_minutes} min</span>
                       )}
                       {recipe.servings && (
-                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>👥 {recipe.servings} servings</span>
+                        <span style={{ fontSize: '0.8rem', color: '#52645A' }}>👥 {recipe.servings} servings</span>
                       )}
                     </div>
                   </div>
@@ -796,16 +794,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '2rem 0' }}>
-              <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
-              <span style={{ color: '#9B8B82', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Creator Dashboard</span>
-              <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
+              <div style={{ flex: 1, height: '1px', background: '#DDCDBB' }} />
+              <span style={{ color: '#687A70', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Creator Dashboard</span>
+              <div style={{ flex: 1, height: '1px', background: '#DDCDBB' }} />
             </div>
 
             <div style={{ marginBottom: '2rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>
                 Welcome back! 👋
               </h2>
-              <p style={{ color: '#6B5C52', margin: 0 }}>Here's how your creator account is looking.</p>
+              <p style={{ color: '#52645A', margin: 0 }}>Here's how your creator account is looking.</p>
             </div>
 
             {/* Stats */}
@@ -815,16 +813,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 { label: 'Active Users', value: homeActiveUsers, icon: '👥' },
                 { label: 'Menus This Week', value: homeMenusThisWeek, icon: '📅' },
               ].map(stat => (
-                <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
+                <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #DDCDBB' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
-                  <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{stat.label}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F3B30', fontFamily: 'var(--font-display)' }}>{stat.value}</div>
+                  <div style={{ color: '#687A70', fontSize: '0.85rem' }}>{stat.label}</div>
                 </div>
               ))}
             </div>
             {/* Quick actions */}
-            <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.1rem' }}>Quick actions</h3>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 1rem', fontSize: '1.1rem' }}>Quick actions</h3>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button onClick={() => { setView('recipes'); setShowRecipeImport(true) }} style={{ background: color, color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600', fontFamily: 'var(--font-sans)' }}>
                   ⬆ Import Recipes
@@ -832,17 +830,17 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 <button onClick={() => { setView('recipes'); setShowRecipeForm(true) }} style={{ background: 'white', color, border: `1.5px solid ${color}`, padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
                   + Add Recipe
                 </button>
-                <button onClick={() => setView('branding')} style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
+                <button onClick={() => setView('branding')} style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
                   🎨 Edit Branding
                 </button>
-                <button onClick={() => setView('sharing')} style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
+                <button onClick={() => setView('sharing')} style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
                   📣 Share Your App
                 </button>
               </div>
               {subscription && (
-                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#9B8B82' }}>
-                    Plan: <strong style={{ color: '#2C1810', textTransform: 'capitalize' }}>{subscription.plan}</strong> · Status: <strong style={{ color: subscription.status === 'active' || subscription.status === 'trialing' ? '#16a34a' : '#dc2626', textTransform: 'capitalize' }}>{subscription.status}</strong>
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F5E8D7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#687A70' }}>
+                    Plan: <strong style={{ color: '#1F3B30', textTransform: 'capitalize' }}>{subscription.plan}</strong> · Status: <strong style={{ color: subscription.status === 'active' || subscription.status === 'trialing' ? '#16a34a' : '#dc2626', textTransform: 'capitalize' }}>{subscription.status}</strong>
                   </p>
                   <a href="https://billing.stripe.com/p/login/aFa9AU7GkaUJbPr7VM1RC00" target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: '0.8rem', color: color, fontWeight: '600', textDecoration: 'none' }}>
@@ -858,23 +856,23 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 { done: !!tenant?.brand_name, label: 'Set up your brand name' },
                 { done: recipes.length > 0, label: 'Add your first recipe' },
                 { done: recipes.length >= 10, label: 'Add at least 10 recipes' },
-                { done: !!tenant?.primary_color && tenant.primary_color !== '#C4622D', label: 'Customize your brand color' },
+                { done: !!tenant?.primary_color && tenant.primary_color !== '#C9471F', label: 'Customize your brand color' },
               ]
               const allDone = checks.every(c => c.done)
               return allDone ? (
-                <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7' }}>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.1rem' }}>🎉 You're all set up!</h3>
-                  <p style={{ color: '#6B5C52', fontSize: '0.85rem', margin: '0 0 1.25rem' }}>Here's what to do next to grow your audience.</p>
+                <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.1rem' }}>🎉 You're all set up!</h3>
+                  <p style={{ color: '#52645A', fontSize: '0.85rem', margin: '0 0 1.25rem' }}>Here's what to do next to grow your audience.</p>
                   {[
                     { icon: '📣', label: `Share ${tenant?.brand_name || 'your page'} with your audience`, action: () => { navigator.clipboard.writeText(`${window.location.origin}?creator=${tenant?.subdomain}`); alert('Link copied!') }, btn: 'Copy Link' },
                     { icon: '💎', label: 'Create a Premium Recipe Pack to earn revenue', action: () => setView('packs'), btn: 'Create Pack' },
                     { icon: '💳', label: tenant?.stripe_onboarded ? "Stripe connected — you're ready to earn!" : 'Connect Stripe to receive payouts', action: tenant?.stripe_onboarded ? undefined : handleStripeConnect, btn: tenant?.stripe_onboarded ? undefined : 'Connect Stripe' },
                     { icon: '🖼️', label: 'Upload a logo to complete your brand', action: () => setView('branding'), btn: 'Go to Branding' },
                   ].map((item, i, arr) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < arr.length - 1 ? '1px solid #F5EFE6' : 'none' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < arr.length - 1 ? '1px solid #F5E8D7' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
-                        <span style={{ color: '#2C1810', fontSize: '0.9rem' }}>{item.label}</span>
+                        <span style={{ color: '#1F3B30', fontSize: '0.9rem' }}>{item.label}</span>
                       </div>
                       {item.btn && item.action && (
                         <button onClick={item.action} style={{ background: color, color: 'white', border: 'none', padding: '0.4rem 0.9rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>{item.btn}</button>
@@ -883,14 +881,14 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   ))}
                 </div>
               ) : (
-                <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7' }}>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.1rem' }}>Getting started</h3>
+                <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 1rem', fontSize: '1.1rem' }}>Getting started</h3>
                   {checks.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', borderBottom: i < checks.length - 1 ? '1px solid #F5EFE6' : 'none' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: item.done ? '#16a34a' : 'white', border: `2px solid ${item.done ? '#16a34a' : '#E8D5B7'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', borderBottom: i < checks.length - 1 ? '1px solid #F5E8D7' : 'none' }}>
+                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: item.done ? '#16a34a' : 'white', border: `2px solid ${item.done ? '#16a34a' : '#DDCDBB'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {item.done && <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: '700' }}>✓</span>}
                       </div>
-                      <span style={{ color: item.done ? '#9B8B82' : '#2C1810', fontSize: '0.9rem', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
+                      <span style={{ color: item.done ? '#687A70' : '#1F3B30', fontSize: '0.9rem', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -900,7 +898,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             {/* This Week's Recipes */}
             {creatorMenuData?.days && (() => {
               const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-              const DAY_COLORS = ['#C4622D', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
+              const DAY_COLORS = ['#C9471F', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
               const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
               const slots: { day: number; meal: string; recipeId: string }[] = []
               Object.entries(creatorMenuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
@@ -912,22 +910,22 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               if (slots.length === 0) return null
               return (
                 <div style={{ marginTop: '1.5rem' }}>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.875rem', color: '#2C1810', fontSize: '1.2rem' }}>This Week's Recipes</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.875rem', color: '#1F3B30', fontSize: '1.2rem' }}>This Week's Recipes</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.875rem' }}>
                     {slots.map(({ day, meal, recipeId }) => {
                       const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
                       if (!recipe) return null
                       return (
-                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
                           {recipe.image_url && (
                             <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '120px', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                           )}
                           <div style={{ padding: '0.75rem 0.875rem' }}>
                             <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', alignItems: 'center' }}>
                               <span style={{ fontSize: '0.65rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
-                              <span style={{ fontSize: '0.65rem', color: '#9B8B82', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
+                              <span style={{ fontSize: '0.65rem', color: '#687A70', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
                             </div>
-                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3 }}>{recipe.title}</p>
+                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#1F3B30', lineHeight: 1.3 }}>{recipe.title}</p>
                           </div>
                         </div>
                       )
@@ -943,8 +941,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {view === 'recipes' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>
-                Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span>
+              <h2 style={{ fontFamily: 'var(--font-display)', margin: 0, color: '#1F3B30', fontSize: '1.5rem' }}>
+                Recipes <span style={{ color: '#687A70', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span>
               </h2>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color, border: `1.5px solid ${color}`, padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>⬆ Import CSV</button>
@@ -952,7 +950,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               </div>
             </div>
             <input type="text" placeholder="🔍 Search recipes..." value={recipeSearch} onChange={e => setRecipeSearch(e.target.value)}
-              style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }} />
+              style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '65vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
               {filteredRecipes.map(recipe => (
                 <RecipeCard
@@ -977,8 +975,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             {!familyId ? (
               <div>
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>My Meal Plan</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Set up your family profile to start generating meal plans.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>My Meal Plan</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Set up your family profile to start generating meal plans.</p>
                 </div>
                 <OnboardingWizard
                   user={user}
@@ -988,10 +986,10 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               </div>
             ) : (
               <div>
-                <div style={{ marginBottom: '1.5rem', padding: '1.5rem 2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ marginBottom: '1.5rem', padding: '1.5rem 2rem', background: '#F5E8D7', borderRadius: '16px', border: '1px solid #DDCDBB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
-                    <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Menu</h2>
-                    <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.4rem' }}>This Week's Menu</h2>
+                    <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>
                       {currentMenuId ? 'Your meal plan is ready.' : targetWeekDate ? `Generate a menu for the week of ${new Date(targetWeekDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.` : 'Generate a personalized weekly meal plan.'}
                     </p>
                     {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
@@ -1003,7 +1001,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                         <button onClick={() => setMenuView('shopping')} style={{ background: 'white', color: '#16a34a', border: '1.5px solid #16a34a', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>Shopping List</button>
                       </>
                     )}
-                    <button onClick={() => setMenuView('settings')} style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>⚙️ Settings</button>
+                    <button onClick={() => setMenuView('settings')} style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>⚙️ Settings</button>
                     <button onClick={() => generateMenu()} disabled={generatingMenu} style={{ background: color, color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: generatingMenu ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: generatingMenu ? 0.7 : 1, whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
                       {generatingMenu ? 'Generating...' : currentMenuId ? '✨ Regenerate' : '✨ Generate Menu'}
                     </button>
@@ -1045,8 +1043,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <div>
-                <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Recipe Packs</h2>
-                <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Bundle recipes into packs your audience can purchase.</p>
+                <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Recipe Packs</h2>
+                <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Bundle recipes into packs your audience can purchase.</p>
               </div>
               <button onClick={() => setShowPackForm(!showPackForm)} style={{ background: color, color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600', fontFamily: 'var(--font-sans)' }}>
                 {showPackForm ? '✕ Cancel' : '+ New Pack'}
@@ -1054,29 +1052,29 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             </div>
 
             {showPackForm && (
-              <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1.25rem', fontSize: '1.1rem' }}>Create New Pack</h3>
+              <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 1.25rem', fontSize: '1.1rem' }}>Create New Pack</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Pack name</label>
-                    <input type="text" value={newPackName} onChange={e => setNewPackName(e.target.value)} placeholder="e.g. Summer Grilling Collection" style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
+                    <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Pack name</label>
+                    <input type="text" value={newPackName} onChange={e => setNewPackName(e.target.value)} placeholder="e.g. Summer Grilling Collection" style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Description</label>
-                    <input type="text" value={newPackDescription} onChange={e => setNewPackDescription(e.target.value)} placeholder="What's included in this pack?" style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
+                    <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Description</label>
+                    <input type="text" value={newPackDescription} onChange={e => setNewPackDescription(e.target.value)} placeholder="What's included in this pack?" style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Price (USD)</label>
-                    <input type="number" value={newPackPrice} onChange={e => setNewPackPrice(e.target.value)} placeholder="9.99" min="0.99" step="0.01" style={{ width: '200px', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                    <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Price (USD)</label>
+                    <input type="number" value={newPackPrice} onChange={e => setNewPackPrice(e.target.value)} placeholder="9.99" min="0.99" step="0.01" style={{ width: '200px', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', outline: 'none' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Upload premium recipes (CSV)</label>
-                    <p style={{ color: '#6B5C52', fontSize: '0.8rem', margin: '0 0 0.5rem', lineHeight: 1.5 }}>These recipes will be marked as premium and locked until users purchase this pack. Use the same CSV format as regular recipe imports.</p>
+                    <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.4rem', fontSize: '0.875rem' }}>Upload premium recipes (CSV)</label>
+                    <p style={{ color: '#52645A', fontSize: '0.8rem', margin: '0 0 0.5rem', lineHeight: 1.5 }}>These recipes will be marked as premium and locked until users purchase this pack. Use the same CSV format as regular recipe imports.</p>
                     <input
                       type="file"
                       accept=".csv"
                       onChange={e => setNewPackCsvFile(e.target.files?.[0] || null)}
-                      style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.875rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                      style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.875rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', cursor: 'pointer', boxSizing: 'border-box' as const }}
                     />
                     {newPackCsvFile && <p style={{ color: '#16a34a', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>✓ {newPackCsvFile.name} selected</p>}
                   </div>
@@ -1199,22 +1197,22 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             )}
 
             {packs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '3rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+              <div style={{ textAlign: 'center', padding: '3rem', background: '#F5E8D7', borderRadius: '16px', border: '1px dashed #CAB7A4' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📦</div>
-                <p style={{ color: '#6B5C52', margin: '0 0 1rem' }}>No recipe packs yet. Create your first pack to start monetizing your recipes.</p>
+                <p style={{ color: '#52645A', margin: '0 0 1rem' }}>No recipe packs yet. Create your first pack to start monetizing your recipes.</p>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
                 {packs.map(pack => (
-                  <div key={pack.id} style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                  <div key={pack.id} style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #DDCDBB', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                      <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600' }}>{pack.name}</h3>
+                      <h3 style={{ margin: 0, fontSize: '1rem', color: '#1F3B30', fontWeight: '600' }}>{pack.name}</h3>
                       <span style={{ fontWeight: '700', color, fontSize: '1.1rem', flexShrink: 0, marginLeft: '0.5rem' }}>${(pack.price_cents / 100).toFixed(2)}</span>
                     </div>
-                    {pack.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{pack.description}</p>}
+                    {pack.description && <p style={{ color: '#52645A', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{pack.description}</p>}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#9B8B82' }}>👑 {pack.recipes?.[0]?.count || 0} premium recipes</span>
-                      <button onClick={async () => { if (confirm('Delete this pack?')) { await supabase.from('recipe_packs').delete().eq('id', pack.id); fetchPacks() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '0.85rem' }}>Delete</button>
+                      <span style={{ fontSize: '0.8rem', color: '#687A70' }}>👑 {pack.recipes?.[0]?.count || 0} premium recipes</span>
+                      <button onClick={async () => { if (confirm('Delete this pack?')) { await supabase.from('recipe_packs').delete().eq('id', pack.id); fetchPacks() } }} style={{ background: 'none', border: 'none', color: '#8A9A8F', cursor: 'pointer', fontSize: '0.85rem' }}>Delete</button>
                     </div>
                   </div>
                 ))}
@@ -1227,8 +1225,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {view === 'shopping' && (
           <>
             <div style={{ marginBottom: '1.5rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Shopping List</h2>
-              <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your shopping list for this week's meal plan.</p>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Shopping List</h2>
+              <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Your shopping list for this week's meal plan.</p>
             </div>
             {creatorMenuId && creatorFamilyId ? (
               <ShoppingList
@@ -1239,10 +1237,10 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 onShoppingComplete={() => setCreatorShoppingStatus('complete')}
               />
             ) : (
-              <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7' }}>
+              <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛒</div>
-                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem' }}>No meal plan yet</h3>
-                <p style={{ color: '#6B5C52', margin: '0 0 1.5rem', fontSize: '0.9rem' }}>Generate a meal plan first to build your shopping list.</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.5rem' }}>No meal plan yet</h3>
+                <p style={{ color: '#52645A', margin: '0 0 1.5rem', fontSize: '0.9rem' }}>Generate a meal plan first to build your shopping list.</p>
                 <button onClick={() => setView('mealplan')} style={{ background: color, color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                   Go to Meal Plan
                 </button>
@@ -1254,15 +1252,15 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {view === 'earnings' && (
           <>
             <div style={{ marginBottom: '1.5rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Earnings</h2>
-              <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your revenue breakdown by recipe pack.</p>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Earnings</h2>
+              <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Your revenue breakdown by recipe pack.</p>
             </div>
 
             {!tenant?.stripe_onboarded && (
               <div style={{ background: '#FFF8EC', border: '1px solid #F5A623', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontWeight: '600', color: '#2C1810', marginBottom: '0.25rem' }}>💳 Connect Stripe to receive payouts</div>
-                  <div style={{ color: '#6B5C52', fontSize: '0.85rem' }}>You need a connected Stripe account before users can purchase your recipe packs.</div>
+                  <div style={{ fontWeight: '600', color: '#1F3B30', marginBottom: '0.25rem' }}>💳 Connect Stripe to receive payouts</div>
+                  <div style={{ color: '#52645A', fontSize: '0.85rem' }}>You need a connected Stripe account before users can purchase your recipe packs.</div>
                 </div>
                 <button
                   onClick={async () => {
@@ -1297,9 +1295,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               </div>
             )}
             {earnings.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '3rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+              <div style={{ textAlign: 'center', padding: '3rem', background: '#F5E8D7', borderRadius: '16px', border: '1px dashed #CAB7A4' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>💰</div>
-                <p style={{ color: '#6B5C52', margin: 0 }}>No sales yet. Once users purchase your recipe packs, your earnings will appear here.</p>
+                <p style={{ color: '#52645A', margin: 0 }}>No sales yet. Once users purchase your recipe packs, your earnings will appear here.</p>
               </div>
             ) : (
               <>
@@ -1309,27 +1307,27 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                     { label: 'Your 80%', value: `$${(earnings.reduce((s, e) => s + e.gross_cents, 0) * 0.8 / 100).toFixed(2)}`, icon: '🏦' },
                     { label: 'Total Units Sold', value: earnings.reduce((s, e) => s + e.units_sold, 0), icon: '🧾' },
                   ].map(stat => (
-                    <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E8D5B7' }}>
+                    <div key={stat.label} style={{ background: 'white', borderRadius: '12px', padding: '1.25rem', border: '1px solid #DDCDBB' }}>
                       <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)' }}>{stat.value}</div>
-                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{stat.label}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F3B30', fontFamily: 'var(--font-display)' }}>{stat.value}</div>
+                      <div style={{ color: '#687A70', fontSize: '0.85rem' }}>{stat.label}</div>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
+                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5E8D7', borderBottom: '1px solid #DDCDBB' }}>
                     {['Pack', 'Units Sold', 'Gross', 'Your 80%', 'Platform 20%'].map(h => (
-                      <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6B5C52', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+                      <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#52645A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
                     ))}
                   </div>
                   {earnings.map((e, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < earnings.length - 1 ? '1px solid #F5EFE6' : 'none', alignItems: 'center' }}>
-                      <div style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.95rem' }}>{e.pack_name}</div>
-                      <div style={{ color: '#2C1810', fontSize: '0.95rem' }}>{e.units_sold}</div>
-                      <div style={{ color: '#2C1810', fontSize: '0.95rem' }}>${(e.gross_cents / 100).toFixed(2)}</div>
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < earnings.length - 1 ? '1px solid #F5E8D7' : 'none', alignItems: 'center' }}>
+                      <div style={{ fontWeight: '600', color: '#1F3B30', fontSize: '0.95rem' }}>{e.pack_name}</div>
+                      <div style={{ color: '#1F3B30', fontSize: '0.95rem' }}>{e.units_sold}</div>
+                      <div style={{ color: '#1F3B30', fontSize: '0.95rem' }}>${(e.gross_cents / 100).toFixed(2)}</div>
                       <div style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>${(e.gross_cents * 0.8 / 100).toFixed(2)}</div>
-                      <div style={{ color: '#9B8B82', fontSize: '0.95rem' }}>${(e.gross_cents * 0.2 / 100).toFixed(2)}</div>
+                      <div style={{ color: '#687A70', fontSize: '0.95rem' }}>${(e.gross_cents * 0.2 / 100).toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
@@ -1338,29 +1336,29 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
 
             {/* Payout History */}
             <div style={{ marginTop: '2.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1rem', fontSize: '1.2rem' }}>Payout History</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 1rem', fontSize: '1.2rem' }}>Payout History</h3>
               {payouts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', background: '#F5E8D7', borderRadius: '16px', border: '1px dashed #CAB7A4' }}>
                   <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>🏦</div>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>No payouts yet. Payouts are processed weekly.</p>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>No payouts yet. Payouts are processed weekly.</p>
                 </div>
               ) : (
-                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5EFE6', borderBottom: '1px solid #E8D5B7' }}>
+                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '0.875rem 1.25rem', background: '#F5E8D7', borderBottom: '1px solid #DDCDBB' }}>
                     {['Period', 'Amount (Your 80%)', 'Status', 'Date'].map(h => (
-                      <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6B5C52', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+                      <div key={h} style={{ fontSize: '0.8rem', fontWeight: '700', color: '#52645A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
                     ))}
                   </div>
                   {payouts.map((p, i) => (
-                    <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < payouts.length - 1 ? '1px solid #F5EFE6' : 'none', alignItems: 'center' }}>
-                      <div style={{ color: '#2C1810', fontSize: '0.9rem' }}>{p.period_start} → {p.period_end}</div>
+                    <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '1rem 1.25rem', borderBottom: i < payouts.length - 1 ? '1px solid #F5E8D7' : 'none', alignItems: 'center' }}>
+                      <div style={{ color: '#1F3B30', fontSize: '0.9rem' }}>{p.period_start} → {p.period_end}</div>
                       <div style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.9rem' }}>${(p.amount_cents / 100).toFixed(2)}</div>
                       <div>
                         <span style={{ fontSize: '0.75rem', background: p.status === 'paid' ? '#F0FDF4' : '#FEF9C3', color: p.status === 'paid' ? '#16a34a' : '#854D0E', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>
                           {p.status === 'paid' ? '✓ Paid' : p.status}
                         </span>
                       </div>
-                      <div style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</div>
+                      <div style={{ color: '#687A70', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</div>
                     </div>
                   ))}
                 </div>
@@ -1373,16 +1371,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {view === 'branding' && (
           <>
             <div style={{ marginBottom: '1.5rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Branding</h2>
-              <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Customize how your app looks to your audience.</p>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Branding</h2>
+              <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Customize how your app looks to your audience.</p>
             </div>
 
-            <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #E8D5B7', maxWidth: '560px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #DDCDBB', maxWidth: '560px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.75rem', fontSize: '0.875rem' }}>Logo / profile image</label>
+                  <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.75rem', fontSize: '0.875rem' }}>Logo / profile image</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '12px', border: '2px solid #E8D5B7', overflow: 'hidden', background: '#F5EFE6', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '12px', border: '2px solid #DDCDBB', overflow: 'hidden', background: '#F5E8D7', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {logoUrl
                         ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <span style={{ fontSize: '2rem' }}>🍽️</span>}
@@ -1395,44 +1393,44 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                       >
                         {uploadingLogo ? 'Uploading...' : logoUrl ? '🖼 Change logo' : '📷 Upload logo'}
                       </button>
-                      <p style={{ color: '#9B8B82', fontSize: '0.78rem', margin: '0.4rem 0 0' }}>JPG or PNG, max 2MB</p>
+                      <p style={{ color: '#687A70', fontSize: '0.78rem', margin: '0.4rem 0 0' }}>JPG or PNG, max 2MB</p>
                     </div>
                   </div>
                   <input ref={logoInputRef} type="file" accept="image/jpeg,image/png" onChange={handleLogoUpload} style={{ display: 'none' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Brand name</label>
+                  <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Brand name</label>
                   <input type="text" value={editBrandName} onChange={e => setEditBrandName(e.target.value)} style={inputStyle} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Tagline</label>
+                  <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Tagline</label>
                   <input type="text" value={editTagline} onChange={e => setEditTagline(e.target.value)} placeholder="e.g. Meal plans made simple" style={inputStyle} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Brand color</label>
+                  <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Brand color</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)} style={{ width: '48px', height: '48px', borderRadius: '10px', border: '2px solid #E8D5B7', cursor: 'pointer', padding: '2px' }} />
-                    <span style={{ color: '#2C1810', fontWeight: '500', fontSize: '0.9rem' }}>{editColor}</span>
+                    <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)} style={{ width: '48px', height: '48px', borderRadius: '10px', border: '2px solid #DDCDBB', cursor: 'pointer', padding: '2px' }} />
+                    <span style={{ color: '#1F3B30', fontWeight: '500', fontSize: '0.9rem' }}>{editColor}</span>
                   </div>
                   <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', borderRadius: '10px', background: editColor, color: 'white', fontWeight: '600', fontSize: '0.875rem', textAlign: 'center' }}>
                     Preview: Button color
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Your subdomain</label>
-                  <div style={{ padding: '0.75rem 1rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#F5EFE6', color: '#6B5C52', fontSize: '0.95rem' }}>
+                  <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Your subdomain</label>
+                  <div style={{ padding: '0.75rem 1rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#F5E8D7', color: '#52645A', fontSize: '0.95rem' }}>
                     {tenant?.subdomain}.createry.app
                   </div>
-                  <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>Subdomain cannot be changed after setup.</p>
+                  <p style={{ color: '#687A70', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>Subdomain cannot be changed after setup.</p>
                 </div>
 
                 <button onClick={saveBranding} disabled={savingBranding} style={{ background: color, color: 'white', border: 'none', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: savingBranding ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: savingBranding ? 0.7 : 1 }}>
                   {brandingSaved ? '✓ Saved!' : savingBranding ? 'Saving...' : 'Save branding'}
                 </button>
 
-                <div style={{ borderTop: '1px solid #E8D5B7', paddingTop: '1.25rem' }}>
-                  <h4 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1rem' }}>Stripe Payouts</h4>
-                  <p style={{ color: '#6B5C52', fontSize: '0.85rem', margin: '0 0 1rem', lineHeight: 1.5 }}>
+                <div style={{ borderTop: '1px solid #DDCDBB', paddingTop: '1.25rem' }}>
+                  <h4 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.5rem', fontSize: '1rem' }}>Stripe Payouts</h4>
+                  <p style={{ color: '#52645A', fontSize: '0.85rem', margin: '0 0 1rem', lineHeight: 1.5 }}>
                     {tenant?.stripe_onboarded
                       ? "✅ Your Stripe account is connected. You'll receive payouts automatically."
                       : 'Connect your Stripe account to receive payouts when users purchase your recipe packs.'}
@@ -1498,14 +1496,14 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           }
           return (
             <div>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Share Your App 📣</h2>
-              <p style={{ color: '#6B5C52', margin: '0 0 2rem' }}>Drive your audience to {brandName} with these ready-to-post captions.</p>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Share Your App 📣</h2>
+              <p style={{ color: '#52645A', margin: '0 0 2rem' }}>Drive your audience to {brandName} with these ready-to-post captions.</p>
 
               {/* Signup link */}
-              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🔗 Your Signup Link</h3>
+              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🔗 Your Signup Link</h3>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <code style={{ flex: 1, background: '#F5EFE6', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.875rem', color: '#2C1810', wordBreak: 'break-all' }}>{appUrl}</code>
+                  <code style={{ flex: 1, background: '#F5E8D7', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.875rem', color: '#1F3B30', wordBreak: 'break-all' }}>{appUrl}</code>
                   <button onClick={() => copy('link', appUrl)} style={{ background: color, color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)' }}>
                     {copied === 'link' ? '✓ Copied!' : 'Copy Link'}
                   </button>
@@ -1518,14 +1516,14 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 { key: 'tiktok', platform: 'TikTok', icon: '🎵' },
                 { key: 'facebook', platform: 'Facebook', icon: '👥' },
               ] as const).map(({ key, platform, icon }) => (
-                <div key={key} style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '1.5rem', marginBottom: '1rem' }}>
+                <div key={key} style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '1.5rem', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: 0, fontSize: '1.1rem' }}>{icon} {platform}</h3>
+                    <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: 0, fontSize: '1.1rem' }}>{icon} {platform}</h3>
                     <button onClick={() => copy(key, captions[key])} style={{ background: copied === key ? '#16a34a' : color, color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.825rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'background 0.2s' }}>
                       {copied === key ? '✓ Copied!' : 'Copy Caption'}
                     </button>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#4A3728', lineHeight: 1.7, whiteSpace: 'pre-line', background: '#FDF6EE', padding: '1rem', borderRadius: '8px' }}>{captions[key]}</p>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#1F3B30', lineHeight: 1.7, whiteSpace: 'pre-line', background: '#FAF3E8', padding: '1rem', borderRadius: '8px' }}>{captions[key]}</p>
                 </div>
               ))}
             </div>
@@ -1535,7 +1533,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} isCreator={true} />
         )}
         {view === 'settings' && !familyId && (
-          <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #E8D5B7', textAlign: 'center', color: '#6B5C52' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', border: '1px solid #DDCDBB', textAlign: 'center', color: '#52645A' }}>
             <p>Set up your meal plan first to access profile settings.</p>
           </div>
         )}
@@ -1557,7 +1555,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       <nav className="bottom-nav" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'white',
-        borderTop: '1px solid #E8D5B7',
+        borderTop: '1px solid #DDCDBB',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
@@ -1587,7 +1585,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</span>
             <span style={{
               fontSize: '0.65rem', fontWeight: view === v ? '700' : '500',
-              color: view === v ? color : '#9B8B82',
+              color: view === v ? color : '#687A70',
               fontFamily: 'var(--font-sans)',
               letterSpacing: '0.02em',
             }}>{label}</span>

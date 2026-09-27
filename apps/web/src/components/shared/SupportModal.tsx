@@ -5,7 +5,7 @@ interface Props {
   primaryColor?: string
 }
 
-export default function SupportModal({ onClose, primaryColor = '#C4622D' }: Props) {
+export default function SupportModal({ onClose, primaryColor = '#C9471F' }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [subject, setSubject] = useState('')
@@ -42,8 +42,8 @@ export default function SupportModal({ onClose, primaryColor = '#C4622D' }: Prop
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.9rem',
-    borderRadius: '10px', border: '2px solid #E8D5B7',
-    background: '#FDF6EE', color: '#2C1810',
+    borderRadius: '10px', border: '2px solid #DDCDBB',
+    background: '#FAF3E8', color: '#1F3B30',
     fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box',
   }
 
@@ -58,7 +58,7 @@ export default function SupportModal({ onClose, primaryColor = '#C4622D' }: Prop
       >
         {/* Header */}
         <div style={{ background: primaryColor, padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: 0, fontSize: '1.25rem' }}>Help &amp; Support</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', color: 'white', margin: 0, fontSize: '1.25rem' }}>Help &amp; Support</h2>
           <button
             onClick={onClose}
             style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, padding: '0.1rem', opacity: 0.8 }}
@@ -69,8 +69,8 @@ export default function SupportModal({ onClose, primaryColor = '#C4622D' }: Prop
         {submitted ? (
           <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✅</div>
-            <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1.15rem' }}>Message sent!</h3>
-            <p style={{ color: '#6B5C52', fontSize: '0.875rem', margin: '0 0 1.5rem' }}>We'll get back to you as soon as possible.</p>
+            <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.5rem', fontSize: '1.15rem' }}>Message sent!</h3>
+            <p style={{ color: '#52645A', fontSize: '0.875rem', margin: '0 0 1.5rem' }}>We'll get back to you as soon as possible.</p>
             <button
               onClick={onClose}
               style={{ background: primaryColor, color: 'white', border: 'none', padding: '0.65rem 1.5rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
@@ -78,26 +78,26 @@ export default function SupportModal({ onClose, primaryColor = '#C4622D' }: Prop
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <p style={{ margin: 0, color: '#6B5C52', fontSize: '0.875rem' }}>We'll get back to you as soon as possible.</p>
+            <p style={{ margin: 0, color: '#52645A', fontSize: '0.875rem' }}>We'll get back to you as soon as possible.</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
-                <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Name</label>
+                <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Name</label>
                 <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} />
               </div>
               <div>
-                <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Email</label>
+                <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Email</label>
                 <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Subject</label>
+              <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Subject</label>
               <input type="text" required value={subject} onChange={e => setSubject(e.target.value)} placeholder="How can we help?" style={inputStyle} />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontWeight: '600', color: '#2C1810', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Message</label>
+              <label style={{ display: 'block', fontWeight: '600', color: '#1F3B30', marginBottom: '0.35rem', fontSize: '0.825rem' }}>Message</label>
               <textarea
                 required
                 value={message}
@@ -114,7 +114,7 @@ export default function SupportModal({ onClose, primaryColor = '#C4622D' }: Prop
               <button
                 type="button"
                 onClick={onClose}
-                style={{ background: 'none', border: '1.5px solid #E8D5B7', color: '#6B5C52', padding: '0.65rem 1.25rem', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: '500' }}
+                style={{ background: 'none', border: '1.5px solid #DDCDBB', color: '#52645A', padding: '0.65rem 1.25rem', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: '500' }}
               >Cancel</button>
               <button
                 type="submit"

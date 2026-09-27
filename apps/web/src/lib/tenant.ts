@@ -14,8 +14,8 @@ const TEST_TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 const DEFAULT_TENANT: TenantConfig = {
   id: TEST_TENANT_ID,
   brand_name: 'Createry',
-  primary_color: '#C4622D',
-  tagline: 'Personalized meal plans for your family.',
+  primary_color: '#C9471F',
+  tagline: 'Your recipes, your week, your way.',
   logo_url: null,
   subdomain: 'default',
 }
@@ -48,7 +48,7 @@ export async function resolveTenant(): Promise<TenantConfig> {
   return {
     id: data.id,
     brand_name: data.brand_name || 'Createry',
-    primary_color: data.primary_color || '#C4622D',
+    primary_color: data.primary_color || '#C9471F',
     tagline: data.tagline,
     logo_url: data.logo_url,
     subdomain: data.subdomain,

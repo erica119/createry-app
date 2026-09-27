@@ -33,7 +33,7 @@ interface AnalyticsData {
 export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const color = primaryColor || '#C4622D'
+  const color = primaryColor || '#C9471F'
 
   useEffect(() => {
     fetchAnalytics()
@@ -97,7 +97,7 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', color: '#9B8B82', fontSize: '0.9rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', color: '#687A70', fontSize: '0.9rem' }}>
       Loading analytics…
     </div>
   )
@@ -108,11 +108,11 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
   const maxAppearances = Math.max(...data.recipeStats.map(r => r.appearances), 1)
 
   const statCard = (icon: string, label: string, value: string | number, sub?: string) => (
-    <div style={{ background: 'white', borderRadius: '14px', padding: '1.25rem 1.5rem', border: '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.05)' }}>
+    <div style={{ background: 'white', borderRadius: '14px', padding: '1.25rem 1.5rem', border: '1px solid #DDCDBB', boxShadow: '0 1px 4px rgba(44,24,16,0.05)' }}>
       <div style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>{icon}</div>
-      <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#2C1810', fontFamily: 'var(--font-serif)', lineHeight: 1 }}>{value}</div>
-      <div style={{ color: '#6B5C52', fontSize: '0.82rem', marginTop: '0.3rem', fontWeight: '600' }}>{label}</div>
-      {sub && <div style={{ color: '#9B8B82', fontSize: '0.75rem', marginTop: '0.15rem' }}>{sub}</div>}
+      <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1F3B30', fontFamily: 'var(--font-display)', lineHeight: 1 }}>{value}</div>
+      <div style={{ color: '#52645A', fontSize: '0.82rem', marginTop: '0.3rem', fontWeight: '600' }}>{label}</div>
+      {sub && <div style={{ color: '#687A70', fontSize: '0.75rem', marginTop: '0.15rem' }}>{sub}</div>}
     </div>
   )
 
@@ -120,8 +120,8 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
       <div>
-        <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Analytics</h2>
-        <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>How your recipes and revenue are performing.</p>
+        <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Analytics</h2>
+        <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>How your recipes and revenue are performing.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
@@ -132,8 +132,8 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
       </div>
 
       {data.monthlySales.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #E8D5B7' }}>
-          <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 1.5rem', fontSize: '1.1rem' }}>Sales — Last 6 Months</h3>
+        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 1.5rem', fontSize: '1.1rem' }}>Sales — Last 6 Months</h3>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', height: '140px' }}>
             {data.monthlySales.map((m, i) => {
               const barHeight = Math.max(4, Math.round((m.count / maxBar) * 120))
@@ -149,29 +149,29 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
                     }}
                     title={`$${(m.revenue_cents / 100).toFixed(2)} revenue`}
                   />
-                  <div style={{ fontSize: '0.7rem', color: '#9B8B82', textAlign: 'center', whiteSpace: 'nowrap' }}>{m.month}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#687A70', textAlign: 'center', whiteSpace: 'nowrap' }}>{m.month}</div>
                 </div>
               )
             })}
           </div>
-          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #F5EFE6', display: 'flex', gap: '2rem' }}>
+          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #F5E8D7', display: 'flex', gap: '2rem' }}>
             <div>
-              <span style={{ fontSize: '0.78rem', color: '#9B8B82' }}>Total sales</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#2C1810', marginLeft: '0.5rem' }}>{data.monthlySales.reduce((s, m) => s + m.count, 0)}</span>
+              <span style={{ fontSize: '0.78rem', color: '#687A70' }}>Total sales</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#1F3B30', marginLeft: '0.5rem' }}>{data.monthlySales.reduce((s, m) => s + m.count, 0)}</span>
             </div>
             <div>
-              <span style={{ fontSize: '0.78rem', color: '#9B8B82' }}>Total revenue</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#2C1810', marginLeft: '0.5rem' }}>${(data.monthlySales.reduce((s, m) => s + m.revenue_cents, 0) / 100).toFixed(2)}</span>
+              <span style={{ fontSize: '0.78rem', color: '#687A70' }}>Total revenue</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#1F3B30', marginLeft: '0.5rem' }}>${(data.monthlySales.reduce((s, m) => s + m.revenue_cents, 0) / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>
       )}
 
       {data.recipeStats.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #F5EFE6' }}>
-            <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.15rem', fontSize: '1.1rem' }}>Recipe Performance</h3>
-            <p style={{ color: '#9B8B82', margin: 0, fontSize: '0.8rem' }}>How often each recipe appears in generated menus</p>
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', overflow: 'hidden' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #F5E8D7' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.15rem', fontSize: '1.1rem' }}>Recipe Performance</h3>
+            <p style={{ color: '#687A70', margin: 0, fontSize: '0.8rem' }}>How often each recipe appears in generated menus</p>
           </div>
           <div style={{ maxHeight: '480px', overflowY: 'auto' }}>
             {data.recipeStats.map((r, i) => {
@@ -180,28 +180,28 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
                 <div key={r.id} style={{
                   display: 'flex', alignItems: 'center', gap: '1rem',
                   padding: '0.85rem 1.5rem',
-                  borderBottom: i < data.recipeStats.length - 1 ? '1px solid #F5EFE6' : 'none',
+                  borderBottom: i < data.recipeStats.length - 1 ? '1px solid #F5E8D7' : 'none',
                   background: i % 2 === 0 ? 'white' : '#FDFAF6',
                 }}>
-                  <div style={{ width: '24px', textAlign: 'right', color: '#C8BAB2', fontSize: '0.78rem', fontWeight: '700', flexShrink: 0 }}>
+                  <div style={{ width: '24px', textAlign: 'right', color: '#8A9A8F', fontSize: '0.78rem', fontWeight: '700', flexShrink: 0 }}>
                     {i + 1}
                   </div>
                   {r.image_url ? (
                     <img src={r.image_url} alt={r.title} style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
                   ) : (
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>🍽️</div>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F5E8D7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>🍽️</div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
+                    <div style={{ fontWeight: '600', color: '#1F3B30', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
-                      <div style={{ flex: 1, height: '5px', background: '#F5EFE6', borderRadius: '999px', overflow: 'hidden' }}>
+                      <div style={{ flex: 1, height: '5px', background: '#F5E8D7', borderRadius: '999px', overflow: 'hidden' }}>
                         <div style={{ width: `${barWidth}%`, height: '100%', background: color, borderRadius: '999px', opacity: r.appearances === 0 ? 0.2 : 0.8 }} />
                       </div>
                     </div>
                   </div>
                   <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: '700', color: r.appearances > 0 ? color : '#C8BAB2' }}>{r.appearances}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#9B8B82' }}>uses</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '700', color: r.appearances > 0 ? color : '#8A9A8F' }}>{r.appearances}</div>
+                    <div style={{ fontSize: '0.68rem', color: '#687A70' }}>uses</div>
                   </div>
                 </div>
               )
@@ -211,9 +211,9 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
       )}
 
       {data.recipeStats.length === 0 && data.monthlySales.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3rem', background: '#F5EFE6', borderRadius: '16px', border: '1px dashed #D4B896' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', background: '#F5E8D7', borderRadius: '16px', border: '1px dashed #CAB7A4' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📊</div>
-          <p style={{ color: '#6B5C52', margin: 0 }}>Analytics will populate as users generate menus and purchase recipe packs.</p>
+          <p style={{ color: '#52645A', margin: 0 }}>Analytics will populate as users generate menus and purchase recipe packs.</p>
         </div>
       )}
 

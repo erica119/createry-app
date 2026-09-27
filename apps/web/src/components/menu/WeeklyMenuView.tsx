@@ -253,8 +253,8 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     return !unlockedPackIds.has(recipe.recipe_pack_id)
   }
 
-  if (loading) return <p style={{ color: '#6B5C52' }}>Loading menu...</p>
-  if (!menu) return <p style={{ color: '#6B5C52' }}>Menu not found.</p>
+  if (loading) return <p style={{ color: '#52645A' }}>Loading menu...</p>
+  if (!menu) return <p style={{ color: '#52645A' }}>Menu not found.</p>
 
   const isApproved = menu.status === 'approved'
   const weekDate = new Date(`${menu.week_start_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -267,22 +267,22 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
             {familyId && (
               <button onClick={() => navigateWeek('prev')} disabled={navigating}
-                style={{ background: 'none', border: '1.5px solid #E8D5B7', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#6B5C52' }}>←</button>
+                style={{ background: 'none', border: '1.5px solid #DDCDBB', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#52645A' }}>←</button>
             )}
             <h2 onClick={() => familyId && setShowCalendar(true)}
-              style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: 0, cursor: familyId ? 'pointer' : 'default', textDecoration: familyId ? 'underline dotted #C8BAB2' : 'none' }}>
+              style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', margin: 0, cursor: familyId ? 'pointer' : 'default', textDecoration: familyId ? 'underline dotted #8A9A8F' : 'none' }}>
               Week of {weekDate}
             </h2>
             {familyId && (
               <button onClick={() => navigateWeek('next')} disabled={navigating}
-                style={{ background: 'none', border: '1.5px solid #E8D5B7', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#6B5C52' }}>→</button>
+                style={{ background: 'none', border: '1.5px solid #DDCDBB', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#52645A' }}>→</button>
             )}
             {familyId && (
               <button onClick={() => setShowCalendar(true)}
-                style={{ background: 'none', border: '1.5px solid #E8D5B7', borderRadius: '6px', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#6B5C52' }}>📅</button>
+                style={{ background: 'none', border: '1.5px solid #DDCDBB', borderRadius: '6px', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#52645A' }}>📅</button>
             )}
           </div>
-          <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
+          <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>
             Status: <strong>{menu.status.replace('_', ' ')}</strong>
           </p>
         </div>
@@ -300,7 +300,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button onClick={() => setShowFeedback(!showFeedback)}
-                      style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500' }}>
+                      style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500' }}>
                       💬 Feedback
                     </button>
                     <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }}
@@ -311,7 +311,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                   {showFeedback && (
                     <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
                       placeholder="e.g. more Italian, less chicken..."
-                      style={{ width: '280px', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #E8D5B7', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                      style={{ width: '280px', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #DDCDBB', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
                   )}
                 </div>
               )}
@@ -332,7 +332,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                 <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                   <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
                     placeholder="e.g. more Italian, less chicken..."
-                    style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #E8D5B7', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+                    style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #DDCDBB', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
                   {onRegenerate && (
                     <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }}
                       style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
@@ -360,9 +360,9 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       )}
 
       {!isApproved && (
-        <div style={{ background: '#FDF6EE', border: '1px solid #E8D5B7', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
-          <strong style={{ color: '#2C1810' }}>Adjust this week’s meals</strong>
-          <p style={{ color: '#6B5C52', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>Add a meal or remove one below before approving. Your regular weekly schedule will not change.</p>
+        <div style={{ background: '#FAF3E8', border: '1px solid #DDCDBB', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+          <strong style={{ color: '#1F3B30' }}>Adjust this week’s meals</strong>
+          <p style={{ color: '#52645A', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>Add a meal or remove one below before approving. Your regular weekly schedule will not change.</p>
           {slotError && <p role="alert" style={{ color: '#dc2626', margin: '0.5rem 0 0' }}>{slotError}</p>}
         </div>
       )}
@@ -384,13 +384,13 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                 <span style={{
                   fontSize: '0.75rem', fontWeight: '700', padding: '0.2rem 0.75rem',
                   borderRadius: '20px', letterSpacing: '0.05em',
-                  background: isToday ? 'var(--color-primary)' : '#F5EFE6',
-                  color: isToday ? 'white' : '#9B8B82',
+                  background: isToday ? 'var(--color-primary)' : '#F5E8D7',
+                  color: isToday ? 'white' : '#687A70',
                 }}>
                   {FULL_DAY_NAMES[i]}{isToday ? ' · Today' : ''}
                 </span>
                 {!hasMeals && (
-                  <span style={{ fontSize: '0.75rem', color: '#C8BAB2', fontStyle: 'italic' }}>Rest day</span>
+                  <span style={{ fontSize: '0.75rem', color: '#8A9A8F', fontStyle: 'italic' }}>Rest day</span>
                 )}
               </div>
 
@@ -406,7 +406,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                           if (planned) void saveSlot(String(i), key, null)
                           else { setSlotError(null); setSwapDay({ day: String(i), meal: key }) }
                         }}
-                        style={{ minHeight: '40px', borderRadius: '20px', padding: '0.4rem 0.75rem', cursor: savingSlot ? 'wait' : 'pointer', border: `1.5px solid ${planned ? 'var(--color-primary)' : '#E8D5B7'}`, background: planned ? 'var(--color-primary)' : 'white', color: planned ? 'white' : '#6B5C52', fontSize: '0.78rem', fontWeight: '600' }}>
+                        style={{ minHeight: '40px', borderRadius: '20px', padding: '0.4rem 0.75rem', cursor: savingSlot ? 'wait' : 'pointer', border: `1.5px solid ${planned ? 'var(--color-primary)' : '#DDCDBB'}`, background: planned ? 'var(--color-primary)' : 'white', color: planned ? 'white' : '#52645A', fontSize: '0.78rem', fontWeight: '600' }}>
                         {planned ? '✓' : '+'} {label}
                       </button>
                     )
@@ -430,13 +430,13 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                           onClick={() => handleUnlockClick(pack, recipe?.title || '')}
                           style={{ background: '#F0EAEA', borderRadius: '12px', border: '1px dashed #D4B0B0', padding: '0.875rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', opacity: 0.85 }}
                         >
-                          <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#E8D5B7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#DDCDBB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <span style={{ fontSize: '1.25rem' }}>🔒</span>
                           </div>
                           <div style={{ flex: 1 }}>
-                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#9B8B82', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.9rem', fontWeight: '600', color: '#9B8B82', filter: 'blur(3px)', userSelect: 'none' }}>{recipe?.title || 'Premium Recipe'}</p>
-                            <span style={{ fontSize: '0.75rem', color: '#C4622D' }}>🔒 ${(pack.price_cents / 100).toFixed(0)} to unlock</span>
+                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#687A70', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.9rem', fontWeight: '600', color: '#687A70', filter: 'blur(3px)', userSelect: 'none' }}>{recipe?.title || 'Premium Recipe'}</p>
+                            <span style={{ fontSize: '0.75rem', color: '#C9471F' }}>🔒 ${(pack.price_cents / 100).toFixed(0)} to unlock</span>
                           </div>
                         </div>
                       )
@@ -445,22 +445,22 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
                     return (
                       <div key={key}
                         onClick={() => !isApproved && !locked && setSwapDay({ day: String(i), meal: key })}
-                        style={{ background: 'white', borderRadius: '12px', border: isToday ? '1.5px solid var(--color-primary)' : '1px solid #E8D5B7', padding: '0.875rem 1rem', cursor: isApproved ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.875rem', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}
+                        style={{ background: 'white', borderRadius: '12px', border: isToday ? '1.5px solid var(--color-primary)' : '1px solid #DDCDBB', padding: '0.875rem 1rem', cursor: isApproved ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.875rem', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}
                       >
                         {(recipe as any)?.image_url ? (
                           <img src={(recipe as any).image_url} alt={recipe?.title} style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         ) : (
-                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#F5E8D7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <span style={{ fontSize: '1.5rem' }}>🍽️</span>
                           </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#9B8B82', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-                          <p style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#687A70', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+                          <p style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: '600', color: '#1F3B30', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {recipe?.title || 'Recipe Not Found'}
                           </p>
                           {recipe?.cook_time_minutes && (
-                            <span style={{ fontSize: '0.75rem', color: '#9B8B82' }}>🕐 {recipe.cook_time_minutes} min</span>
+                            <span style={{ fontSize: '0.75rem', color: '#687A70' }}>🕐 {recipe.cook_time_minutes} min</span>
                           )}
                         </div>
                         {!isApproved && (
@@ -481,20 +481,20 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', width: '100%', maxHeight: '80vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontFamily: 'var(--font-serif)', color: '#2C1810' }}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', color: '#1F3B30' }}>
                 {menu.menu_data.days[swapDay.day]?.[swapDay.meal] ? 'Swap' : 'Add'} {swapDay.meal} on {FULL_DAY_NAMES[parseInt(swapDay.day)]}
               </h3>
-              <button onClick={() => setSwapDay(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6B5C52' }}>✕</button>
+              <button onClick={() => setSwapDay(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#52645A' }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {allRecipes.filter(r => r.is_active && !isLocked(r) && r.meal_type?.includes(swapDay?.meal || '')).map(recipe => (
                 <button
                   key={recipe.id}
                   onClick={() => handleSwap(recipe.id)}
-                  style={{ padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #E8D5B7', background: 'white', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                  style={{ padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #DDCDBB', background: 'white', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
                 >
-                  <p style={{ margin: '0 0 0.2rem', fontWeight: '600', color: '#2C1810', fontSize: '0.9rem' }}>{recipe.title}</p>
-                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#9B8B82' }}>
+                  <p style={{ margin: '0 0 0.2rem', fontWeight: '600', color: '#1F3B30', fontSize: '0.9rem' }}>{recipe.title}</p>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#687A70' }}>
                     {recipe.prep_time_minutes && `${recipe.prep_time_minutes}m prep · `}{recipe.complexity}
                   </p>
                 </button>
@@ -536,7 +536,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
           >
             <div style={{ background: 'var(--color-primary)', padding: '1.5rem 2rem' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>
                 {unlockModal.pack.name}
               </h2>
               <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.875rem' }}>
@@ -544,15 +544,15 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
               </p>
             </div>
             <div style={{ padding: '1.5rem 2rem' }}>
-              <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
-                <p style={{ margin: 0, color: '#2C1810', fontWeight: '500', fontSize: '0.95rem' }}>
+              <div style={{ background: '#FAF3E8', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
+                <p style={{ margin: 0, color: '#1F3B30', fontWeight: '500', fontSize: '0.95rem' }}>
                   {unlockModal.recipeTitle} + more recipes in this pack
                 </p>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <span style={{ color: '#6B5C52', fontSize: '0.9rem' }}>One-time purchase</span>
-                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#2C1810', fontWeight: '700' }}>
+                <span style={{ color: '#52645A', fontSize: '0.9rem' }}>One-time purchase</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#1F3B30', fontWeight: '700' }}>
                   ${(unlockModal.pack.price_cents / 100).toFixed(2)}
                 </span>
               </div>
@@ -565,7 +565,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
               </button>
               <button
                 onClick={() => setUnlockModal(null)}
-                style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}
+                style={{ width: '100%', background: 'none', border: 'none', color: '#687A70', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}
               >
                 Maybe later
               </button>

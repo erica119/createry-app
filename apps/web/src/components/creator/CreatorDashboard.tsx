@@ -701,14 +701,27 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {/* OVERVIEW */}
         {view === 'overview' && (
           <>
-            <section className="creator-welcome" aria-label="Creator updates" onMouseEnter={() => setHeroPaused(true)} onMouseLeave={() => setHeroPaused(false)} onFocusCapture={() => setHeroPaused(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHeroPaused(false) }}>
-              <div>
-                <span className="eyebrow">{heroSlide === 0 ? 'YOUR CREATOR STUDIO' : 'FROM LIST TO CART'}</span>
-                <h1>{heroSlide === 0 ? 'Recipes people come back to.' : creatorInstacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Your shopping list, ready for Instacart.'}</h1>
-                <p>{heroSlide === 0 ? 'Keep your library fresh, see what your audience is cooking, and give them a simple path from dinner idea to weekly plan.' : creatorInstacartLive ? 'Turn a planned week into a shopping list, then open it in Instacart to review products, quantities, and checkout.' : 'Build a shopping list from your weekly menu. Instacart ordering is in preview for this account while production access is finalized.'}</p>
-                <button onClick={() => setView(heroSlide === 0 ? 'sharing' : 'shopping')}>{heroSlide === 0 ? 'Share your app ↗' : 'View shopping list ↗'}</button>
-              </div>
-              <div className="preview-card" aria-hidden="true"><span>{heroSlide === 0 ? 'YOUR APP AT A GLANCE' : 'THE WEEKLY FLOW'}</span><strong>{heroSlide === 0 ? tenant?.brand_name || 'Your kitchen' : 'Plan → List → Shop'}</strong><small>{heroSlide === 0 ? `${recipes.length} recipes ready to plan` : creatorInstacartLive ? 'Review your cart in Instacart' : 'Ordering preview in this account'}</small></div>
+            <section className={`creator-welcome ${heroSlide === 1 ? 'instacart-announcement' : ''}`} aria-label="Creator updates" onMouseEnter={() => setHeroPaused(true)} onMouseLeave={() => setHeroPaused(false)} onFocusCapture={() => setHeroPaused(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHeroPaused(false) }}>
+              {heroSlide === 0 ? <>
+                <div>
+                  <span className="eyebrow">YOUR CREATOR STUDIO</span>
+                  <h1>Recipes people come back to.</h1>
+                  <p>Keep your library fresh, see what your audience is cooking, and give them a simple path from dinner idea to weekly plan.</p>
+                  <button onClick={() => setView('sharing')}>Share your app ↗</button>
+                </div>
+                <div className="preview-card" aria-hidden="true"><span>YOUR APP AT A GLANCE</span><strong>{tenant?.brand_name || 'Your kitchen'}</strong><small>{recipes.length} recipes ready to plan</small></div>
+              </> : <>
+                <div className="instacart-copy">
+                  <span className="launch-label"><span className="launch-dot" /> NEW IN CREATERY</span>
+                  <h1>{creatorInstacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Your grocery list has a new destination.'}</h1>
+                  <p>{creatorInstacartLive ? 'Plan the week, build your list, and open it in Instacart to review your cart and checkout.' : 'Plan the week, build your list, and preview the Instacart handoff. Real ordering will appear here when production access is ready.'}</p>
+                  <button onClick={() => setView('shopping')}>Explore shopping <span aria-hidden="true">↗</span></button>
+                </div>
+                <div className="instacart-art" aria-hidden="true">
+                  <div className="partner-lockup"><img src="/brand/createry-wordmark.svg" alt="" /><span>×</span><div><img src="/instacart-logo.svg" alt="" /><strong>Instacart</strong></div></div>
+                  <div className="cart-illustration"><span className="cart-illustration-title">YOUR WEEKLY LIST</span><span>✓ Fresh ingredients</span><span>✓ Your favorite recipes</span><span>✓ Ready to review</span><div className="cart-illustration-footer"><span>Createry</span><span>→</span><span>Instacart</span></div></div>
+                </div>
+              </>}
               <div className="creator-hero-controls" aria-label="Banner controls">
                 {[0, 1].map(index => <button key={index} className={heroSlide === index ? 'active' : ''} onClick={() => setHeroSlide(index)} aria-label={`Show banner ${index + 1}: ${index === 0 ? 'Recipes' : 'Instacart'}`} aria-current={heroSlide === index ? 'true' : undefined} />)}
               </div>

@@ -106,13 +106,13 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
 
   const inputStyle = {
     width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem',
-    borderRadius: '10px', border: '2px solid #E8D5B7',
-    background: '#FDF6EE', color: '#2C1810',
+    borderRadius: '10px', border: '2px solid #DDCDBB',
+    background: '#FAF3E8', color: '#1F3B30',
     fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const,
   }
 
   const labelStyle = {
-    display: 'block', fontWeight: '600', color: '#2C1810',
+    display: 'block', fontWeight: '600', color: '#1F3B30',
     marginBottom: '0.5rem', fontSize: '0.875rem',
   }
 
@@ -127,7 +127,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
             className={active ? 'chip-active' : 'chip-inactive'}
             style={{
               padding: '0.35rem 0.85rem', borderRadius: '20px',
-              border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+              border: `2px solid ${active ? '#C9471F' : '#DDCDBB'}`,
               fontSize: '0.8rem', cursor: 'pointer', fontWeight: '500',
               transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
               textTransform: 'capitalize' as const,
@@ -143,10 +143,10 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: '0 0 0.25rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', margin: '0 0 0.25rem' }}>
           Add a Recipe
         </h2>
-        <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.95rem' }}>
+        <p style={{ color: '#52645A', margin: 0, fontSize: '0.95rem' }}>
           Fill in the details and we'll include it in your weekly meal plans.
         </p>
       </div>
@@ -194,7 +194,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
                   className={active ? 'chip-active' : 'chip-inactive'}
                   style={{
                     flex: 1, padding: '0.6rem', borderRadius: '10px',
-                    border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+                    border: `2px solid ${active ? '#C9471F' : '#DDCDBB'}`,
                     fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500',
                     transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)',
                     textTransform: 'capitalize' as const,
@@ -231,8 +231,8 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
           <div
             onClick={() => imageInputRef.current?.click()}
             style={{
-              border: '2px dashed #E8D5B7', borderRadius: '12px', padding: '1.5rem',
-              textAlign: 'center', cursor: 'pointer', background: '#FDF6EE',
+              border: '2px dashed #DDCDBB', borderRadius: '12px', padding: '1.5rem',
+              textAlign: 'center', cursor: 'pointer', background: '#FAF3E8',
               transition: 'all 0.2s ease',
             }}
           >
@@ -241,7 +241,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
             ) : (
               <>
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
-                <p style={{ margin: 0, color: '#9B8B82', fontSize: '0.875rem' }}>Click to upload a photo</p>
+                <p style={{ margin: 0, color: '#687A70', fontSize: '0.875rem' }}>Click to upload a photo</p>
               </>
             )}
             <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
@@ -251,7 +251,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         {/* Ingredients */}
         <div>
           <label style={labelStyle}>Ingredients *</label>
-          <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>One purchasable ingredient per line with an amount. Put alternatives and optional garnishes in the instructions.</p>
+          <p style={{ color: '#687A70', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>One purchasable ingredient per line with an amount. Put alternatives and optional garnishes in the instructions.</p>
           <textarea
             value={ingredients}
             onChange={e => setIngredients(e.target.value)}

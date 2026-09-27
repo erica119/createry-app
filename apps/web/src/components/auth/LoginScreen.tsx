@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { TenantConfig } from '../../lib/tenant'
+import BrandMark from '../shared/BrandMark'
 
 interface Props {
   onGoogleSignIn: () => void
@@ -10,9 +11,8 @@ interface Props {
 }
 
 export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props) {
-  const brandName = tenant?.brand_name || 'Createry'
-  const brandColor = tenant?.primary_color || '#C4622D'
-  const tagline = tenant?.tagline || 'Personalized weekly meal plans built from recipes you love. Shopping lists ready to go.'
+  const brandColor = tenant?.primary_color || '#C9471F'
+  const tagline = tenant?.tagline || 'Your recipes, your week, your way. Plan meals and take a ready-to-shop list with you.'
   const isCreatorBranded = !!tenant && tenant.id !== 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
   const handleGoogleSignIn = () => {
@@ -72,21 +72,21 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
 
   const inputStyle = {
     width: '100%', padding: '0.875rem 1rem', fontSize: '0.95rem',
-    borderRadius: '10px', border: '2px solid #E8D5B7',
-    background: '#FDF6EE', color: '#2C1810',
+    borderRadius: '10px', border: '2px solid #DDCDBB',
+    background: '#FAF3E8', color: '#1F3B30',
     fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' as const,
     marginBottom: '0.75rem',
   }
 
   if (confirmationSent) {
     return (
-      <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', padding: '2rem', textAlign: 'center' }}>
+      <div style={{ minHeight: '100vh', background: '#FAF3E8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', padding: '2rem', textAlign: 'center' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
-        <h2 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem' }}>Check your email</h2>
-        <p style={{ color: '#6B5C52', maxWidth: '360px', lineHeight: 1.6 }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.5rem' }}>Check your email</h2>
+        <p style={{ color: '#52645A', maxWidth: '360px', lineHeight: 1.6 }}>
           We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account and sign in.
         </p>
-        <button onClick={() => setConfirmationSent(false)} style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#C4622D', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '0.9rem', fontWeight: '600' }}>
+        <button onClick={() => setConfirmationSent(false)} style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#C9471F', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '0.9rem', fontWeight: '600' }}>
           ← Back to sign in
         </button>
       </div>
@@ -94,24 +94,24 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', padding: '2rem 2rem 5rem', textAlign: 'center', position: 'relative' }}>
-      <footer style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '0.6rem 2rem', background: 'rgba(244,235,225,0.95)', borderTop: '1px solid #E8D5B7', display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center', zIndex: 10 }}>
-        <a href="/terms" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
-        <a href="/privacy" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
-        <a href="/cookies" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
+    <div style={{ minHeight: '100vh', background: '#FAF3E8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', padding: '2rem 2rem 5rem', textAlign: 'center', position: 'relative' }}>
+      <footer style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '0.6rem 2rem', background: 'rgba(244,235,225,0.95)', borderTop: '1px solid #DDCDBB', display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center', zIndex: 10 }}>
+        <a href="/terms" style={{ fontSize: '0.75rem', color: '#C9471F', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
+        <a href="/privacy" style={{ fontSize: '0.75rem', color: '#C9471F', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
+        <a href="/cookies" style={{ fontSize: '0.75rem', color: '#C9471F', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
       </footer>
-      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
-      <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
-        {isCreatorBranded ? brandName : <>{`Your Meals,`}<br /><em>Planned.</em></>}
+      <div style={{ marginBottom: '1.75rem' }}><BrandMark tenant={tenant} /></div>
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 2.75rem)', color: '#1F3B30', margin: '0 0 0.5rem', fontWeight: 700 }}>
+        {isCreatorBranded ? 'Welcome to your kitchen.' : 'Make dinner happen.'}
       </h1>
-      <p style={{ color: '#6B5C52', margin: '0 0 2.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
+      <p style={{ color: '#52645A', margin: '0 0 2.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
         {tagline}
       </p>
 
       <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 24px rgba(44,24,16,0.08)', maxWidth: '380px', width: '100%' }}>
 
         {/* Mode toggle */}
-        <div style={{ display: 'flex', background: '#FDF6EE', borderRadius: '10px', padding: '4px', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', background: '#FAF3E8', borderRadius: '10px', padding: '4px', marginBottom: '1.5rem' }}>
           {(['login', 'signup'] as const).map(m => (
             <button
               key={m}
@@ -119,7 +119,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
               style={{
                 flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none',
                 background: mode === m ? 'white' : 'transparent',
-                color: mode === m ? '#2C1810' : '#6B5C52',
+                color: mode === m ? '#1F3B30' : '#52645A',
                 fontWeight: mode === m ? '600' : '400',
                 fontSize: '0.875rem', cursor: 'pointer',
                 fontFamily: 'var(--font-sans)',
@@ -169,17 +169,17 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-          <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
-          <span style={{ color: '#9B8B82', fontSize: '0.8rem' }}>or</span>
-          <div style={{ flex: 1, height: '1px', background: '#E8D5B7' }} />
+          <div style={{ flex: 1, height: '1px', background: '#DDCDBB' }} />
+          <span style={{ color: '#687A70', fontSize: '0.8rem' }}>or</span>
+          <div style={{ flex: 1, height: '1px', background: '#DDCDBB' }} />
         </div>
 
         {/* Google */}
         <button
           onClick={handleGoogleSignIn}
           style={{
-            width: '100%', padding: '0.875rem', background: 'white', color: '#2C1810',
-            border: '2px solid #E8D5B7', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600',
+            width: '100%', padding: '0.875rem', background: 'white', color: '#1F3B30',
+            border: '2px solid #DDCDBB', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600',
             cursor: 'pointer', fontFamily: 'var(--font-sans)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
           }}
@@ -202,7 +202,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
               onChange={e => setTosAccepted(e.target.checked)}
               style={{ marginTop: '2px', accentColor: brandColor, flexShrink: 0, width: '15px', height: '15px', cursor: 'pointer' }}
             />
-            <label htmlFor="tos-accept" style={{ fontSize: '0.78rem', color: '#6B5C52', lineHeight: 1.5, cursor: 'pointer' }}>
+            <label htmlFor="tos-accept" style={{ fontSize: '0.78rem', color: '#52645A', lineHeight: 1.5, cursor: 'pointer' }}>
               I agree to the{' '}
               <a href="https://www.notion.so/Terms-of-Service-33cf2e6d5092819ab105d956ab1c5d62" target="_blank" rel="noopener noreferrer" style={{ color: brandColor, fontWeight: '600' }}>Terms of Service</a>
               {' '}and{' '}
@@ -211,7 +211,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
           </div>
         )}
         {mode === 'login' && (
-          <p style={{ color: '#9B8B82', fontSize: '0.8rem', margin: '1rem 0 0' }}>
+          <p style={{ color: '#687A70', fontSize: '0.8rem', margin: '1rem 0 0' }}>
             Free to get started. No credit card required.
           </p>
         )}

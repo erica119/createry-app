@@ -88,7 +88,7 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: 'var(--color-text)', margin: '0 0 0.5rem' }}>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: 'var(--color-text)', margin: '0 0 0.5rem' }}>
         Tell us about your family
       </h2>
       <p style={{ color: 'var(--color-text-muted)', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
@@ -105,8 +105,8 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
           onChange={e => setFamilyName(e.target.value)}
           style={{
             width: '100%', padding: '0.75rem 1rem', fontSize: '1rem',
-            borderRadius: '10px', border: '2px solid #E8D5B7',
-            background: '#FDF6EE', color: '#2C1810',
+            borderRadius: '10px', border: '2px solid #DDCDBB',
+            background: '#FAF3E8', color: '#1F3B30',
             fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box'
           }}
         />
@@ -118,32 +118,32 @@ export default function StepFamilySize({ user, tenantId, familyId, onNext }: Pro
       ].map(({ label, value, min, set }) => (
         <div key={label} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '1rem 1.25rem', background: '#FDF6EE', borderRadius: '12px', marginBottom: '0.75rem'
+          padding: '1rem 1.25rem', background: '#FAF3E8', borderRadius: '12px', marginBottom: '0.75rem'
         }}>
-          <span style={{ fontWeight: '500', color: '#2C1810', fontSize: '1rem' }}>{label}</span>
+          <span style={{ fontWeight: '500', color: '#1F3B30', fontSize: '1rem' }}>{label}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               onClick={() => set(Math.max(min, value - 1))}
               disabled={value <= min}
               style={{
                 ...btnBase,
-                border: '2px solid #E8D5B7',
+                border: '2px solid #DDCDBB',
                 background: 'white',
-                color: '#2C1810',
+                color: '#1F3B30',
                 opacity: value <= min ? 0.35 : 1,
                 cursor: value <= min ? 'not-allowed' : 'pointer',
               }}
             >−</button>
             <span style={{
-              fontSize: '1.6rem', fontWeight: '700', color: '#C4622D',
-              minWidth: '2rem', textAlign: 'center', fontFamily: 'var(--font-serif)'
+              fontSize: '1.6rem', fontWeight: '700', color: '#C9471F',
+              minWidth: '2rem', textAlign: 'center', fontFamily: 'var(--font-display)'
             }}>{value}</span>
             <button
               onClick={() => set(value + 1)}
               style={{
                 ...btnBase,
-                border: '2px solid #C4622D',
-                background: '#C4622D',
+                border: '2px solid #C9471F',
+                background: '#C9471F',
                 color: 'white',
               }}
             >+</button>

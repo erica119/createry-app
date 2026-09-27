@@ -1,34 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap');
 
 /* ============================================
-   DESIGN SYSTEM: The Farmhouse Kitchen
+   DESIGN SYSTEM: Createry
    ============================================ */
 
 :root {
   /* Colors */
-  --color-bg:          #FDF6EE;
+  --color-bg:          #FAF3E8;
   --color-bg-card:     #FFFFFF;
-  --color-bg-warm:     #F5EBD9;
-  --color-bg-muted:    #F0E6D3;
-  --color-border:      #E8D5B7;
-  --color-border-dark: #D4B896;
+  --color-bg-warm:     #F5E8D7;
+  --color-bg-muted:    #F3E6D5;
+  --color-border:      #DDCDBB;
+  --color-border-dark: #CAB7A4;
 
-  --color-primary:     #C4622D;
-  --color-primary-dark:#A04E22;
+  --color-primary:     #C9471F;
+  --color-primary-dark:#A83A19;
   --color-primary-light:#F0D4C0;
 
-  --color-text:        #2C1810;
-  --color-text-muted:  #7A5C48;
-  --color-text-light:  #B08060;
+  --color-text:        #1F3B30;
+  --color-text-muted:  #52645A;
+  --color-text-light:  #748176;
 
   --color-success:     #5A7F5C;
   --color-success-bg:  #E8F2E8;
 
-  --color-nav:         #2C1810;
+  --color-nav:         #1F3B30;
 
   /* Typography */
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'Lato', -apple-system, sans-serif;
+  --font-display: 'Figtree', sans-serif;
+  --font-body:    'Figtree', -apple-system, sans-serif;
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --cream: #FAF3E8;
+  --espresso: #1F3B30;
+  --text-light: #748176;
 
   /* Spacing */
   --radius-sm:   6px;
@@ -37,9 +42,9 @@
   --radius-xl:   24px;
 
   /* Shadows */
-  --shadow-sm:   0 1px 3px rgba(44,24,16,0.08);
-  --shadow-md:   0 4px 12px rgba(44,24,16,0.10);
-  --shadow-lg:   0 8px 24px rgba(44,24,16,0.12);
+  --shadow-sm:   0 1px 3px rgba(31,59,48,0.08);
+  --shadow-md:   0 4px 12px rgba(31,59,48,0.10);
+  --shadow-lg:   0 8px 24px rgba(31,59,48,0.12);
 }
 
 /* Reset & Base */
@@ -265,7 +270,7 @@ label {
 .nav-link.active {
   color: var(--color-bg);
   font-weight: 700;
-  background: rgba(196,98,45,0.4);
+  background: rgba(201,71,31,0.4);
 }
 
 .nav-link:disabled {
@@ -601,3 +606,11 @@ a.btn-link {
   body { background: white !important; color: black !important; }
   .main-content { padding: 0 !important; }
 }
+
+/* Supplied Createry identity and creator override presentation */
+.createry-wordmark { display: block; width: 134px; height: auto; max-height: 44px; object-fit: contain; }
+.brand-mark { display: inline-flex; align-items: center; gap: .65rem; line-height: 1.2; }
+.creator-mark { font-family: var(--font-body); font-size: 1.05rem; font-weight: 700; color: inherit; }
+.creator-mark small { display: inline-block; margin-left: .55rem; font-size: .7rem; font-weight: 400; opacity: .7; }
+.creator-logo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: white; }
+:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }

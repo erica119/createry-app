@@ -58,14 +58,14 @@ export default function StepGrocerySchedule({ familyId, tenantId, onNext, onBack
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#1F3B30', margin: '0 0 0.5rem' }}>
         When do you grocery shop?
       </h2>
-      <p style={{ color: '#6B5C52', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
+      <p style={{ color: '#52645A', margin: '0 0 1.75rem', fontSize: '0.95rem' }}>
         We'll make sure your list is ready before your usual shopping day.
       </p>
 
-      <p style={{ fontWeight: '600', color: '#2C1810', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ fontWeight: '600', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         Shopping days
       </p>
 
@@ -79,7 +79,7 @@ export default function StepGrocerySchedule({ familyId, tenantId, onNext, onBack
               className={active ? 'day-pill-active' : 'day-pill-inactive'}
               style={{
                 padding: '0.75rem 0.1rem', borderRadius: '10px',
-                border: `2px solid ${active ? '#C4622D' : '#E8D5B7'}`,
+                border: `2px solid ${active ? '#C9471F' : '#DDCDBB'}`,
                 fontSize: '0.7rem', fontWeight: '600', cursor: 'pointer',
                 transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', textAlign: 'center',
               }}
@@ -91,8 +91,8 @@ export default function StepGrocerySchedule({ familyId, tenantId, onNext, onBack
       </div>
 
       {shoppingDays.length > 0 && (
-        <div style={{ padding: '1rem', background: '#FDF6EE', borderRadius: '12px', marginBottom: '1.5rem' }}>
-          <p style={{ margin: 0, color: '#2C1810', fontSize: '0.9rem' }}>
+        <div style={{ padding: '1rem', background: '#FAF3E8', borderRadius: '12px', marginBottom: '1.5rem' }}>
+          <p style={{ margin: 0, color: '#1F3B30', fontSize: '0.9rem' }}>
             🛒 Shopping on <strong>{shoppingDays.map(d => DAYS[d]).join(', ')}</strong>
           </p>
         </div>

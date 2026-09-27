@@ -1,3 +1,4 @@
+import BrandMark from '../shared/BrandMark'
 import { useCallback, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -386,14 +387,14 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
   const errorCount = recipes.filter(recipe => recipe._errors.length > 0).length
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' },
-    header: { padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2C1810' },
+    page: { fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8' },
+    header: { padding: '1rem 2rem', borderBottom: '1px solid #DDCDBB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1F3B30' },
     body: { maxWidth: '960px', margin: '0 auto', padding: '2rem' },
-    card: { background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '2rem', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' },
-    primaryBtn: { background: '#C4622D', color: 'white', border: 'none', padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.95rem', cursor: 'pointer', fontWeight: '600', fontFamily: 'var(--font-sans)' },
-    secondaryBtn: { background: 'white', color: '#C4622D', border: '1.5px solid #C4622D', padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.95rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' },
-    th: { textAlign: 'left', padding: '0.6rem 0.75rem', borderBottom: '2px solid #E8D5B7', color: '#6B5C52', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' },
-    td: { padding: '0.6rem 0.75rem', borderBottom: '1px solid #F5EFE6', verticalAlign: 'top' },
+    card: { background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '2rem', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' },
+    primaryBtn: { background: '#C9471F', color: 'white', border: 'none', padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.95rem', cursor: 'pointer', fontWeight: '600', fontFamily: 'var(--font-sans)' },
+    secondaryBtn: { background: 'white', color: '#C9471F', border: '1.5px solid #C9471F', padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.95rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' },
+    th: { textAlign: 'left', padding: '0.6rem 0.75rem', borderBottom: '2px solid #DDCDBB', color: '#52645A', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' },
+    td: { padding: '0.6rem 0.75rem', borderBottom: '1px solid #F5E8D7', verticalAlign: 'top' },
   }
 
   const badge = (color: string, background: string): React.CSSProperties => ({
@@ -405,28 +406,28 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
   return (
     <div style={styles.page}>
       <div style={styles.header}>
-        <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ Createry</span>
+        <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}><BrandMark onDark /></span>
         <button onClick={onCancel} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
       </div>
 
       <div style={styles.body}>
         <div style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.5rem' }}>Bulk Recipe Import</h2>
-          <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Upload a CSV file to import multiple recipes at once.</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.5rem' }}>Bulk Recipe Import</h2>
+          <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Upload a CSV file to import multiple recipes at once.</p>
         </div>
 
         {stage === 'upload' && (
           <div style={styles.card}>
             <div
-              style={{ border: `2px dashed ${dragging ? '#C4622D' : '#E8D5B7'}`, borderRadius: '12px', padding: '3rem 2rem', textAlign: 'center', background: dragging ? '#FEF3EC' : '#FDF6EE', cursor: 'pointer' }}
+              style={{ border: `2px dashed ${dragging ? '#C9471F' : '#DDCDBB'}`, borderRadius: '12px', padding: '3rem 2rem', textAlign: 'center', background: dragging ? '#FEF3EC' : '#FAF3E8', cursor: 'pointer' }}
               onDragOver={event => { event.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
               onClick={() => fileRef.current?.click()}
             >
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📂</div>
-              <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#2C1810' }}>Drop your CSV here or click to browse</p>
-              <p style={{ margin: 0, color: '#9B8B82', fontSize: '0.85rem' }}>Accepts .csv files only</p>
+              <p style={{ margin: '0 0 0.5rem', fontWeight: '600', color: '#1F3B30' }}>Drop your CSV here or click to browse</p>
+              <p style={{ margin: 0, color: '#687A70', fontSize: '0.85rem' }}>Accepts .csv files only</p>
               <input ref={fileRef} type="file" accept=".csv" onChange={event => { const file = event.target.files?.[0]; if (file) processFile(file) }} style={{ display: 'none' }} />
             </div>
 
@@ -434,9 +435,9 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
               <button onClick={downloadTemplate} style={styles.secondaryBtn}>⬇️ Download CSV Template</button>
             </div>
 
-            <div style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#F5EFE6', borderRadius: '10px', border: '1px solid #E8D5B7' }}>
-              <p style={{ margin: '0 0 0.4rem', fontWeight: '600', color: '#2C1810', fontSize: '0.85rem' }}>📋 Import notes</p>
-              <p style={{ margin: 0, color: '#6B5C52', fontSize: '0.8rem', lineHeight: 1.6 }}>
+            <div style={{ marginTop: '1.5rem', padding: '1rem 1.25rem', background: '#F5E8D7', borderRadius: '10px', border: '1px solid #DDCDBB' }}>
+              <p style={{ margin: '0 0 0.4rem', fontWeight: '600', color: '#1F3B30', fontSize: '0.85rem' }}>📋 Import notes</p>
+              <p style={{ margin: 0, color: '#52645A', fontSize: '0.8rem', lineHeight: 1.6 }}>
                 Required: Title, Ingredients, Instructions. Each ingredient needs a numeric amount and one clear grocery item. Put alternatives, optional garnishes, and serving notes in Instructions. Separate ingredient lines with semicolons, pipes, or line breaks.
               </p>
             </div>
@@ -447,10 +448,10 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
           <>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ ...styles.card, padding: '0.75rem 1.25rem', display: 'flex', gap: '1.5rem', flex: 1, minWidth: '260px' }}>
-                <div><strong style={{ color: '#16a34a', fontSize: '1.3rem' }}>{validCount}</strong> <span style={{ color: '#6B5C52', fontSize: '0.8rem' }}>ready</span></div>
-                {errorCount > 0 && <div><strong style={{ color: '#dc2626', fontSize: '1.3rem' }}>{errorCount}</strong> <span style={{ color: '#6B5C52', fontSize: '0.8rem' }}>with errors</span></div>}
-                <div><strong style={{ color: '#C4622D', fontSize: '1.3rem' }}>{selectedRows.size}</strong> <span style={{ color: '#6B5C52', fontSize: '0.8rem' }}>selected</span></div>
-                <div style={{ color: '#9B8B82', fontSize: '0.8rem', alignSelf: 'center' }}>📄 {fileName}</div>
+                <div><strong style={{ color: '#16a34a', fontSize: '1.3rem' }}>{validCount}</strong> <span style={{ color: '#52645A', fontSize: '0.8rem' }}>ready</span></div>
+                {errorCount > 0 && <div><strong style={{ color: '#dc2626', fontSize: '1.3rem' }}>{errorCount}</strong> <span style={{ color: '#52645A', fontSize: '0.8rem' }}>with errors</span></div>}
+                <div><strong style={{ color: '#C9471F', fontSize: '1.3rem' }}>{selectedRows.size}</strong> <span style={{ color: '#52645A', fontSize: '0.8rem' }}>selected</span></div>
+                <div style={{ color: '#687A70', fontSize: '0.8rem', alignSelf: 'center' }}>📄 {fileName}</div>
               </div>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button onClick={() => { setStage('upload'); setRecipes([]) }} style={styles.secondaryBtn}>← Re-upload</button>
@@ -486,11 +487,11 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
                       return (
                         <tr key={index} style={{ background: hasErrors ? '#FFF5F5' : selectedRows.has(index) ? '#F0FFF4' : 'white' }}>
                           <td style={styles.td}><input type="checkbox" checked={selectedRows.has(index)} disabled={hasErrors} onChange={() => toggleRow(index)} /></td>
-                          <td style={{ ...styles.td, color: '#9B8B82' }}>{recipe._row}</td>
-                          <td style={{ ...styles.td, fontWeight: '600', color: '#2C1810', minWidth: '180px' }}>{recipe.title || '—'}</td>
+                          <td style={{ ...styles.td, color: '#687A70' }}>{recipe._row}</td>
+                          <td style={{ ...styles.td, fontWeight: '600', color: '#1F3B30', minWidth: '180px' }}>{recipe.title || '—'}</td>
                           <td style={styles.td}><span style={badge(complexityColor[0], complexityColor[1])}>{recipe.complexity}</span></td>
-                          <td style={styles.td}>{recipe.meal_type.map(tag => <span key={tag} style={badge('#C4622D', '#FEF3EC')}>{tag}</span>)}</td>
-                          <td style={styles.td}>{recipe.cuisine_tags.slice(0, 2).map(tag => <span key={tag} style={badge('#6B5C52', '#F5EFE6')}>{tag}</span>)}</td>
+                          <td style={styles.td}>{recipe.meal_type.map(tag => <span key={tag} style={badge('#C9471F', '#FEF3EC')}>{tag}</span>)}</td>
+                          <td style={styles.td}>{recipe.cuisine_tags.slice(0, 2).map(tag => <span key={tag} style={badge('#52645A', '#F5E8D7')}>{tag}</span>)}</td>
                           <td style={styles.td}>{recipe.dietary_tags.slice(0, 2).map(tag => <span key={tag} style={badge('#16a34a', '#dcfce7')}>{tag}</span>)}</td>
                           <td style={styles.td}>{recipe.prep_time_minutes !== null ? `${recipe.prep_time_minutes}m` : '—'}</td>
                           <td style={styles.td}>{recipe.cook_time_minutes !== null ? `${recipe.cook_time_minutes}m` : '—'}</td>
@@ -510,11 +511,11 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
         {stage === 'importing' && (
           <div style={{ ...styles.card, textAlign: 'center', padding: '3rem 2rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⏳</div>
-            <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810' }}>Importing recipes...</h3>
-            <div style={{ background: '#F5EFE6', borderRadius: '999px', height: '10px', overflow: 'hidden', maxWidth: '400px', margin: '1.5rem auto 0' }}>
-              <div style={{ background: '#C4622D', height: '100%', width: `${importProgress}%`, transition: 'width 0.3s ease' }} />
+            <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30' }}>Importing recipes...</h3>
+            <div style={{ background: '#F5E8D7', borderRadius: '999px', height: '10px', overflow: 'hidden', maxWidth: '400px', margin: '1.5rem auto 0' }}>
+              <div style={{ background: '#C9471F', height: '100%', width: `${importProgress}%`, transition: 'width 0.3s ease' }} />
             </div>
-            <p style={{ color: '#9B8B82', fontSize: '0.85rem' }}>{importProgress}%</p>
+            <p style={{ color: '#687A70', fontSize: '0.85rem' }}>{importProgress}%</p>
           </div>
         )}
 
@@ -523,8 +524,8 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
             <div style={{ ...styles.card, marginBottom: '1.5rem', padding: '1.25rem 1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.25rem' }}>🎉 {importResults.success} recipe{importResults.success === 1 ? '' : 's'} imported!</h3>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.875rem' }}>Add photos now or skip and add them later.</p>
+                  <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem' }}>🎉 {importResults.success} recipe{importResults.success === 1 ? '' : 's'} imported!</h3>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.875rem' }}>Add photos now or skip and add them later.</p>
                   {importResults.failed > 0 && <p style={{ color: '#dc2626', margin: '0.35rem 0 0', fontSize: '0.82rem' }}>{importResults.failed} failed to import.</p>}
                 </div>
                 <button onClick={onComplete} style={styles.secondaryBtn}>Skip → Done</button>
@@ -539,14 +540,14 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
                 const hasImage = Boolean(recipe.image_url)
                 const wasUploaded = uploadedIds.has(recipe.id)
                 return (
-                  <div key={recipe.id} style={{ background: 'white', border: `1.5px solid ${wasUploaded ? '#86efac' : '#E8D5B7'}`, borderRadius: '12px', overflow: 'hidden' }}>
-                    <div onClick={() => !isUploading && triggerImageUpload(recipe.id)} style={{ height: '130px', background: '#F5EFE6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isUploading ? 'wait' : 'pointer', position: 'relative', overflow: 'hidden' }}>
-                      {hasImage ? <img src={recipe.image_url!} alt={recipe.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center', color: '#C8BAB2' }}>📷<div style={{ fontSize: '0.75rem', fontWeight: '600' }}>Add Photo</div></div>}
-                      {isUploading && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C4622D', fontWeight: '600' }}>Uploading…</div>}
+                  <div key={recipe.id} style={{ background: 'white', border: `1.5px solid ${wasUploaded ? '#86efac' : '#DDCDBB'}`, borderRadius: '12px', overflow: 'hidden' }}>
+                    <div onClick={() => !isUploading && triggerImageUpload(recipe.id)} style={{ height: '130px', background: '#F5E8D7', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isUploading ? 'wait' : 'pointer', position: 'relative', overflow: 'hidden' }}>
+                      {hasImage ? <img src={recipe.image_url!} alt={recipe.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center', color: '#8A9A8F' }}>📷<div style={{ fontSize: '0.75rem', fontWeight: '600' }}>Add Photo</div></div>}
+                      {isUploading && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C9471F', fontWeight: '600' }}>Uploading…</div>}
                     </div>
                     <div style={{ padding: '0.65rem 0.75rem' }}>
-                      <div style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.82rem' }}>{recipe.title}</div>
-                      <button onClick={() => !isUploading && triggerImageUpload(recipe.id)} disabled={isUploading} style={{ marginTop: '0.4rem', width: '100%', padding: '0.35rem', border: '1.5px solid #E8D5B7', borderRadius: '6px', background: '#FDF6EE', color: '#6B5C52', fontWeight: '600', cursor: 'pointer' }}>
+                      <div style={{ fontWeight: '600', color: '#1F3B30', fontSize: '0.82rem' }}>{recipe.title}</div>
+                      <button onClick={() => !isUploading && triggerImageUpload(recipe.id)} disabled={isUploading} style={{ marginTop: '0.4rem', width: '100%', padding: '0.35rem', border: '1.5px solid #DDCDBB', borderRadius: '6px', background: '#FAF3E8', color: '#52645A', fontWeight: '600', cursor: 'pointer' }}>
                         {isUploading ? 'Uploading…' : hasImage ? 'Change Photo' : '+ Add Photo'}
                       </button>
                     </div>

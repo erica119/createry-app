@@ -1,4 +1,5 @@
 import './App.css'
+import BrandMark from './components/shared/BrandMark'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { resolveTenant, clearCreatorSession } from './lib/tenant'
@@ -78,7 +79,7 @@ export default function App() {
   const [shoppingComplete, setShoppingComplete] = useState(false)
 
   useEffect(() => {
-    const color = tenant?.primary_color || '#C4622D'
+    const color = tenant?.primary_color || '#C9471F'
     // Parse hex to RGB for derived colors
     const hex = color.replace('#', '')
     const r = parseInt(hex.substring(0,2), 16)
@@ -183,7 +184,7 @@ export default function App() {
         setTenant({
           id: tenantData.id,
           brand_name: tenantData.brand_name || 'Createry',
-          primary_color: tenantData.primary_color || '#C4622D',
+          primary_color: tenantData.primary_color || '#C9471F',
           tagline: tenantData.tagline,
           logo_url: tenantData.logo_url,
           subdomain: tenantData.subdomain,
@@ -248,7 +249,7 @@ export default function App() {
           const resolvedTenant = {
             id: tenantData.id,
             brand_name: tenantData.brand_name || 'Createry',
-            primary_color: tenantData.primary_color || '#C4622D',
+            primary_color: tenantData.primary_color || '#C9471F',
             tagline: tenantData.tagline,
             logo_url: tenantData.logo_url,
             subdomain: tenantData.subdomain,
@@ -451,7 +452,7 @@ export default function App() {
     return <CreatorDashboard user={user!} tenantId={creatorTenantId} onSignOut={signOut} />
   }
 
-  if (loading || tenantLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FDF6EE' }}><p>Loading...</p></div>
+  if (loading || tenantLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#FAF3E8' }}><p>Loading...</p></div>
 
   // Ensure we have real tenant data before rendering anything
   // Use tenant if it has a real ID (not the fallback)
@@ -460,22 +461,22 @@ export default function App() {
   const path = window.location.pathname
 
   const legalFooter = (
-    <footer style={{ padding: '0.6rem 2rem', background: 'rgba(244,235,225,0.95)', borderTop: '1px solid #E8D5B7', display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
-      <a href="/terms" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
-      <a href="/privacy" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
-      <a href="/cookies" style={{ fontSize: '0.75rem', color: '#C4622D', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
+    <footer style={{ padding: '0.6rem 2rem', background: 'rgba(244,235,225,0.95)', borderTop: '1px solid #DDCDBB', display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
+      <a href="/terms" style={{ fontSize: '0.75rem', color: '#C9471F', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
+      <a href="/privacy" style={{ fontSize: '0.75rem', color: '#C9471F', textDecoration: 'none', fontWeight: '500' }}>Privacy</a>
+      <a href="/cookies" style={{ fontSize: '0.75rem', color: '#C9471F', textDecoration: 'none', fontWeight: '500' }}>Cookies</a>
     </footer>
   )
 
   if (path === '/terms') {
     return (
-      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8', display: 'flex', flexDirection: 'column' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto', padding: '3rem 2rem', flex: 1 }}>
-          <a href="/" style={{ fontSize: '0.85rem', color: '#C4622D', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
-          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', marginBottom: '0.5rem' }}>Terms of Service</h1>
-          <p style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
-          <p style={{ color: '#6B5C52', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Terms of Service, please visit:</p>
-          <a href="https://www.notion.so/Terms-of-Service-33cf2e6d5092819ab105d956ab1c5d62" target="_blank" rel="noopener noreferrer" style={{ color: '#C4622D', fontWeight: '600', fontSize: '1rem' }}>View Terms of Service →</a>
+          <a href="/" style={{ fontSize: '0.85rem', color: '#C9471F', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
+          <h1 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', marginBottom: '0.5rem' }}>Terms of Service</h1>
+          <p style={{ color: '#687A70', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
+          <p style={{ color: '#52645A', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Terms of Service, please visit:</p>
+          <a href="https://www.notion.so/Terms-of-Service-33cf2e6d5092819ab105d956ab1c5d62" target="_blank" rel="noopener noreferrer" style={{ color: '#C9471F', fontWeight: '600', fontSize: '1rem' }}>View Terms of Service →</a>
         </div>
         {legalFooter}
       </div>
@@ -484,13 +485,13 @@ export default function App() {
 
   if (path === '/privacy') {
     return (
-      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8', display: 'flex', flexDirection: 'column' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto', padding: '3rem 2rem', flex: 1 }}>
-          <a href="/" style={{ fontSize: '0.85rem', color: '#C4622D', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
-          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', marginBottom: '0.5rem' }}>Privacy Policy</h1>
-          <p style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
-          <p style={{ color: '#6B5C52', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Privacy Policy, please visit:</p>
-          <a href="https://www.notion.so/Privacy-Policy-33cf2e6d509281b282d0c0bdb872eff8" target="_blank" rel="noopener noreferrer" style={{ color: '#C4622D', fontWeight: '600', fontSize: '1rem' }}>View Privacy Policy →</a>
+          <a href="/" style={{ fontSize: '0.85rem', color: '#C9471F', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
+          <h1 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', marginBottom: '0.5rem' }}>Privacy Policy</h1>
+          <p style={{ color: '#687A70', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
+          <p style={{ color: '#52645A', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Privacy Policy, please visit:</p>
+          <a href="https://www.notion.so/Privacy-Policy-33cf2e6d509281b282d0c0bdb872eff8" target="_blank" rel="noopener noreferrer" style={{ color: '#C9471F', fontWeight: '600', fontSize: '1rem' }}>View Privacy Policy →</a>
         </div>
         {legalFooter}
       </div>
@@ -499,13 +500,13 @@ export default function App() {
 
   if (path === '/cookies') {
     return (
-      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8', display: 'flex', flexDirection: 'column' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto', padding: '3rem 2rem', flex: 1 }}>
-          <a href="/" style={{ fontSize: '0.85rem', color: '#C4622D', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
-          <h1 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', marginBottom: '0.5rem' }}>Cookies Policy</h1>
-          <p style={{ color: '#9B8B82', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
-          <p style={{ color: '#6B5C52', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Cookies Policy, please visit:</p>
-          <a href="https://www.notion.so/Cookies-Policy-33cf2e6d5092819083bfe0df26e03c71" target="_blank" rel="noopener noreferrer" style={{ color: '#C4622D', fontWeight: '600', fontSize: '1rem' }}>View Cookies Policy →</a>
+          <a href="/" style={{ fontSize: '0.85rem', color: '#C9471F', textDecoration: 'none', fontWeight: '600', display: 'block', marginBottom: '2rem' }}>← Back</a>
+          <h1 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', marginBottom: '0.5rem' }}>Cookies Policy</h1>
+          <p style={{ color: '#687A70', fontSize: '0.85rem', marginBottom: '2rem' }}>Effective July 1, 2025</p>
+          <p style={{ color: '#52645A', lineHeight: 1.7, marginBottom: '1rem' }}>For the full Cookies Policy, please visit:</p>
+          <a href="https://www.notion.so/Cookies-Policy-33cf2e6d5092819083bfe0df26e03c71" target="_blank" rel="noopener noreferrer" style={{ color: '#C9471F', fontWeight: '600', fontSize: '1rem' }}>View Cookies Policy →</a>
         </div>
         {legalFooter}
       </div>
@@ -533,8 +534,8 @@ export default function App() {
   if (!familyId) {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
-        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #DDCDBB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.id !== FALLBACK_TENANT_ID ? (tenant?.primary_color || '#C9471F') : '#1F3B30' }}>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}><BrandMark tenant={tenant} onDark /></span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <OnboardingWizard
@@ -553,15 +554,15 @@ export default function App() {
   if (familyId && userSubStatus !== null && !validStatuses.includes(userSubStatus)) {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
-        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #DDCDBB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.id !== FALLBACK_TENANT_ID ? (tenant?.primary_color || '#C9471F') : '#1F3B30' }}>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}><BrandMark tenant={tenant} onDark /></span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
           <div style={{ width: '100%', maxWidth: '480px' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🥗</div>
-              <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: 'var(--espresso)', margin: '0 0 0.5rem' }}>
                 {userSubStatus === 'past_due' ? 'Payment issue' : 'Choose your plan'}
               </h1>
               <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.95rem' }}>
@@ -600,8 +601,8 @@ export default function App() {
   if (showRecipeForm) {
     return (
       <div style={{ fontFamily: 'var(--font-sans)' }}>
-        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #E8D5B7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.primary_color || '#2C1810' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>🍽️ {tenant?.brand_name || 'Createry'}</span>
+        <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #DDCDBB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: tenant?.id !== FALLBACK_TENANT_ID ? (tenant?.primary_color || '#C9471F') : '#1F3B30' }}>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem' }}><BrandMark tenant={tenant} onDark /></span>
           <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>Sign out</button>
         </div>
         <RecipeForm
@@ -635,14 +636,14 @@ export default function App() {
     { view: 'settings', label: 'Settings', enabled: true },
   ]
   const activeLabel = NAV_LABELS.find(n => n.view === view)?.label || 'Home'
-  const brandColor = tenant?.primary_color || '#2C1810'
+  const brandColor = tenant?.id !== FALLBACK_TENANT_ID ? (tenant?.primary_color || '#C9471F') : '#1F3B30'
 
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FDF6EE' }}>
+    <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8' }}>
       <div ref={navRef} style={{ position: 'relative' }}>
         <div className="nav-bar" style={{ padding: '0 2rem', background: brandColor, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
-            🍽️ {tenant?.brand_name || 'Createry'}
+          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
+            <BrandMark tenant={tenant} onDark />
             <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {activeLabel}</span>
           </span>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -652,7 +653,7 @@ export default function App() {
           </div>
         </div>
         {navOpen && (
-          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #E8D5B7', minWidth: '180px', zIndex: 50, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #DDCDBB', minWidth: '180px', zIndex: 50, overflow: 'hidden' }}>
             {NAV_LABELS.map(({ view: v, label, enabled }, i, arr) => (
               <button
                 key={v}
@@ -660,11 +661,11 @@ export default function App() {
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
                   padding: '0.8rem 1.25rem',
-                  background: view === v ? '#FDF6EE' : 'white',
-                  color: view === v ? brandColor : enabled ? '#2C1810' : '#C8BAB2',
+                  background: view === v ? '#FAF3E8' : 'white',
+                  color: view === v ? brandColor : enabled ? '#1F3B30' : '#8A9A8F',
                   fontWeight: view === v ? '700' : '400',
                   fontSize: '0.95rem', border: 'none',
-                  borderBottom: i < arr.length - 1 ? '1px solid #F5EFE6' : 'none',
+                  borderBottom: i < arr.length - 1 ? '1px solid #F5E8D7' : 'none',
                   cursor: enabled ? 'pointer' : 'not-allowed',
                   fontFamily: 'var(--font-sans)',
                 }}
@@ -678,13 +679,13 @@ export default function App() {
         {view === 'menu' && generatingMenu && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✨</div>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', marginBottom: '0.5rem' }}>Generating your menu...</div>
-            <div style={{ color: '#6B5C52', fontSize: '0.95rem' }}>This usually takes 15-30 seconds. Hang tight!</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#1F3B30', marginBottom: '0.5rem' }}>Generating your menu...</div>
+            <div style={{ color: '#52645A', fontSize: '0.95rem' }}>This usually takes 15-30 seconds. Hang tight!</div>
           </div>
         )}
         {view === 'menu' && currentMenuId && !generatingMenu && (
           <div>
-          <p style={{ fontSize: '0.78rem', color: '#9B8B82', margin: '0 0 0.75rem', textAlign: 'center' }}>AI-generated plan based on your preferences</p>
+          <p style={{ fontSize: '0.78rem', color: '#687A70', margin: '0 0 0.75rem', textAlign: 'center' }}>AI-generated plan based on your preferences</p>
           <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}
@@ -725,7 +726,7 @@ export default function App() {
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ fontFamily: 'var(--font-serif)', margin: 0, color: '#2C1810', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#9B8B82', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', margin: 0, color: '#1F3B30', fontSize: '1.5rem' }}>My Recipes <span style={{ color: '#687A70', fontSize: '1rem', fontFamily: 'var(--font-sans)', fontWeight: '400' }}>({recipes.length})</span></h2>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button onClick={() => setShowRecipeImport(true)} style={{ background: 'white', color: 'var(--brand-color)', border: '1.5px solid var(--brand-color)', padding: '0.6rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>⬆ Import CSV</button>
                 <button onClick={() => setShowRecipeForm(true)} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>+ Add Recipe</button>
@@ -736,27 +737,27 @@ export default function App() {
               placeholder="🔍 Search recipes..."
               value={recipeSearch}
               onChange={e => setRecipeSearch(e.target.value)}
-              style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #E8D5B7', background: '#FDF6EE', color: '#2C1810', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
+              style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
             />
             <div className="recipe-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
               {recipes.filter(r => r.title.toLowerCase().includes(recipeSearch.toLowerCase()) || r.description?.toLowerCase().includes(recipeSearch.toLowerCase()) || r.cuisine_tags?.some((t: string) => t.toLowerCase().includes(recipeSearch.toLowerCase()))).sort((a, b) => (a.is_premium === b.is_premium ? 0 : a.is_premium ? 1 : -1)).map(recipe => {
                 const isLocked = recipe.is_premium && recipe.recipe_pack_id && !unlockedPackIds.has(recipe.recipe_pack_id)
                 const pack = recipe.recipe_pack_id ? recipePacks[recipe.recipe_pack_id] : null
                 return (
-                <div key={recipe.id} onClick={() => !isLocked && setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: isLocked ? '1px dashed #D4B0B0' : '1px solid #E8D5B7', boxShadow: '0 1px 4px rgba(44,24,16,0.06)', cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.85 : 1, position: 'relative' }}>
+                <div key={recipe.id} onClick={() => !isLocked && setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: isLocked ? '1px dashed #D4B0B0' : '1px solid #DDCDBB', boxShadow: '0 1px 4px rgba(44,24,16,0.06)', cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.85 : 1, position: 'relative' }}>
                   {recipe.image_url && (
                     <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '160px', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   )}
                   <div style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', color: '#2C1810', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
+                    <h3 style={{ margin: 0, fontSize: '1rem', color: '#1F3B30', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
-                      <button onClick={async () => { if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#C8BAB2', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }} title="Delete recipe">✕</button>
+                      <button onClick={async () => { if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#8A9A8F', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }} title="Delete recipe">✕</button>
                       <button onClick={e => toggleFavorite(e, recipe.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem', lineHeight: 1 }} title={favorites.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}>{favorites.has(recipe.id) ? '❤️' : '🤍'}</button>
                     </div>
                   </div>
-                  {recipe.description && <p style={{ color: '#6B5C52', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
-                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#9B8B82', flexWrap: 'wrap' }}>
+                  {recipe.description && <p style={{ color: '#52645A', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
+                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#687A70', flexWrap: 'wrap' }}>
                     {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}
                     {recipe.cook_time_minutes && <span>🔥 {recipe.cook_time_minutes}m cook</span>}
                     {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
@@ -764,23 +765,23 @@ export default function App() {
                   {recipe.cuisine_tags?.length > 0 && (
                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                       {recipe.cuisine_tags.slice(0, 2).map((tag: string) => (
-                        <span key={tag} style={{ fontSize: '0.7rem', background: '#FDF6EE', color: 'var(--brand-color)', padding: '0.2rem 0.6rem', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.04em' }}>{tag}</span>
+                        <span key={tag} style={{ fontSize: '0.7rem', background: '#FAF3E8', color: 'var(--brand-color)', padding: '0.2rem 0.6rem', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.04em' }}>{tag}</span>
                       ))}
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem' }}>
                     {tenant?.brand_name && (
-                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#9B8B82', fontStyle: 'italic' }}>
+                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#687A70', fontStyle: 'italic' }}>
                         {tenant.brand_name}'s Recipe
                       </p>
                     )}
                     {recipe.complexity && (
-                      <span style={{ fontSize: '0.65rem', background: '#F5EFE6', color: 'var(--brand-color)', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
+                      <span style={{ fontSize: '0.65rem', background: '#F5E8D7', color: 'var(--brand-color)', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{recipe.complexity}</span>
                     )}
                   </div>
                   {isLocked && pack && (
                     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F0E0E0' }}>
-                      <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#9B8B82' }}>🔒 {pack.name}</p>
+                      <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#687A70' }}>🔒 {pack.name}</p>
                       <button
                         onClick={e => { e.stopPropagation(); setUnlockModal({ pack, recipeTitles: recipes.filter((r: any) => r.recipe_pack_id === pack.id).map((r: any) => r.title) }) }}
                         style={{ width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
@@ -801,11 +802,11 @@ export default function App() {
           <>
             {/* Context-aware status card */}
             {!currentMenuId ? (
-              <div style={{ background: '#F5EFE6', borderRadius: '16px', border: '1px solid #E8D5B7', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ background: '#F5E8D7', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👩‍🍳</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>{generatingMenu ? "Building this week's menu…" : "Let's get started"}</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>{generatingMenu ? 'Personalizing your meal plan from your recipes. This only takes a moment.' : 'Generate a personalized weekly meal plan from your recipes.'}</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.4rem' }}>{generatingMenu ? "Building this week's menu…" : "Let's get started"}</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>{generatingMenu ? 'Personalizing your meal plan from your recipes. This only takes a moment.' : 'Generate a personalized weekly meal plan from your recipes.'}</p>
                   {menuError && <p style={{ color: '#dc2626', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{menuError}</p>}
                 </div>
                 {!generatingMenu && (
@@ -818,8 +819,8 @@ export default function App() {
               <div style={{ background: '#FFF9F0', borderRadius: '16px', border: '1.5px solid var(--brand-color)', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>Your menu is ready to review</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Take a look at this week's meal plan and approve it when ready.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.4rem' }}>Your menu is ready to review</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Take a look at this week's meal plan and approve it when ready.</p>
                 </div>
                 <button onClick={() => setView('menu')} style={{ background: 'var(--brand-color)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
                   View Menu →
@@ -829,8 +830,8 @@ export default function App() {
               <div style={{ background: '#F0FDF4', borderRadius: '16px', border: '1.5px solid #16a34a', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🛒</div>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>Time to shop</h2>
-                  <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Your menu is approved — build your shopping list and you're all set.</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.4rem' }}>Time to shop</h2>
+                  <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Your menu is approved — build your shopping list and you're all set.</p>
                 </div>
                 <button onClick={() => setView('shopping')} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
                   Shopping List →
@@ -841,8 +842,8 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <span style={{ fontSize: '2rem' }}>✅</span>
                   <div>
-                    <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.25rem', color: '#2C1810', fontSize: '1.4rem' }}>You're all set this week</h2>
-                    <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals!</p>
+                    <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.25rem', color: '#1F3B30', fontSize: '1.4rem' }}>You're all set this week</h2>
+                    <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Menu approved and shopping list ready. Enjoy your meals!</p>
                   </div>
                 </div>
                 {nextWeekMenuId ? (
@@ -864,23 +865,23 @@ export default function App() {
                     acc + ['breakfast', 'lunch', 'dinner'].filter(m => day[m]).length, 0)
                 : 0
               const shoppingLabel = !currentMenuId ? 'No menu' : shoppingComplete ? 'Complete' : shoppingListBuilt ? 'Ready' : currentMenuStatus === 'approved' ? 'Not built' : 'Pending'
-              const shoppingColor = shoppingComplete ? '#16a34a' : shoppingListBuilt ? '#2563eb' : currentMenuStatus === 'approved' ? '#d97706' : '#9B8B82'
+              const shoppingColor = shoppingComplete ? '#16a34a' : shoppingListBuilt ? '#2563eb' : currentMenuStatus === 'approved' ? '#d97706' : '#687A70'
               return (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>in your library</p>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>in your library</p>
                   </div>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meals Planned</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', fontWeight: '700', lineHeight: 1 }}>{mealCount}</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>this week</p>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meals Planned</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{mealCount}</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>this week</p>
                   </div>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9B8B82' }}>{shoppingLabel}</p>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>{shoppingLabel}</p>
                   </div>
                 </div>
               )
@@ -909,7 +910,7 @@ export default function App() {
               return (
                 <div
                   onClick={() => setSelectedRecipe(tonightRecipe)}
-                  style={{ background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(44,24,16,0.10)', marginBottom: '2rem' }}
+                  style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(44,24,16,0.10)', marginBottom: '2rem' }}
                 >
                   {tonightRecipe.image_url && (
                     <img
@@ -923,16 +924,16 @@ export default function App() {
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.75rem', borderRadius: '20px', background: brandColor, color: 'white', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{mealLabel}</span>
                       {tonightRecipe.cuisine_tags && (
-                        <span style={{ fontSize: '0.75rem', color: '#9B8B82', fontWeight: '500' }}>{Array.isArray(tonightRecipe.cuisine_tags) ? tonightRecipe.cuisine_tags[0] : tonightRecipe.cuisine_tags}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#687A70', fontWeight: '500' }}>{Array.isArray(tonightRecipe.cuisine_tags) ? tonightRecipe.cuisine_tags[0] : tonightRecipe.cuisine_tags}</span>
                       )}
                     </div>
-                    <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.5rem', color: '#2C1810', fontSize: '1.3rem', lineHeight: 1.2 }}>{tonightRecipe.title}</h3>
+                    <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.5rem', color: '#1F3B30', fontSize: '1.3rem', lineHeight: 1.2 }}>{tonightRecipe.title}</h3>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                       {tonightRecipe.cook_time_minutes && (
-                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>🕐 {tonightRecipe.cook_time_minutes} min</span>
+                        <span style={{ fontSize: '0.8rem', color: '#52645A' }}>🕐 {tonightRecipe.cook_time_minutes} min</span>
                       )}
                       {tonightRecipe.servings && (
-                        <span style={{ fontSize: '0.8rem', color: '#6B5C52' }}>👥 {tonightRecipe.servings} servings</span>
+                        <span style={{ fontSize: '0.8rem', color: '#52645A' }}>👥 {tonightRecipe.servings} servings</span>
                       )}
                     </div>
                   </div>
@@ -955,22 +956,22 @@ export default function App() {
               if (slots.length === 0) return null
               return (
                 <>
-                  <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 1rem', color: '#2C1810', fontSize: '1.4rem' }}>This Week's Recipes</h2>
+                  <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 1rem', color: '#1F3B30', fontSize: '1.4rem' }}>This Week's Recipes</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
                     {slots.map(({ day, meal, recipeId }) => {
                       const recipe = recipes.find((r: any) => r.id === recipeId)
                       if (!recipe) return null
                       return (
-                        <div key={`${day}-${meal}`} onClick={() => setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                        <div key={`${day}-${meal}`} onClick={() => setSelectedRecipe(recipe)} style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
                           {recipe.image_url && (
                             <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '130px', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                           )}
                           <div style={{ padding: '0.875rem 1rem' }}>
                             <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', alignItems: 'center' }}>
                               <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
-                              <span style={{ fontSize: '0.7rem', color: '#9B8B82', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
+                              <span style={{ fontSize: '0.7rem', color: '#687A70', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
                             </div>
-                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: '#2C1810', lineHeight: 1.3 }}>{recipe.title}</p>
+                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: '#1F3B30', lineHeight: 1.3 }}>{recipe.title}</p>
                           </div>
                         </div>
                       )
@@ -984,7 +985,7 @@ export default function App() {
       </div>
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
 
-      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C4622D'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C9471F'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Createry</strong></span>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <a href="/terms" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '500' }}>Terms</a>
@@ -1000,22 +1001,22 @@ export default function App() {
           <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', maxWidth: '420px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(44,24,16,0.25)' }}>
             <div style={{ background: 'var(--color-primary)', padding: '1.5rem 2rem' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔒</div>
-              <h2 style={{ fontFamily: 'var(--font-serif)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>{unlockModal.pack.name}</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: 'white', margin: '0 0 0.25rem', fontSize: '1.35rem' }}>{unlockModal.pack.name}</h2>
               <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.875rem' }}>Unlock this recipe pack to access all premium recipes</p>
               <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0.5rem 0 0', fontSize: '0.75rem', fontStyle: 'italic' }}>Recipes provided by Creator. Createry AI may include these recipes in your generated meal plans based on your preferences.</p>
             </div>
             <div style={{ padding: '1.5rem 2rem' }}>
-              <div style={{ background: '#FDF6EE', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
-                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#9B8B82', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
+              <div style={{ background: '#FAF3E8', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+                <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Includes</p>
                 <ul style={{ margin: 0, padding: '0 0 0 1.1rem' }}>
                   {unlockModal.recipeTitles.map((t, i) => (
-                    <li key={i} style={{ color: '#2C1810', fontSize: '0.875rem', marginBottom: '0.3rem', lineHeight: 1.4 }}>{t}</li>
+                    <li key={i} style={{ color: '#1F3B30', fontSize: '0.875rem', marginBottom: '0.3rem', lineHeight: 1.4 }}>{t}</li>
                   ))}
                 </ul>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <span style={{ color: '#6B5C52', fontSize: '0.9rem' }}>One-time purchase</span>
-                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#2C1810', fontWeight: '700' }}>${(unlockModal.pack.price_cents / 100).toFixed(2)}</span>
+                <span style={{ color: '#52645A', fontSize: '0.9rem' }}>One-time purchase</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#1F3B30', fontWeight: '700' }}>${(unlockModal.pack.price_cents / 100).toFixed(2)}</span>
               </div>
               <button
                 onClick={() => handleCheckout(unlockModal.pack.id)}
@@ -1024,7 +1025,7 @@ export default function App() {
               >
                 {checkingOut ? 'Redirecting...' : `Unlock ${unlockModal.pack.name}`}
               </button>
-              <button onClick={() => setUnlockModal(null)} style={{ width: '100%', background: 'none', border: 'none', color: '#9B8B82', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}>
+              <button onClick={() => setUnlockModal(null)} style={{ width: '100%', background: 'none', border: 'none', color: '#687A70', padding: '0.75rem', fontSize: '0.875rem', cursor: 'pointer', marginTop: '0.5rem' }}>
                 Maybe later
               </button>
             </div>
@@ -1036,7 +1037,7 @@ export default function App() {
       <nav className="bottom-nav" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'white',
-        borderTop: '1px solid #E8D5B7',
+        borderTop: '1px solid #DDCDBB',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
@@ -1067,7 +1068,7 @@ export default function App() {
             <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</span>
             <span style={{
               fontSize: '0.65rem', fontWeight: view === v ? '700' : '500',
-              color: view === v ? brandColor : '#9B8B82',
+              color: view === v ? brandColor : '#687A70',
               fontFamily: 'var(--font-sans)',
               letterSpacing: '0.02em',
             }}>{label}</span>

@@ -121,20 +121,20 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     /^(?:arge|rilled|emon|reen|alt)\b/i.test(item.name)
   ) || []
 
-  if (loading) return <p style={{ color: '#6B5C52' }}>Loading shopping list...</p>
+  if (loading) return <p style={{ color: '#52645A' }}>Loading shopping list...</p>
 
   if (!list) {
     return (
-      <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid #E8D5B7' }}>
+      <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛒</div>
-        <h3 style={{ fontFamily: 'var(--font-serif)', color: '#2C1810', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Ready to shop?</h3>
-        <p style={{ color: '#6B5C52', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Ready to shop?</h3>
+        <p style={{ color: '#52645A', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
           {stale ? 'Your menu changed after this list was made. Rebuild it before shopping.' : "We'll build your list from this week's approved menu."}
         </p>
         <button
           onClick={generateList}
           disabled={generating}
-          style={{ background: '#C4622D', color: 'white', border: 'none', padding: '0.875rem 2rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: generating ? 'not-allowed' : 'pointer', opacity: generating ? 0.7 : 1, fontFamily: 'var(--font-sans)' }}
+          style={{ background: '#C9471F', color: 'white', border: 'none', padding: '0.875rem 2rem', borderRadius: '10px', fontSize: '1rem', fontWeight: '600', cursor: generating ? 'not-allowed' : 'pointer', opacity: generating ? 0.7 : 1, fontFamily: 'var(--font-sans)' }}
         >
           {generating ? 'Building list...' : '✨ Build Shopping List'}
         </button>
@@ -148,8 +148,8 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
       {/* Header */}
       <div className="shopping-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: '#2C1810', margin: '0 0 0.25rem' }}>Shopping List</h2>
-          <p style={{ color: '#6B5C52', margin: 0, fontSize: '0.9rem' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', margin: '0 0 0.25rem' }}>Shopping List</h2>
+          <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>
             {checkedCount} of {totalCount} items checked
           </p>
         </div>
@@ -173,12 +173,12 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               {isTestLink ? 'Instacart ordering is not available yet' : reviewItems.length > 0 ? '🛒 Instacart needs ingredient review' : 'Instacart link unavailable'}
             </button>
           )}
-          <button onClick={() => window.print()} style={{ background: "#C4622D", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
+          <button onClick={() => window.print()} style={{ background: "#C9471F", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
 
           <button
             onClick={generateList}
             disabled={generating}
-            style={{ background: 'white', color: '#6B5C52', border: '1.5px solid #E8D5B7', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: generating ? 'not-allowed' : 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}
+            style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: generating ? 'not-allowed' : 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}
           >
             {generating ? 'Rebuilding...' : '↺ Rebuild'}
           </button>
@@ -217,7 +217,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
 
       {/* Progress bar */}
       {totalCount > 0 && (
-        <div style={{ background: '#E8D5B7', borderRadius: '4px', height: '6px', marginBottom: '1.5rem', overflow: 'hidden' }}>
+        <div style={{ background: '#DDCDBB', borderRadius: '4px', height: '6px', marginBottom: '1.5rem', overflow: 'hidden' }}>
           <div style={{ background: '#16a34a', height: '6px', width: `${(checkedCount / totalCount) * 100}%`, transition: 'width 0.3s ease', borderRadius: '4px' }} />
         </div>
       )}
@@ -227,24 +227,24 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([aisle, items]) => (
           <div key={aisle} style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#9B8B82', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700' }}>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#687A70', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700' }}>
               {aisle}
             </h3>
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E8D5B7', overflow: 'hidden' }}>
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', overflow: 'hidden' }}>
               {items.map((item, i) => (
                 <div
                   key={i}
                   onClick={() => toggleItem(item.index)}
                   style={{
                     display: 'flex', alignItems: 'center', padding: '0.875rem 1rem',
-                    borderBottom: i < items.length - 1 ? '1px solid #F5EFE6' : 'none',
+                    borderBottom: i < items.length - 1 ? '1px solid #F5E8D7' : 'none',
                     cursor: 'pointer', background: item.checked ? '#FAFAF8' : 'white',
                     transition: 'background 0.15s ease',
                   }}
                 >
                   <div style={{
                     width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, marginRight: '0.875rem',
-                    border: `2px solid ${item.checked ? '#16a34a' : '#E8D5B7'}`,
+                    border: `2px solid ${item.checked ? '#16a34a' : '#DDCDBB'}`,
                     background: item.checked ? '#16a34a' : 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: 'white', fontSize: '0.7rem', fontWeight: '700', transition: 'all 0.15s ease',
@@ -252,16 +252,16 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
                     {item.checked && '✓'}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: '0.95rem', color: item.checked ? '#9B8B82' : '#2C1810', textDecoration: item.checked ? 'line-through' : 'none', fontWeight: '500' }}>
+                    <span style={{ fontSize: '0.95rem', color: item.checked ? '#687A70' : '#1F3B30', textDecoration: item.checked ? 'line-through' : 'none', fontWeight: '500' }}>
                       {item.name}
                     </span>
                     {(item.quantity > 0 || item.unit) && (
-                      <span style={{ color: '#9B8B82', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
+                      <span style={{ color: '#687A70', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
                         {item.quantity > 0 ? `${item.quantity} ${item.unit}` : item.unit}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#C8BAB2', textAlign: 'right', maxWidth: '100px', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: '0.72rem', color: '#8A9A8F', textAlign: 'right', maxWidth: '100px', lineHeight: 1.3 }}>
                     {item.recipe_sources.slice(0, 2).join(', ')}
                   </div>
                 </div>

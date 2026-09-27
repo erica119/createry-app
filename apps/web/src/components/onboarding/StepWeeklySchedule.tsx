@@ -70,13 +70,13 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', color: '#2C1810', margin: '0 0 0.5rem' }}>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#1F3B30', margin: '0 0 0.5rem' }}>
         When do you cook at home?
       </h2>
-      <p style={{ color: '#6B5C52', margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
+      <p style={{ color: '#52645A', margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
         Tap the days you're home, then choose which meals.
       </p>
-      <p style={{ color: '#C4622D', margin: '0 0 1.25rem', fontSize: '0.85rem', fontWeight: '600' }}>
+      <p style={{ color: '#C9471F', margin: '0 0 1.25rem', fontSize: '0.85rem', fontWeight: '600' }}>
         {homeDays} day{homeDays !== 1 ? 's' : ''} selected
       </p>
 
@@ -88,7 +88,7 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
             className={day.is_home ? 'day-pill-active' : 'day-pill-inactive'}
             style={{
               padding: '0.6rem 0.1rem', borderRadius: '10px',
-              border: `2px solid ${day.is_home ? '#C4622D' : '#E8D5B7'}`,
+              border: `2px solid ${day.is_home ? '#C9471F' : '#DDCDBB'}`,
               fontSize: '0.7rem', fontWeight: '600', cursor: 'pointer',
               transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', textAlign: 'center',
             }}
@@ -102,10 +102,10 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
         {schedule.filter(d => d.is_home).map((day) => (
           <div key={day.day_of_week} style={{
             padding: '0.875rem 1rem', borderRadius: '12px',
-            background: '#FDF6EE', border: '1px solid #E8D5B7',
+            background: '#FAF3E8', border: '1px solid #DDCDBB',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <span style={{ fontWeight: '600', color: '#2C1810', fontSize: '0.875rem', minWidth: '80px' }}>
+            <span style={{ fontWeight: '600', color: '#1F3B30', fontSize: '0.875rem', minWidth: '80px' }}>
               {DAYS[day.day_of_week]}
             </span>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -120,7 +120,7 @@ export default function StepWeeklySchedule({ familyId, tenantId, onNext, onBack 
                   className={day[key] ? 'meal-btn-active' : 'meal-btn-inactive'}
                   style={{
                     padding: '0.3rem 0.6rem', borderRadius: '20px',
-                    border: `1.5px solid ${day[key] ? '#C4622D' : '#E8D5B7'}`,
+                    border: `1.5px solid ${day[key] ? '#C9471F' : '#DDCDBB'}`,
                     fontSize: '0.72rem', fontWeight: '500', cursor: 'pointer',
                     transition: 'all 0.15s ease', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
                   }}

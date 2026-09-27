@@ -121,14 +121,14 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
 
       <div>
         <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Analytics</h2>
-        <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>How your recipes and revenue are performing.</p>
+        <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Menu usage and recipe pack purchases. Audience subscription commissions are not included here yet.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
         {statCard('👨‍👩‍👧', 'Total Users', data.totalUsers, 'on your platform')}
         {statCard('📅', 'Menus Generated', data.totalMenus, 'all time')}
         {statCard('🧾', 'Total Sales', data.totalSales, 'recipe pack purchases')}
-        {statCard('💵', 'Your Revenue', `$${(data.totalRevenue * 0.8 / 100).toFixed(2)}`, `$${(data.totalRevenue / 100).toFixed(2)} gross`)}
+        {statCard('💵', 'Pack Share (80%)', `$${(data.totalRevenue * 0.8 / 100).toFixed(2)}`, `$${(data.totalRevenue / 100).toFixed(2)} pack sales gross`)}
       </div>
 
       {data.monthlySales.length > 0 && (

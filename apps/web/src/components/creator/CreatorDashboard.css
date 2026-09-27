@@ -4,6 +4,7 @@
 .creator-topbar-brand { min-width: 0; display: flex; align-items: center; color: white; }
 .creator-topbar-right { display: flex; align-items: center; gap: 20px; }
 .creator-topbar .nav-email { color: #C8D2CB; font-size: .79rem; }
+.creator-topbar .nav-greeting { color: #FAF3E8; font-size: .86rem; font-weight: 600; }
 .creator-signout { background: none; border: 1px solid #61766B; color: #FAF3E8; padding: 8px 14px; border-radius: 7px; font: 600 .8rem var(--font-body); cursor: pointer; }
 .creator-menu-toggle { display: none; background: none; border: 0; color: white; font-size: 1.45rem; cursor: pointer; }
 .creator-mobile-menu { display: none; }
@@ -19,7 +20,7 @@
 .creator-side-foot strong { font-size: .86rem; overflow-wrap: anywhere; }
 .creator-side-foot small { color: #687A70; font-size: .7rem; overflow-wrap: anywhere; }
 .creator-main { width: min(100%, 1130px); padding: clamp(24px, 3vw, 45px); padding-bottom: 70px; margin: 0 auto; min-width: 0; }
-.creator-app .creator-welcome { display: grid; grid-template-columns: 1.35fr .65fr; gap: 28px; border-radius: 19px; background: #1F3B30; color: #FAF3E8; padding: clamp(25px, 4vw, 42px); margin-bottom: 26px; overflow: hidden; position: relative; }
+.creator-app .creator-welcome { display: grid; grid-template-columns: 1.35fr .65fr; gap: 28px; border-radius: 19px; background: #1F3B30; color: #FAF3E8; padding: clamp(25px, 4vw, 42px); padding-bottom: 57px; margin-bottom: 26px; overflow: hidden; position: relative; min-height: 278px; }
 .creator-welcome::after { content: ''; position: absolute; width: 280px; height: 280px; right: -80px; top: -110px; border: 1px solid rgba(250,243,232,.15); border-radius: 50%; box-shadow: 0 0 0 48px rgba(250,243,232,.035), 0 0 0 98px rgba(250,243,232,.025); }
 .creator-welcome > * { position: relative; z-index: 1; }
 .creator-welcome .eyebrow { color: #F0724A; font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
@@ -30,6 +31,10 @@
 .creator-welcome .preview-card span { font-size: .61rem; font-weight: 700; letter-spacing: .1em; color: #748176; }
 .creator-welcome .preview-card strong { display: block; font-size: 1.12rem; margin: 13px 0 5px; }
 .creator-welcome .preview-card small { color: #52645A; }
+.creator-app .creator-hero-controls { position: absolute; left: clamp(25px, 4vw, 42px); bottom: 23px; display: flex; gap: 9px; align-items: center; }
+.creator-app .creator-hero-controls button { width: 28px; height: 8px; padding: 0; border: 1px solid #D5DED7; border-radius: 99px; background: transparent; cursor: pointer; }
+.creator-app .creator-hero-controls button.active { background: #F0724A; border-color: #F0724A; }
+.creator-app .creator-hero-controls button:focus-visible { outline: 2px solid #FAF3E8; outline-offset: 3px; }
 .creator-recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 13px; }
 .creator-recipe-card { display: flex; min-height: 172px; background: #FFFDF9; border: 1px solid #E2D7C9; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(31,59,48,.05); }
 .creator-recipe-preview { width: 35%; min-width: 105px; border: 0; padding: 0; background: #E9DDCC; cursor: pointer; flex-shrink: 0; }
@@ -59,4 +64,4 @@
 .creator-revenue-note strong { font-size: .89rem; }
 .creator-revenue-note p { font-size: .82rem; margin: 5px 0 0; line-height: 1.5; color: #40564A; }
 @media (max-width: 900px) { .creator-layout { display: block; } .creator-sidebar { display: none; } .creator-topbar .creator-nav-bar { min-height: 60px; } .creator-menu-toggle { display: block; } .creator-mobile-menu { display: block; position: absolute; top: 100%; right: 10px; min-width: 220px; max-height: 70vh; overflow-y: auto; background: #FFFDF9; border: 1px solid #E2D7C9; border-radius: 12px; box-shadow: 0 10px 32px rgba(31,59,48,.22); } .creator-main { padding: 22px 20px 90px; } }
-@media (max-width: 600px) { .creator-topbar .nav-email, .creator-signout { display: none; } .creator-app .creator-welcome { grid-template-columns: 1fr; } .creator-welcome .preview-card { display: none; } .creator-recipe-grid { grid-template-columns: 1fr; } .creator-meal-toolbar { align-items: flex-start; } .creator-meal-tabs { width: 100%; } .creator-meal-tabs button { flex: 1; } }
+@media (max-width: 600px) { .creator-topbar .nav-greeting { font-size: .75rem; } .creator-signout { display: none; } .creator-app .creator-welcome { grid-template-columns: 1fr; min-height: 300px; } .creator-welcome .preview-card { display: none; } .creator-recipe-grid { grid-template-columns: 1fr; } .creator-meal-toolbar { align-items: flex-start; } .creator-meal-tabs { width: 100%; } .creator-meal-tabs button { flex: 1; } }

@@ -86,9 +86,6 @@ function RecipeCard({ recipe, tenantId, onSelect, onDelete, onImageUpdated, isFa
 }
 
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
-  const accountName = [user.user_metadata?.first_name, user.user_metadata?.given_name, user.user_metadata?.full_name, user.user_metadata?.name]
-    .find(value => typeof value === 'string' && value.trim())
-  const firstName = typeof accountName === 'string' ? accountName.trim().split(/\s+/)[0] : null
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
   const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings' | 'sharing'>('overview')
@@ -667,7 +664,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             <BrandMark tenant={tenant} onDark creator />
           </span>
           <div className="creator-topbar-right">
-            <span className="nav-greeting">Hi, {firstName || 'Creator'}!</span>
+            <span className="nav-greeting">Hi, {tenant?.brand_name || 'Creator'}!</span>
             <button className="creator-signout" onClick={onSignOut}>Sign out</button>
             <button className="creator-menu-toggle" onClick={() => setMenuOpen(o => !o)} aria-label="Open creator navigation" aria-expanded={menuOpen}>☰</button>
           </div>

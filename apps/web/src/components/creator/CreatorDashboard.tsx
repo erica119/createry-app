@@ -823,6 +823,46 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               )
             })()}
 
+            {/* This Week's Recipes */}
+            {creatorMenuData?.days && (() => {
+              const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+              const DAY_COLORS = ['#C9471F', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
+              const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
+              const slots: { day: number; meal: string; recipeId: string }[] = []
+              Object.entries(creatorMenuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
+                const day = parseInt(dayKey)
+                ;['breakfast', 'lunch', 'dinner'].forEach(meal => {
+                  if (meals[meal]) slots.push({ day, meal, recipeId: meals[meal] })
+                })
+              })
+              if (slots.length === 0) return null
+              return (
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.875rem', color: '#1F3B30', fontSize: '1.2rem' }}>This Week's Recipes</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.875rem' }}>
+                    {slots.map(({ day, meal, recipeId }) => {
+                      const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
+                      if (!recipe) return null
+                      return (
+                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
+                          {recipe.image_url && (
+                            <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '120px', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          )}
+                          <div style={{ padding: '0.75rem 0.875rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
+                              <span style={{ fontSize: '0.65rem', color: '#687A70', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#1F3B30', lineHeight: 1.3 }}>{recipe.title}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             <div style={{ marginBottom: '2rem' }}>
               <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>
                 At a glance
@@ -919,45 +959,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               )
             })()}
 
-            {/* This Week's Recipes */}
-            {creatorMenuData?.days && (() => {
-              const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-              const DAY_COLORS = ['#C9471F', '#2563eb', '#7C3AED', '#16a34a', '#d97706', '#db2777', '#0891b2']
-              const MEAL_LABELS: Record<string, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' }
-              const slots: { day: number; meal: string; recipeId: string }[] = []
-              Object.entries(creatorMenuData.days as Record<string, any>).forEach(([dayKey, meals]: [string, any]) => {
-                const day = parseInt(dayKey)
-                ;['breakfast', 'lunch', 'dinner'].forEach(meal => {
-                  if (meals[meal]) slots.push({ day, meal, recipeId: meals[meal] })
-                })
-              })
-              if (slots.length === 0) return null
-              return (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 0.875rem', color: '#1F3B30', fontSize: '1.2rem' }}>This Week's Recipes</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.875rem' }}>
-                    {slots.map(({ day, meal, recipeId }) => {
-                      const recipe = creatorMenuRecipes.find((r: any) => r.id === recipeId)
-                      if (!recipe) return null
-                      return (
-                        <div key={`${day}-${meal}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}>
-                          {recipe.image_url && (
-                            <img src={recipe.image_url} alt={recipe.title} style={{ width: '100%', height: '120px', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                          )}
-                          <div style={{ padding: '0.75rem 0.875rem' }}>
-                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.65rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '20px', background: DAY_COLORS[day], color: 'white', letterSpacing: '0.04em' }}>{DAY_LABELS[day]}</span>
-                              <span style={{ fontSize: '0.65rem', color: '#687A70', fontWeight: '500' }}>{MEAL_LABELS[meal]}</span>
-                            </div>
-                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#1F3B30', lineHeight: 1.3 }}>{recipe.title}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })()}
+
           </>
         )}
 

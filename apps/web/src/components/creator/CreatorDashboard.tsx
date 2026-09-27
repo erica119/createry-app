@@ -86,6 +86,9 @@ function RecipeCard({ recipe, tenantId, onSelect, onDelete, onImageUpdated, isFa
 }
 
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
+  const accountName = [user.user_metadata?.first_name, user.user_metadata?.given_name, user.user_metadata?.full_name, user.user_metadata?.name]
+    .find(value => typeof value === 'string' && value.trim())
+  const firstName = typeof accountName === 'string' ? accountName.trim().split(/\s+/)[0] : null
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
   const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings' | 'sharing'>('overview')
@@ -149,6 +152,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [creatorMenuData, setCreatorMenuData] = useState<any>(null)
   const [creatorMenuStatus, setCreatorMenuStatus] = useState<string | null>(null)
   const [creatorShoppingStatus, setCreatorShoppingStatus] = useState<string | null>(null)
+  const [creatorInstacartLive, setCreatorInstacartLive] = useState(false)
+  const [heroSlide, setHeroSlide] = useState(0)
+  const [heroPaused, setHeroPaused] = useState(false)
   const [creatorMenuRecipes, setCreatorMenuRecipes] = useState<any[]>([])
   const [homeActiveUsers, setHomeActiveUsers] = useState(0)
   const [homeMenusThisWeek, setHomeMenusThisWeek] = useState(0)
@@ -157,6 +163,12 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly')
   const [startingCheckout, setStartingCheckout] = useState(false)
   const [subError, setSubError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (view !== 'overview' || heroPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const timer = window.setInterval(() => setHeroSlide(current => (current + 1) % 2), 7000)
+    return () => window.clearInterval(timer)
+  }, [view, heroPaused])
 
   const fetchSubscription = async () => {
     setSubLoading(true)
@@ -266,11 +278,15 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       setCreatorMenuStatus(menu.status)
       const { data: shopping } = await supabase
         .from('grocery_lists')
-        .select('id, status')
+        .select('id, status, instacart_cart_url')
         .eq('weekly_menu_id', menu.id)
         .limit(1)
         .maybeSingle()
       setCreatorShoppingStatus(shopping?.status || null)
+      try {
+        const host = new URL(shopping?.instacart_cart_url || '').hostname
+        setCreatorInstacartLive(host === 'instacart.com' || host.endsWith('.instacart.com'))
+      } catch { setCreatorInstacartLive(false) }
       if (menu.menu_data?.days) {
         const recipeIds = Object.values(menu.menu_data.days).flatMap((day: any) =>
           ['breakfast', 'lunch', 'dinner'].map((m: string) => day[m]).filter(Boolean)
@@ -651,7 +667,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
             <BrandMark tenant={tenant} onDark creator />
           </span>
           <div className="creator-topbar-right">
-            <span className="nav-email">{user.email}</span>
+            <span className="nav-greeting">Hi, {firstName || 'Creator'}!</span>
             <button className="creator-signout" onClick={onSignOut}>Sign out</button>
             <button className="creator-menu-toggle" onClick={() => setMenuOpen(o => !o)} aria-label="Open creator navigation" aria-expanded={menuOpen}>☰</button>
           </div>
@@ -688,14 +704,17 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         {/* OVERVIEW */}
         {view === 'overview' && (
           <>
-            <section className="creator-welcome">
+            <section className="creator-welcome" aria-label="Creator updates" onMouseEnter={() => setHeroPaused(true)} onMouseLeave={() => setHeroPaused(false)} onFocusCapture={() => setHeroPaused(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHeroPaused(false) }}>
               <div>
-                <span className="eyebrow">YOUR CREATOR STUDIO</span>
-                <h1>Recipes people come back to.</h1>
-                <p>Keep your library fresh, see what your audience is cooking, and give them a simple path from dinner idea to weekly plan.</p>
-                <button onClick={() => setView('sharing')}>Share your app ↗</button>
+                <span className="eyebrow">{heroSlide === 0 ? 'YOUR CREATOR STUDIO' : 'FROM LIST TO CART'}</span>
+                <h1>{heroSlide === 0 ? 'Recipes people come back to.' : creatorInstacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Your shopping list, ready for Instacart.'}</h1>
+                <p>{heroSlide === 0 ? 'Keep your library fresh, see what your audience is cooking, and give them a simple path from dinner idea to weekly plan.' : creatorInstacartLive ? 'Turn a planned week into a shopping list, then open it in Instacart to review products, quantities, and checkout.' : 'Build a shopping list from your weekly menu. Instacart ordering is in preview for this account while production access is finalized.'}</p>
+                <button onClick={() => setView(heroSlide === 0 ? 'sharing' : 'shopping')}>{heroSlide === 0 ? 'Share your app ↗' : 'View shopping list ↗'}</button>
               </div>
-              <div className="preview-card" aria-hidden="true"><span>YOUR APP AT A GLANCE</span><strong>{tenant?.brand_name || 'Your kitchen'}</strong><small>{recipes.length} recipes ready to plan</small></div>
+              <div className="preview-card" aria-hidden="true"><span>{heroSlide === 0 ? 'YOUR APP AT A GLANCE' : 'THE WEEKLY FLOW'}</span><strong>{heroSlide === 0 ? tenant?.brand_name || 'Your kitchen' : 'Plan → List → Shop'}</strong><small>{heroSlide === 0 ? `${recipes.length} recipes ready to plan` : creatorInstacartLive ? 'Review your cart in Instacart' : 'Ordering preview in this account'}</small></div>
+              <div className="creator-hero-controls" aria-label="Banner controls">
+                {[0, 1].map(index => <button key={index} className={heroSlide === index ? 'active' : ''} onClick={() => setHeroSlide(index)} aria-label={`Show banner ${index + 1}: ${index === 0 ? 'Recipes' : 'Instacart'}`} aria-current={heroSlide === index ? 'true' : undefined} />)}
+              </div>
             </section>
             {/* ── Creator's own meal plan status ── */}
             {!creatorMenuId ? (

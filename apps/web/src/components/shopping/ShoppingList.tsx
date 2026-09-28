@@ -6,6 +6,7 @@ interface Props {
   familyId: string
   tenantId: string
   onShoppingComplete?: () => void
+  onListReady?: () => void
   creatorPreview?: boolean
 }
 
@@ -16,6 +17,9 @@ interface GroceryItem {
   aisle: string
   checked: boolean
   recipe_sources: string[]
+  is_custom?: boolean
+  excluded?: boolean
+  quantity_override?: number
 }
 
 interface GroceryList {
@@ -30,19 +34,24 @@ interface GroceryList {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export default function ShoppingList({ menuId, familyId, tenantId, onShoppingComplete, creatorPreview = false }: Props) {
+export default function ShoppingList({ menuId, familyId, tenantId, onShoppingComplete, onListReady, creatorPreview = false }: Props) {
   const [list, setList] = useState<GroceryList | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
+  const [newItemName, setNewItemName] = useState('')
+  const [editingItem, setEditingItem] = useState<number | null>(null)
+  const [editQuantity, setEditQuantity] = useState('')
+  const [savingItems, setSavingItems] = useState(false)
+  const [showPantry, setShowPantry] = useState(false)
 
   useEffect(() => { fetchList() }, [menuId])
 
   const fetchList = async () => {
     setLoading(true)
     const [{ data: menu, error: menuError }, { data, error: listError }] = await Promise.all([
-      supabase.from('weekly_menus').select('updated_at, menu_data').eq('id', menuId).single(),
+      supabase.from('weekly_menus').select('updated_at, menu_data, status').eq('id', menuId).single(),
       supabase.from('grocery_lists').select('*').eq('weekly_menu_id', menuId)
         .order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ])
@@ -65,6 +74,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     setStale(listIsStale)
     setList(listIsStale ? null : data)
     setLoading(false)
+    if (!data && menu?.status === 'approved') void generateList()
   }
 
   const generateList = async () => {
@@ -86,6 +96,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
       if (!response.ok) throw new Error(result.error || 'Failed to generate list')
       setList(result.grocery_list)
       setStale(false)
+      onListReady?.()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -95,8 +106,8 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
 
   const markShoppingComplete = async () => {
     if (!list) return
-    const { error } = await supabase.from('grocery_lists').update({ status: 'complete' }).eq('id', list.id)
-    if (error) {
+    const { data, error } = await supabase.from('grocery_lists').update({ status: 'complete' }).eq('id', list.id).eq('family_id', familyId).select('id').single()
+    if (error || !data) {
       console.error('Failed to mark shopping complete:', error)
       setError('Could not save shopping status — please try again.')
       return
@@ -105,33 +116,74 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     if (onShoppingComplete) onShoppingComplete()
   }
 
-  const toggleItem = async (index: number) => {
+  const saveItems = async (updatedItems: GroceryItem[], contentsChanged = false) => {
     if (!list) return
-    const updatedItems = [...list.items]
-    updatedItems[index] = { ...updatedItems[index], checked: !updatedItems[index].checked }
-    setList({ ...list, items: updatedItems })
-    await supabase.from('grocery_lists').update({ items: updatedItems }).eq('id', list.id)
+    setSavingItems(true)
+    const previous = list
+    const next = { ...list, items: updatedItems, status: contentsChanged ? 'draft' : list.status, instacart_cart_url: contentsChanged ? null : list.instacart_cart_url }
+    setList(next)
+    const { data, error } = await supabase.from('grocery_lists')
+      .update({ items: updatedItems, ...(contentsChanged ? { instacart_cart_url: null, status: 'draft' } : {}) })
+      .eq('id', list.id).eq('family_id', familyId).select('id').single()
+    if (error || !data) {
+      setList(previous)
+      setError('Could not save your shopping change. Please try again.')
+    } else setError(null)
+    setSavingItems(false)
+  }
+
+  const toggleItem = (index: number) => {
+    if (!list || savingItems) return
+    const updatedItems = list.items.map((item, i) => i === index ? { ...item, checked: !item.checked } : item)
+    void saveItems(updatedItems)
+  }
+
+  const togglePantry = (index: number) => {
+    if (!list || savingItems) return
+    void saveItems(list.items.map((item, i) => i === index ? { ...item, excluded: !item.excluded, checked: false } : item), true)
+  }
+
+  const saveQuantity = (index: number) => {
+    if (!list || savingItems) return
+    const quantity = Number(editQuantity)
+    if (!Number.isFinite(quantity) || quantity <= 0) { setError('Enter a quantity greater than zero.'); return }
+    void saveItems(list.items.map((item, i) => i === index ? { ...item, quantity, quantity_override: quantity } : item), true)
+    setEditingItem(null)
+  }
+
+  const addItem = () => {
+    if (!list || savingItems || !newItemName.trim()) return
+    const name = newItemName.trim()
+    void saveItems([...list.items, { name, quantity: 1, unit: 'each', aisle: 'Other', checked: false, recipe_sources: ['Added by you'], is_custom: true }], true)
+    setNewItemName('')
+  }
+
+  const deleteCustomItem = (index: number) => {
+    if (!list || savingItems) return
+    void saveItems(list.items.filter((_, i) => i !== index), true)
   }
 
 
   const groupedItems = list?.items.reduce((acc, item, index) => {
+    if (item.excluded) return acc
     const aisle = item.aisle || 'Other'
     if (!acc[aisle]) acc[aisle] = []
     acc[aisle].push({ ...item, index })
     return acc
   }, {} as Record<string, (GroceryItem & { index: number })[]>)
 
-  const checkedCount = list?.items.filter(i => i.checked).length || 0
-  const totalCount = list?.items.length || 0
+  const checkedCount = list?.items.filter(i => !i.excluded && i.checked).length || 0
+  const totalCount = list?.items.filter(i => !i.excluded).length || 0
+  const pantryItems = list?.items.map((item, index) => ({ ...item, index })).filter(item => item.excluded) || []
   const isTestLink = (() => {
     if (!list?.instacart_cart_url) return false
     try { return new URL(list.instacart_cart_url).hostname === 'customers.dev.instacart.tools' }
     catch { return false }
   })()
   const showInstacartLink = !!list?.instacart_cart_url && (!isTestLink || creatorPreview)
-  const reviewItems = list?.items.filter(item =>
+  const reviewItems = list?.items.filter(item => !item.excluded && (
     item.quantity <= 0 || /\b(?:or|and|optional|enough|to taste|for serving)\b/i.test(item.name) ||
-    /^(?:arge|rilled|emon|reen|alt)\b/i.test(item.name)
+    /^(?:arge|rilled|emon|reen|alt)\b/i.test(item.name))
   ) || []
 
   if (loading) return <p style={{ color: '#52645A' }}>Loading shopping list...</p>
@@ -142,7 +194,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛒</div>
         <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Ready to shop?</h3>
         <p style={{ color: '#52645A', margin: '0 0 1.5rem', fontSize: '0.95rem' }}>
-          {stale ? 'Your menu changed after this list was made. Rebuild it before shopping.' : "We'll build your list from this week's approved menu."}
+          {stale ? 'A meal or recipe changed. Rebuild to get the right ingredients while keeping your shopping adjustments.' : "We'll gather the ingredients from your plan."}
         </p>
         <button
           onClick={generateList}
@@ -158,6 +210,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
 
   return (
     <div>
+      {error && <p role="alert" style={{ color: '#B42318', background: '#FFF0ED', padding: '0.75rem 1rem', borderRadius: '8px' }}>{error}</p>}
       {/* Header */}
       <div className="shopping-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -178,14 +231,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />
               Shop on Instacart
             </a>
-          ) : (
-            <button
-              disabled
-              style={{ background: '#a0a0a0', color: '#e0e0e0', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'not-allowed', opacity: 0.7 }}
-            >
-              {isTestLink ? 'Instacart ordering coming October 2026' : reviewItems.length > 0 ? '🛒 Instacart needs ingredient review' : 'Instacart link unavailable'}
-            </button>
-          )}
+          ) : null}
           <button onClick={() => window.print()} style={{ background: "#C9471F", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
 
           <button
@@ -208,6 +254,9 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           Your shopping list is ready to use here or print. Instacart ordering is coming October 2026.
         </p>
       )}
+      {!showInstacartLink && !isTestLink && !creatorPreview && (
+        <p role="status" style={{ color: '#52645A', fontSize: '0.84rem' }}>Instacart ordering is coming October 2026. This list is ready to use or print now.</p>
+      )}
       {showInstacartLink && (
         <div role="note" style={{ background: '#f0f7f3', border: '1px solid #c9dfd1', borderRadius: '10px', padding: '1rem', marginBottom: '1rem', color: '#244438' }}>
           <strong>Review matches before adding to cart</strong>
@@ -216,17 +265,25 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           </p>
         </div>
       )}
-      {!list.instacart_cart_url && reviewItems.length === 0 && (
+      {!list.instacart_cart_url && reviewItems.length === 0 && creatorPreview && (
         <p role="status" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
           Instacart could not create a link. You can still use or print this list; try Rebuild later.
         </p>
       )}
       {reviewItems.length > 0 && !list.instacart_cart_url && (
         <p role="alert" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
-          {reviewItems.length} ingredient lines need a clear quantity or choice before Instacart can build a reliable cart.
-          Review the source recipes, then rebuild this list.
+          {reviewItems.length} ingredient lines need a clearer quantity or choice. Review the source recipes, then rebuild this list.
         </p>
       )}
+
+      <div style={{ background: 'white', border: '1px solid #DDCDBB', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem' }}>
+        <label htmlFor="extra-shopping-item" style={{ display: 'block', fontWeight: 700, color: '#1F3B30', marginBottom: '0.5rem' }}>Add something else</label>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input id="extra-shopping-item" value={newItemName} onChange={e => setNewItemName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addItem() }} placeholder="Milk, paper towels…"
+            style={{ flex: 1, minWidth: 0, padding: '0.7rem', border: '1px solid #DDCDBB', borderRadius: '8px', fontSize: '0.9rem' }} />
+          <button onClick={addItem} disabled={savingItems || !newItemName.trim()} className="btn-primary">Add</button>
+        </div>
+      </div>
 
       {/* Progress bar */}
       {totalCount > 0 && (
@@ -247,23 +304,23 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               {items.map((item, i) => (
                 <div
                   key={i}
-                  onClick={() => toggleItem(item.index)}
                   style={{
                     display: 'flex', alignItems: 'center', padding: '0.875rem 1rem',
                     borderBottom: i < items.length - 1 ? '1px solid #F5E8D7' : 'none',
-                    cursor: 'pointer', background: item.checked ? '#FAFAF8' : 'white',
+                    background: item.checked ? '#FAFAF8' : 'white',
                     transition: 'background 0.15s ease',
                   }}
                 >
-                  <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, marginRight: '0.875rem',
+                  <button type="button" onClick={() => toggleItem(item.index)} disabled={savingItems} role="checkbox" aria-checked={item.checked} aria-label={`${item.name} ${item.checked ? 'checked' : 'not checked'}`}
+                    style={{
+                    width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0, marginRight: '0.5rem', cursor: 'pointer',
                     border: `2px solid ${item.checked ? '#16a34a' : '#DDCDBB'}`,
                     background: item.checked ? '#16a34a' : 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: 'white', fontSize: '0.7rem', fontWeight: '700', transition: 'all 0.15s ease',
                   }}>
                     {item.checked && '✓'}
-                  </div>
+                  </button>
                   <div style={{ flex: 1 }}>
                     <span style={{ fontSize: '0.95rem', color: item.checked ? '#687A70' : '#1F3B30', textDecoration: item.checked ? 'line-through' : 'none', fontWeight: '500' }}>
                       {item.name}
@@ -273,9 +330,18 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
                         {item.quantity > 0 ? `${item.quantity} ${item.unit}` : item.unit}
                       </span>
                     )}
+                    {item.recipe_sources.length > 0 && <div style={{ color: '#8A9A8F', fontSize: '0.7rem', marginTop: '0.15rem' }}>{item.recipe_sources.slice(0, 2).join(', ')}</div>}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#8A9A8F', textAlign: 'right', maxWidth: '100px', lineHeight: 1.3 }}>
-                    {item.recipe_sources.slice(0, 2).join(', ')}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {editingItem === item.index ? <>
+                      <input type="number" min="0.01" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} aria-label={`Quantity for ${item.name}`} style={{ width: '64px', padding: '0.35rem' }} />
+                      <button onClick={() => saveQuantity(item.index)} disabled={savingItems} className="btn-secondary">Save</button>
+                      <button onClick={() => setEditingItem(null)} className="btn-secondary">Cancel</button>
+                    </> : <>
+                      <button onClick={() => { setEditingItem(item.index); setEditQuantity(String(item.quantity || 1)) }} className="btn-secondary" aria-label={`Change quantity for ${item.name}`}>Edit amount</button>
+                      {item.is_custom ? <button onClick={() => deleteCustomItem(item.index)} disabled={savingItems} className="btn-secondary" aria-label={`Remove ${item.name}`}>Remove</button>
+                        : <button onClick={() => togglePantry(item.index)} disabled={savingItems} className="btn-secondary" aria-label={`Mark ${item.name} as already at home`}>Have it</button>}
+                    </>}
                   </div>
                 </div>
               ))}
@@ -283,6 +349,15 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           </div>
         ))
       }
+      {pantryItems.length > 0 && <div style={{ margin: '1rem 0' }}>
+        <button onClick={() => setShowPantry(!showPantry)} className="btn-secondary" aria-expanded={showPantry}>{showPantry ? 'Hide' : 'Show'} already at home ({pantryItems.length})</button>
+        {showPantry && <div style={{ marginTop: '0.5rem', background: 'white', border: '1px solid #DDCDBB', borderRadius: '12px' }}>
+          {pantryItems.map(item => <div key={item.index} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #F5E8D7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ color: '#52645A' }}>{item.name}</span>
+            <button onClick={() => togglePantry(item.index)} disabled={savingItems} className="btn-secondary">Put back on list</button>
+          </div>)}
+        </div>}
+      </div>}
       {list.status !== 'complete' && (
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
           <button
@@ -298,7 +373,6 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           <p style={{ margin: 0, color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>✓ Shopping complete! Enjoy your meals this week.</p>
         </div>
       )}
-      {error && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{error}</p>}
     </div>
   )
 }

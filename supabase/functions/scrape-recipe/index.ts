@@ -12,12 +12,63 @@ const corsHeaders = {
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 
-async function fetchPageHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RecipeScraper/1.0)' }
-  })
-  if (!res.ok) throw new Error(`Failed to fetch URL: ${res.status}`)
-  return await res.text()
+function validatePublicUrl(value: string): URL {
+  const url = new URL(value)
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) {
+    throw new Error('Use a public HTTPS recipe URL')
+  }
+  const host = url.hostname.toLowerCase().replace(/\\.$/, '')
+  if (!host.includes('.') || host === 'localhost' || host.endsWith('.localhost') ||
+      host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.test') ||
+      host.endsWith('.invalid') || host.endsWith('.example') ||
+      /^[0-9.]+$/.test(host) || host.includes(':')) {
+    throw new Error('Use a public HTTPS recipe URL')
+  }
+  return url
+}
+
+async function fetchPageHtml(value: string): Promise<string> {
+  let url = validatePublicUrl(value)
+  for (let redirect = 0; redirect < 4; redirect++) {
+    const addresses = [
+      ...await Deno.resolveDns(url.hostname, 'A').catch(() => []),
+      ...await Deno.resolveDns(url.hostname, 'AAAA').catch(() => []),
+    ]
+    if (!addresses.length || addresses.some(ip => {
+      if (ip.includes(':')) {
+        const v = ip.toLowerCase()
+        return v === '::' || v === '::1' || v.startsWith('fc') || v.startsWith('fd') ||
+          v.startsWith('fe8') || v.startsWith('fe9') || v.startsWith('fea') ||
+          v.startsWith('feb') || v.startsWith('2001:db8') || v.includes('ffff:')
+      }
+      const parts = ip.split('.').map(Number)
+      return parts[0] === 0 || parts[0] === 10 || parts[0] === 127 ||
+        parts[0] >= 224 || (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) ||
+        (parts[0] === 169 && parts[1] === 254) ||
+        (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+        (parts[0] === 192 && parts[1] === 168) ||
+        (parts[0] === 192 && parts[1] === 0) ||
+        (parts[0] === 198 && (parts[1] === 18 || parts[1] === 19))
+    })) throw new Error('Use a public HTTPS recipe URL')
+    const res = await fetch(url, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RecipeScraper/1.0)' }
+    })
+    if ([301, 302, 303, 307, 308].includes(res.status)) {
+      const location = res.headers.get('location')
+      if (!location) throw new Error('Recipe page redirected without a location')
+      url = validatePublicUrl(new URL(location, url).href)
+      continue
+    }
+    if (!res.ok) throw new Error(`Failed to fetch URL: ${res.status}`)
+    if (!res.headers.get('content-type')?.toLowerCase().includes('text/html')) {
+      throw new Error('The URL must point to a recipe webpage')
+    }
+    const html = await res.text()
+    if (html.length > 1_000_000) throw new Error('Recipe page is too large')
+    return html
+  }
+  throw new Error('Too many redirects')
 }
 
 function extractRecipeLinks(html: string, baseUrl: string): { title: string; url: string }[] {
@@ -118,6 +169,20 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    const token = req.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1]
+    if (!token) return new Response(JSON.stringify({ error: 'Sign in required' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return new Response(JSON.stringify({ error: 'Invalid session' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+    const { data: operator, error: operatorError } = await supabase.from('platform_admins')
+      .select('user_id').eq('user_id', user.id).maybeSingle()
+    if (operatorError || !operator) return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+
     const { mode, url, urls, tenant_id } = await req.json()
 
     if (mode === 'discover') {
@@ -130,6 +195,7 @@ Deno.serve(async (req) => {
 
     if (mode === 'parse') {
       const targetUrls: string[] = urls || [url]
+      if (!Array.isArray(targetUrls) || targetUrls.length > 5) throw new Error('Select up to five recipe URLs at a time')
       const results = []
       for (const u of targetUrls) {
         try {
@@ -156,7 +222,8 @@ Deno.serve(async (req) => {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error('scrape-recipe error:', err)
+    return new Response(JSON.stringify({ error: 'Unable to process the recipe page' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

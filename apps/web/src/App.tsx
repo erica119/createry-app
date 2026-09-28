@@ -663,21 +663,19 @@ export default function App() {
         onSignOut={signOut}
         foot={activeTenant?.brand_name || 'Createry'}
       >
-        {view === 'menu' && generatingMenu && (
+        {view === 'menu' && generatingMenu && !currentMenuId && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✨</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#1F3B30', marginBottom: '0.5rem' }}>Generating your menu...</div>
-            <div style={{ color: '#52645A', fontSize: '0.95rem' }}>This usually takes 15-30 seconds. Hang tight!</div>
+            <div style={{ color: '#52645A', fontSize: '0.95rem' }}>This can take about a minute. Hang tight!</div>
           </div>
         )}
-        {view === 'menu' && currentMenuId && !generatingMenu && (
+        {view === 'menu' && currentMenuId && (
           <div>
           <p style={{ fontSize: '0.78rem', color: '#687A70', margin: '0 0 0.75rem', textAlign: 'center' }}>AI-generated plan based on your preferences</p>
-          {menuError && <div role="alert" style={{ margin: '0 auto 1rem', maxWidth: '720px', padding: '0.9rem 1rem', background: '#FFF0E8', border: '1px solid #C9471F', borderRadius: '10px', color: '#8D321D' }}>
-            {menuError} Your existing plan is still here. Please try replan again.
-          </div>}
           <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
             regenerating={generatingMenu}
+            regenerationError={menuError}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}
             userId={user?.id}

@@ -36,6 +36,7 @@ export default function WorkspaceFrame({ tenant, role, greeting, groups, active,
       </div>
       {menuOpen && <nav className="creator-mobile-menu" aria-label={`${role} navigation`}>
         {groups.flatMap(group => group.items).map(item => <button key={item.id} className={active === item.id ? 'active' : ''} onClick={() => navigate(item)} disabled={item.disabled}>{item.label}</button>)}
+        <button className="mobile-signout" onClick={onSignOut}>Sign out</button>
       </nav>}
     </header>
     <div className="creator-layout">

@@ -679,6 +679,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 cursor: 'pointer', fontFamily: 'var(--font-sans)',
               }}>{TAB_LABELS[v]}</button>
             ))}
+            <button className="mobile-signout" onClick={onSignOut}>Sign out</button>
           </div>
         )}
       </div>

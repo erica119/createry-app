@@ -186,9 +186,11 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       const priceId = selectedPlan === 'monthly'
         ? 'price_1TNdqeJzNLT19Phao9z7oH4u'
         : 'price_1TNdwNJzNLT19PhaZF15La1v'
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Please sign in again to subscribe.')
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/creator-subscription`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
         body: JSON.stringify({ price_id: priceId, creator_id: user.id, tenant_id: tenantId })
       })
       const result = await response.json()

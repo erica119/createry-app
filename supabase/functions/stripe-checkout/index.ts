@@ -19,17 +19,23 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
+    const token = req.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1]
+    if (!token) return new Response(JSON.stringify({ error: 'Sign in required' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return new Response(JSON.stringify({ error: 'Invalid session' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
     const body = await req.json()
-    console.log('Request body:', JSON.stringify(body))
-    const { recipe_pack_id, user_id, tenant_id, success_url, cancel_url } = body
-    console.log('Querying pack:', recipe_pack_id)
+    const { recipe_pack_id, tenant_id } = body
     const { data: pack, error: packError } = await supabase
       .from('recipe_packs')
       .select('*, tenants(stripe_account_id)')
       .eq('id', recipe_pack_id)
       .single()
-    console.log('Pack result:', JSON.stringify(pack), 'Error:', JSON.stringify(packError))
-    if (!pack) throw new Error('Recipe pack not found')
+    if (packError || !pack) throw new Error('Recipe pack not found')
+    if (tenant_id && pack.tenant_id !== tenant_id) throw new Error('Recipe pack does not belong to this creator')
     const connectedAccountId = pack.tenants?.stripe_account_id
     if (!connectedAccountId) throw new Error('Creator has not connected Stripe')
     const platformFeeCents = Math.round(pack.price_cents * 0.20)
@@ -47,9 +53,9 @@ Deno.serve(async (req) => {
         application_fee_amount: platformFeeCents,
         transfer_data: { destination: connectedAccountId },
       },
-      metadata: { recipe_pack_id, user_id, tenant_id },
-      success_url: success_url || 'https://easymealplanning.netlify.app/?purchase=success',
-      cancel_url: cancel_url || 'https://easymealplanning.netlify.app/',
+      metadata: { recipe_pack_id, user_id: user.id, tenant_id: pack.tenant_id },
+      success_url: 'https://createry.app/?purchase=success',
+      cancel_url: 'https://createry.app/',
     })
     return new Response(JSON.stringify({ url: session.url, session_id: session.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

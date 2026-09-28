@@ -315,6 +315,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       .from('recipes')
       .select('*')
       .eq('tenant_id', tenantId)
+      .eq('source', 'creator')
       .order('created_at', { ascending: false })
     if (data) setRecipes(data)
   }

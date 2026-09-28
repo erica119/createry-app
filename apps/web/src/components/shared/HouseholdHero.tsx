@@ -26,8 +26,8 @@ export default function HouseholdHero({ tenant, recipeCount, hasMenu, instacartL
       <div className="preview-card" aria-hidden="true"><span>YOUR KITCHEN</span><strong>{tenant?.brand_name || 'Createry'}</strong><small>{recipeCount} recipes to explore</small></div>
     </> : <>
       <div className="instacart-copy"><span className="launch-label"><span className="launch-dot" /> NEW IN CREATERY</span>
-        <h1>{instacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Your grocery list has a new destination.'}</h1>
-        <p>{instacartLive ? 'Build your list from this week’s menu, then open it in Instacart to review products and checkout.' : 'Build a shopping list from your menu. Real Instacart ordering will appear when production access is ready.'}</p>
+        <h1>{instacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Instacart ordering is coming October 2026!'}</h1>
+        <p>{instacartLive ? 'Build your list from this week’s menu, then open it in Instacart to review products and checkout.' : 'Build a shopping list from your menu today. Instacart ordering is on the way.'}</p>
         <button onClick={() => onNavigate(hasMenu ? 'shopping' : 'recipes')}>{hasMenu ? 'Explore shopping ↗' : 'Explore recipes ↗'}</button></div>
       <div className="instacart-art" aria-hidden="true"><div className="partner-lockup"><img src="/brand/createry-wordmark.svg" alt="" /><span>×</span><div><img src="/instacart-logo.svg" alt="" /><strong>Instacart</strong></div></div>
         <div className="cart-illustration"><span className="cart-illustration-title">YOUR WEEKLY LIST</span><span>✓ Fresh ingredients</span><span>✓ Your favorite recipes</span><span>✓ Ready to review</span><div className="cart-illustration-footer"><span>Createry</span><span>→</span><span>Instacart</span></div></div></div>

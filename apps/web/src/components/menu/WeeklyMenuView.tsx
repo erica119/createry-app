@@ -15,7 +15,7 @@ interface Props {
   onViewRecipe?: (recipeId: string) => void
   onPlanChanged?: () => void
   onWeekChange?: (menuId: string | null, weekDate: string) => void
-  onRegenerate?: (feedback: string) => void
+  onRegenerate?: (feedback: string, weekStartDate: string) => void
 }
 
 interface Recipe {
@@ -367,7 +367,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         {showFeedback && onRegenerate && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
           <input value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would you like to change?" aria-label="Replan feedback"
             style={{ flex: '1 1 220px', padding: '0.7rem', border: '1px solid #DDCDBB', borderRadius: '8px' }} />
-          <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }} className="btn-primary">Generate a new plan</button>
+          <button onClick={() => { onRegenerate(feedback, menu.week_start_date); setShowFeedback(false); setFeedback('') }} className="btn-primary">Generate a new plan</button>
         </div>}
       </div>
 

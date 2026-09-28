@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 
 interface Props {
@@ -45,6 +45,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
   const [editQuantity, setEditQuantity] = useState('')
   const [savingItems, setSavingItems] = useState(false)
   const [showPantry, setShowPantry] = useState(false)
+  const autoBuildAttempted = useRef<string | null>(null)
 
   useEffect(() => { fetchList() }, [menuId])
 
@@ -74,7 +75,10 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     setStale(listIsStale)
     setList(listIsStale ? null : data)
     setLoading(false)
-    if (!data && menu?.status === 'approved') void generateList()
+    if (!data && menu?.status === 'approved' && autoBuildAttempted.current !== menuId) {
+      autoBuildAttempted.current = menuId
+      void generateList()
+    }
   }
 
   const generateList = async () => {

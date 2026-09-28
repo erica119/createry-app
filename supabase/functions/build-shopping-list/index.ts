@@ -190,8 +190,25 @@ serve(async (req) => {
 
     if (recipesError || !recipes) throw new Error("Failed to fetch recipes");
 
+    // Use only this household's saved versions; the creator recipes stay untouched.
+    const { data: recipeEdits, error: editsError } = await supabase
+      .from("recipe_overrides")
+      .select("recipe_id, edits")
+      .eq("family_id", family_id)
+      .in("recipe_id", Array.from(recipeIds));
+    if (editsError) throw new Error("Failed to fetch household recipe edits");
+    const editsByRecipe = Object.fromEntries((recipeEdits || []).map(row => [row.recipe_id, row.edits]));
+
     const recipeMap: Record<string, any> = {};
-    recipes.forEach(r => { recipeMap[r.id] = r; });
+    recipes.forEach(r => {
+      const edits = editsByRecipe[r.id] || {};
+      recipeMap[r.id] = {
+        ...r,
+        title: typeof edits.title === 'string' ? edits.title : r.title,
+        ingredients: Array.isArray(edits.ingredients) ? edits.ingredients : r.ingredients,
+        servings: typeof edits.servings === 'number' ? edits.servings : r.servings,
+      };
+    });
 
     // 4. Aggregate ingredients
     const ingredientMap: Record<string, {

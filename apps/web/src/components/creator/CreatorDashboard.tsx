@@ -996,6 +996,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                     familyId={familyId}
                     onApproved={() => fetchCurrentMenu(familyId!)}
                     onGoShopping={() => setMenuView('shopping')}
+                    onViewRecipe={recipeId => { const recipe = recipes.find(r => r.id === recipeId); if (recipe) setSelectedRecipe(recipe) }}
+                    onPlanChanged={() => fetchCurrentMenu(familyId!)}
                     onWeekChange={(newMenuId, weekDate) => {
                       if (newMenuId) {
                         setCurrentMenuId(newMenuId)

@@ -736,6 +736,7 @@ export default function App() {
                       <button onClick={e => toggleFavorite(e, recipe.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem', lineHeight: 1 }} title={favorites.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}>{favorites.has(recipe.id) ? '❤️' : '🤍'}</button>
                     </div>
                   </div>
+                  {recipe.video_url && <span style={{ display: 'inline-block', color: '#9C4C2B', background: '#FFF3EA', borderRadius: '20px', padding: '0.2rem 0.55rem', fontSize: '0.72rem', fontWeight: 700, marginBottom: '0.55rem' }}>▶ Cooking video</span>}
                   {recipe.description && <p style={{ color: '#52645A', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>{recipe.description}</p>}
                   <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: '#687A70', flexWrap: 'wrap' }}>
                     {recipe.prep_time_minutes && <span>⏱ {recipe.prep_time_minutes}m prep</span>}

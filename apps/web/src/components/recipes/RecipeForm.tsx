@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingredientReadiness'
+import { canonicalYouTubeUrl } from '../../lib/youtube'
 
 interface Props {
   user: User
@@ -19,6 +20,7 @@ const DIETARY_TAGS = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'keto'
 export default function RecipeForm({ user, tenantId, source = 'user', onSaved, onCancel }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [ingredients, setIngredients] = useState('')
   const [instructions, setInstructions] = useState('')
   const [prepTime, setPrepTime] = useState('')
@@ -63,6 +65,8 @@ export default function RecipeForm({ user, tenantId, source = 'user', onSaved, o
     if (!title.trim()) { setError('Recipe title is required.'); return }
     if (!ingredients.trim()) { setError('Ingredients are required.'); return }
     if (!instructions.trim()) { setError('Instructions are required.'); return }
+    const normalizedVideoUrl = videoUrl.trim() ? canonicalYouTubeUrl(videoUrl) : null
+    if (source === 'creator' && videoUrl.trim() && !normalizedVideoUrl) { setError('Enter a valid YouTube video link.'); return }
     const parsedIngredients = ingredients.split('\n').filter(line => line.trim()).map(parseShoppingIngredient)
     const issues = recipeIngredientIssues(parsedIngredients)
     if (issues.length) { setError(`Fix ingredient lines before saving: ${issues.join(' ')}`); return }
@@ -91,6 +95,7 @@ export default function RecipeForm({ user, tenantId, source = 'user', onSaved, o
         is_active: true,
         source,
         image_url: imageUrl || null,
+        ...(source === 'creator' ? { video_url: normalizedVideoUrl } : {}),
       })
       if (error) throw error
       onSaved()
@@ -165,6 +170,12 @@ export default function RecipeForm({ user, tenantId, source = 'user', onSaved, o
           <label style={labelStyle}>Short description</label>
           <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="A quick description of the dish" style={inputStyle} />
         </div>
+
+        {source === 'creator' && <div>
+          <label htmlFor="recipe-video-url" style={labelStyle}>YouTube cooking video (optional)</label>
+          <input id="recipe-video-url" type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" style={inputStyle} />
+          <p style={{ color: '#687A70', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>Your audience can watch this video from the recipe detail.</p>
+        </div>}
 
         {/* Time + Servings */}
         <div className="recipe-time-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>

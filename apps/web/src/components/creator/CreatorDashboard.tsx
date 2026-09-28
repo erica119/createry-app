@@ -11,6 +11,7 @@ import RecipeImport from '../recipes/RecipeImport'
 import RecipeModal from '../recipes/RecipeModal'
 import ProfileSettings from '../profile/ProfileSettings'
 import CreatorAnalytics from './CreatorAnalytics'
+import CreatorEnablementHub from './CreatorEnablementHub'
 import SupportModal from '../shared/SupportModal'
 import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingredientReadiness'
 
@@ -103,7 +104,6 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [showRecipeForm, setShowRecipeForm] = useState(false)
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorFavorites, setCreatorFavorites] = useState<Set<string>>(new Set())
-  const [copied, setCopied] = useState<string | null>(null)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -541,7 +541,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const TAB_LABELS: Record<string, string> = {
     overview: 'Overview', recipes: 'Recipes', packs: 'Recipe Packs', shopping: 'Shopping',
     earnings: 'Earnings', analytics: 'Analytics', branding: 'Branding', mealplan: 'My Meal Plan',
-    settings: 'Settings', sharing: 'Share Your App',
+    settings: 'Settings', sharing: 'Launch Hub',
   }
 
   // Subscription loading
@@ -698,7 +698,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   <span className="eyebrow">YOUR CREATOR STUDIO</span>
                   <h1>Recipes people come back to.</h1>
                   <p>Keep your library fresh, see what your audience is cooking, and give them a simple path from dinner idea to weekly plan.</p>
-                  <button onClick={() => setView('sharing')}>Share your app ↗</button>
+                  <button onClick={() => setView('sharing')}>Open your launch hub ↗</button>
                 </div>
                 <div className="preview-card" aria-hidden="true"><span>YOUR APP AT A GLANCE</span><strong>{tenant?.brand_name || 'Your kitchen'}</strong><small>{recipes.length} recipes ready to plan</small></div>
               </> : <>
@@ -889,7 +889,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   🎨 Edit Branding
                 </button>
                 <button onClick={() => setView('sharing')} style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>
-                  📣 Share Your App
+                  📣 Launch Hub
                 </button>
               </div>
               {subscription && (
@@ -1471,54 +1471,16 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <CreatorAnalytics tenantId={tenantId} primaryColor={color} />
         )}
 
-        {view === 'sharing' && (() => {
-          const appUrl = `https://createry.app/?creator=${encodeURIComponent(tenant?.subdomain || '')}`
-          const brandName = tenant?.brand_name || 'my meal planning app'
-          const captions = {
-            instagram: `Your saved recipes deserve a place in your real week. With ${brandName}, you can plan meals around your household, review the week, and take a shopping list with you.\n\nExplore my meal planning app: ${appUrl}\n\nAudience subscription: $9/month.\n\n#mealplanning #familymeals #weeknightdinners`,
-            tiktok: `What if dinner ideas became an actual plan? My recipes are now in ${brandName}: weekly meal plans, easy swaps, and a shopping list for the week. Explore it at ${appUrl}. Audience subscription: $9/month.`,
-            facebook: `I wanted my recipes to be useful beyond a saved post. ${brandName} helps you turn them into a weekly meal plan that fits your household, then builds the shopping list.\n\nTake a look: ${appUrl}\n\nAudience subscription: $9/month. I'd love to hear what you'd cook first.`,
-          }
-          const copy = (key: string, text: string) => {
-            navigator.clipboard.writeText(text)
-            setCopied(key)
-            setTimeout(() => setCopied(null), 2000)
-          }
-          return (
-            <div>
-              <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Share Your App 📣</h2>
-              <p style={{ color: '#52645A', margin: '0 0 2rem' }}>Share your branded link. These captions are starting points; make them sound like you before posting.</p>
-
-              {/* Signup link */}
-              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🔗 Your Signup Link</h3>
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <code style={{ flex: 1, background: '#F5E8D7', padding: '0.65rem 1rem', borderRadius: '8px', fontSize: '0.875rem', color: '#1F3B30', wordBreak: 'break-all' }}>{appUrl}</code>
-                  <button onClick={() => copy('link', appUrl)} style={{ background: color, color: 'white', border: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)' }}>
-                    {copied === 'link' ? '✓ Copied!' : 'Copy Link'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Caption cards */}
-              {([
-                { key: 'instagram', platform: 'Instagram', icon: '📸' },
-                { key: 'tiktok', platform: 'TikTok', icon: '🎵' },
-                { key: 'facebook', platform: 'Facebook', icon: '👥' },
-              ] as const).map(({ key, platform, icon }) => (
-                <div key={key} style={{ background: 'white', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '1.5rem', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: 0, fontSize: '1.1rem' }}>{icon} {platform}</h3>
-                    <button onClick={() => copy(key, captions[key])} style={{ background: copied === key ? '#16a34a' : color, color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.825rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'background 0.2s' }}>
-                      {copied === key ? '✓ Copied!' : 'Copy Caption'}
-                    </button>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#1F3B30', lineHeight: 1.7, whiteSpace: 'pre-line', background: '#FAF3E8', padding: '1rem', borderRadius: '8px' }}>{captions[key]}</p>
-                </div>
-              ))}
-            </div>
-          )
-        })()}
+        {view === 'sharing' && <CreatorEnablementHub
+          creatorId={user.id}
+          brandName={tenant?.brand_name || 'my meal planning app'}
+          subdomain={tenant?.subdomain || ''}
+          hasLogo={!!tenant?.logo_url}
+          recipeCount={recipes.filter(recipe => recipe.is_active).length}
+          hasMealPlan={!!currentMenuId}
+          onNavigate={destination => setView(destination)}
+          onSupport={() => setShowSupport(true)}
+        />}
         {view === 'settings' && familyId && (
           <ProfileSettings user={user} familyId={familyId} tenantId={tenantId} isCreator={true} />
         )}
@@ -1559,7 +1521,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           { v: 'overview' as const, label: 'Home', icon: '🏠' },
           { v: 'mealplan' as const, label: 'Menu', icon: '📅' },
           { v: 'shopping' as const, label: 'Shop', icon: '🛒' },
-          { v: 'sharing' as const, label: 'Share', icon: '📣' },
+          { v: 'sharing' as const, label: 'Launch', icon: '📣' },
           { v: 'settings' as const, label: 'Profile', icon: '👤' },
         ].map(({ v, label, icon }) => (
           <button

@@ -592,6 +592,7 @@ export default function App() {
         <RecipeImport
           user={user}
           tenantId={familyTenantId || tenant?.id || FALLBACK_TENANT_ID}
+          source="user"
           onComplete={() => { setShowRecipeImport(false); fetchRecipes() }}
           onCancel={() => setShowRecipeImport(false)}
         />
@@ -724,7 +725,7 @@ export default function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', color: '#1F3B30', fontWeight: '600', lineHeight: 1.3 }}>{recipe.title}</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
-                      <button onClick={async () => { if (confirm('Delete this recipe?')) { await supabase.from('recipes').delete().eq('id', recipe.id); fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#8A9A8F', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }} title="Delete recipe">✕</button>
+                      {recipe.source === 'user' && recipe.created_by === user?.id && <button onClick={async e => { e.stopPropagation(); if (confirm('Delete your personal recipe?')) { const { data, error } = await supabase.from('recipes').delete().eq('id', recipe.id).select('id').single(); if (error || !data) alert('Could not delete this recipe. Please try again.'); else fetchRecipes() } }} style={{ background: 'none', border: 'none', color: '#8A9A8F', cursor: 'pointer', fontSize: '1rem', padding: '0.1rem', lineHeight: 1 }} title="Delete personal recipe">✕</button>}
                       <button onClick={e => toggleFavorite(e, recipe.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem', lineHeight: 1 }} title={favorites.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}>{favorites.has(recipe.id) ? '❤️' : '🤍'}</button>
                     </div>
                   </div>

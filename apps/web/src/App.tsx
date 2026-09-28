@@ -76,7 +76,6 @@ export default function App() {
   const [menuData, setMenuData] = useState<any>(null)
   const [currentMenuStatus, setCurrentMenuStatus] = useState<string | null>(null)
   const [shoppingListBuilt, setShoppingListBuilt] = useState(false)
-  const [shoppingComplete, setShoppingComplete] = useState(false)
   const [instacartLive, setInstacartLive] = useState(false)
 
   useEffect(() => {
@@ -344,7 +343,6 @@ export default function App() {
         .limit(1)
         .maybeSingle()
       setShoppingListBuilt(!!shoppingData?.id)
-      setShoppingComplete(shoppingData?.status === 'complete')
       try {
         const host = new URL(shoppingData?.instacart_cart_url || '').hostname
         setInstacartLive(host === 'instacart.com' || host.endsWith('.instacart.com'))
@@ -370,7 +368,6 @@ export default function App() {
       setMenuData(null)
       setCurrentMenuStatus(null)
       setShoppingListBuilt(false)
-      setShoppingComplete(false)
       setInstacartLive(false)
       setNextWeekMenuId(null)
       setNextWeekStart(null)
@@ -675,7 +672,7 @@ export default function App() {
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
-          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onShoppingComplete={() => { setShoppingListBuilt(true); setShoppingComplete(true) }} />
+          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onShoppingComplete={() => setShoppingListBuilt(true)} />
         )}
 
         {view === 'settings' && familyId && (
@@ -920,36 +917,6 @@ export default function App() {
                 </>
               )
             })()}
-
-            {/* Quick stats row */}
-            {(() => {
-              const mealCount = menuData?.days
-                ? (Object.values(menuData.days) as any[]).reduce((acc: number, day: any) =>
-                    acc + ['breakfast', 'lunch', 'dinner'].filter(m => day[m]).length, 0)
-                : 0
-              const shoppingLabel = !currentMenuId ? 'No menu' : shoppingComplete ? 'Complete' : shoppingListBuilt ? 'Ready' : currentMenuStatus === 'approved' ? 'Not built' : 'Pending'
-              const shoppingColor = shoppingComplete ? '#16a34a' : shoppingListBuilt ? '#2563eb' : currentMenuStatus === 'approved' ? '#d97706' : '#687A70'
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>in your library</p>
-                  </div>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meals Planned</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{mealCount}</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>this week</p>
-                  </div>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>{shoppingLabel}</p>
-                  </div>
-                </div>
-              )
-            })()}
-
 
           </>
         )}

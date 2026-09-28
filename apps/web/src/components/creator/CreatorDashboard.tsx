@@ -713,8 +713,8 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
               </> : <>
                 <div className="instacart-copy">
                   <span className="launch-label"><span className="launch-dot" /> NEW IN CREATERY</span>
-                  <h1>{creatorInstacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Your grocery list has a new destination.'}</h1>
-                  <p>{creatorInstacartLive ? 'Plan the week, build your list, and open it in Instacart to review your cart and checkout.' : 'Plan the week, build your list, and preview the Instacart handoff. Real ordering will appear here when production access is ready.'}</p>
+                  <h1>{creatorInstacartLive ? 'One-Click Instacart Ordering is LIVE!' : 'Instacart ordering is coming October 2026!'}</h1>
+                  <p>{creatorInstacartLive ? 'Plan the week, build your list, and open it in Instacart to review your cart and checkout.' : 'Plan the week and build your list today. Instacart ordering is on the way.'}</p>
                   <button onClick={() => setView('shopping')}>Explore shopping <span aria-hidden="true">↗</span></button>
                 </div>
                 <div className="instacart-art" aria-hidden="true">

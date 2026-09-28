@@ -170,7 +170,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               disabled
               style={{ background: '#a0a0a0', color: '#e0e0e0', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: 'not-allowed', opacity: 0.7 }}
             >
-              {isTestLink ? 'Instacart ordering is not available yet' : reviewItems.length > 0 ? '🛒 Instacart needs ingredient review' : 'Instacart link unavailable'}
+              {isTestLink ? 'Instacart ordering coming October 2026' : reviewItems.length > 0 ? '🛒 Instacart needs ingredient review' : 'Instacart link unavailable'}
             </button>
           )}
           <button onClick={() => window.print()} style={{ background: "#C9471F", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
@@ -192,7 +192,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
       )}
       {isTestLink && !creatorPreview && (
         <p role="status" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
-          Your shopping list is ready to use here or print. Instacart ordering is coming soon.
+          Your shopping list is ready to use here or print. Instacart ordering is coming October 2026.
         </p>
       )}
       {showInstacartLink && (

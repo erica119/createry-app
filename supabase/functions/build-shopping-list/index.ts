@@ -249,24 +249,43 @@ serve(async (req) => {
       });
     });
 
-    // 5. Build items array
-    const items = Object.values(ingredientMap)
+    // 5. Preserve this household's shopping decisions when a menu or recipe changes.
+    const { data: previousList, error: previousError } = await supabase.from("grocery_lists")
+      .select("items").eq("weekly_menu_id", menu_id)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (previousError) throw previousError;
+    const priorItems: any[] = Array.isArray(previousList?.items) ? previousList.items : [];
+    const itemKey = (item: any) => `${String(item.name || '').trim().toLowerCase()}__${String(item.unit || '').trim().toLowerCase()}`;
+    const priorGenerated = new Map(priorItems.filter(item => !item.is_custom).map(item => [itemKey(item), item]));
+
+    const items: any[] = Object.values(ingredientMap)
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map(item => ({
-        ...item,
-        quantity: item.quantity > 0 ? parseFloat(item.quantity.toFixed(2)) : item.quantity,
-        checked: false,
-        aisle: guessAisle(item.name),
-      }));
+      .map(item => {
+        const prior: any = priorGenerated.get(itemKey(item));
+        const generatedQuantity = item.quantity > 0 ? parseFloat(item.quantity.toFixed(2)) : item.quantity;
+        const manualQuantity = Number(prior?.quantity_override);
+        return {
+          ...item,
+          quantity: Number.isFinite(manualQuantity) && manualQuantity > 0 ? manualQuantity : generatedQuantity,
+          ...(Number.isFinite(manualQuantity) && manualQuantity > 0 ? { quantity_override: manualQuantity } : {}),
+          checked: !!prior?.checked,
+          excluded: !!prior?.excluded,
+          aisle: guessAisle(item.name),
+        };
+      });
+    items.push(...priorItems.filter(item => item.is_custom).map(item => ({
+      ...item, is_custom: true, recipe_sources: ['Added by you'],
+    })));
 
     // Withhold a retailer link if any line cannot be purchased reliably.
     // A partial bulk cart looks complete but can leave the family without dinner.
-    const needsReview = items.some(item =>
+    const orderItems = items.filter(item => !item.excluded);
+    const needsReview = orderItems.some(item =>
       item.quantity <= 0 ||
       /\b(?:or|and|optional|enough|to taste|for serving)\b/i.test(item.name) ||
       /^(?:arge|rilled|emon|reen|alt)\b/i.test(item.name)
     );
-    const instacartUrl = needsReview ? null : await buildInstacartUrl(items, menu.week_start_date);
+    const instacartUrl = needsReview || orderItems.length === 0 ? null : await buildInstacartUrl(orderItems, menu.week_start_date);
 
     // 7. Fetch grocery schedule
     const { data: grocerySchedule } = await supabase

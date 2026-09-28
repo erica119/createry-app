@@ -12,6 +12,8 @@ interface Props {
   familyId?: string
   onApproved: () => void
   onGoShopping?: () => void
+  onViewRecipe?: (recipeId: string) => void
+  onPlanChanged?: () => void
   onWeekChange?: (menuId: string | null, weekDate: string) => void
   onRegenerate?: (feedback: string) => void
 }
@@ -52,7 +54,7 @@ const MEALS: { key: Meal; label: string }[] = [
   { key: 'breakfast', label: 'Breakfast' }, { key: 'lunch', label: 'Lunch' }, { key: 'dinner', label: 'Dinner' },
 ]
 
-export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onWeekChange, onRegenerate }: Props) {
+export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onViewRecipe, onPlanChanged, onWeekChange, onRegenerate }: Props) {
   const [menu, setMenu] = useState<WeeklyMenu | null>(null)
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({})
   const [packs, setPacks] = useState<Record<string, RecipePack>>({})
@@ -63,13 +65,16 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
   const [savingSlot, setSavingSlot] = useState(false)
   const [slotError, setSlotError] = useState<string | null>(null)
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
-  const [justApproved, setJustApproved] = useState(false)
   const [unlockModal, setUnlockModal] = useState<{ pack: RecipePack; recipeTitle: string } | null>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [showFeedback, setShowFeedback] = useState(false)
   const [navigating, setNavigating] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const today = new Date().getDay()
+    return today
+  })
 
   useEffect(() => {
     fetchMenu()
@@ -86,6 +91,10 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       .maybeSingle()
     if (data) {
       setMenu(data)
+      const thisWeek = new Date()
+      thisWeek.setDate(thisWeek.getDate() - thisWeek.getDay())
+      const weekKey = [thisWeek.getFullYear(), String(thisWeek.getMonth() + 1).padStart(2, '0'), String(thisWeek.getDate()).padStart(2, '0')].join('-')
+      setSelectedDay(data.week_start_date === weekKey ? new Date().getDay() : 0)
       await fetchRecipesForMenu(data.menu_data)
     }
     setLoading(false)
@@ -181,8 +190,10 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       .eq('id', menu.id)
     if (!error) {
       setMenu({ ...menu, status: 'approved' })
-      setJustApproved(true)
       onApproved()
+      onGoShopping?.()
+    } else {
+      setSlotError('Could not save this plan. Please try again.')
     }
     setApproving(false)
   }
@@ -206,17 +217,18 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       }
     }
     const updatedMenuData = { ...menu.menu_data, days: updatedDays, schedule_override: scheduleOverride }
+    const nextStatus = menu.status === 'approved' ? 'approved' : 'pending_approval'
     const { error } = await supabase.from('weekly_menus')
-      .update({ menu_data: updatedMenuData, status: 'pending_approval' })
+      .update({ menu_data: updatedMenuData, status: nextStatus })
       .eq('id', menu.id)
     if (error) {
       setSlotError('Could not save this week’s schedule. Please try again.')
       setSavingSlot(false)
       return false
     }
-    setMenu({ ...menu, menu_data: updatedMenuData, status: 'pending_approval' })
-    setJustApproved(false)
+    setMenu({ ...menu, menu_data: updatedMenuData, status: nextStatus })
     if (recipeId) await fetchRecipesForMenu(updatedMenuData)
+    onPlanChanged?.()
     setSavingSlot(false)
     return true
   }
@@ -272,220 +284,84 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-            {familyId && (
-              <button onClick={() => navigateWeek('prev')} disabled={navigating}
-                style={{ background: 'none', border: '1.5px solid #DDCDBB', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#52645A' }}>←</button>
-            )}
-            <h2 onClick={() => familyId && setShowCalendar(true)}
-              style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', margin: 0, cursor: familyId ? 'pointer' : 'default', textDecoration: familyId ? 'underline dotted #8A9A8F' : 'none' }}>
-              Week of {weekDate}
-            </h2>
-            {familyId && (
-              <button onClick={() => navigateWeek('next')} disabled={navigating}
-                style={{ background: 'none', border: '1.5px solid #DDCDBB', borderRadius: '6px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '1rem', color: '#52645A' }}>→</button>
-            )}
-            {familyId && (
-              <button onClick={() => setShowCalendar(true)}
-                style={{ background: 'none', border: '1.5px solid #DDCDBB', borderRadius: '6px', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#52645A' }}>📅</button>
-            )}
+      {/* One week, one selected day: the same controls work before and after approval. */}
+      <div className="plan-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            {familyId && <button onClick={() => navigateWeek('prev')} disabled={navigating} aria-label="Previous week" className="btn-secondary">←</button>}
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', margin: 0 }}>Week of {weekDate}</h2>
+            {familyId && <button onClick={() => navigateWeek('next')} disabled={navigating} aria-label="Next week" className="btn-secondary">→</button>}
+            {familyId && <button onClick={() => setShowCalendar(true)} aria-label="Choose a week" className="btn-secondary">📅</button>}
           </div>
-          <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>
-            Status: <strong>{menu.status.replace('_', ' ')}</strong>
+          <p style={{ color: '#52645A', margin: '0.45rem 0 0', fontSize: '0.9rem' }}>
+            {isApproved ? 'Your plan is ready. You can still change any meal.' : 'Review and adjust your meals before shopping.'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {isApproved ? (
-            <>
-              <span style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.95rem' }}>✓ Approved</span>
-              {onGoShopping && (
-                <button onClick={onGoShopping}
-                  style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600' }}>
-                  → Build Shopping List
-                </button>
-              )}
-              {onRegenerate && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => setShowFeedback(!showFeedback)}
-                      style={{ background: 'white', color: '#52645A', border: '1.5px solid #DDCDBB', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500' }}>
-                      💬 Feedback
-                    </button>
-                    <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }}
-                      style={{ background: 'white', color: 'var(--color-primary)', border: '1.5px solid var(--color-primary)', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600' }}>
-                      ✨ Regenerate
-                    </button>
-                  </div>
-                  {showFeedback && (
-                    <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
-                      placeholder="e.g. more Italian, less chicken..."
-                      style={{ width: '280px', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #DDCDBB', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
-                  )}
-                </div>
-              )}
-            </>
+            onGoShopping && <button onClick={onGoShopping} className="btn-primary" style={{ padding: '0.7rem 1.1rem' }}>Review shopping list →</button>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => setShowFeedback(!showFeedback)}
-                  style={{ background: 'white', color: 'var(--color-primary)', border: '1.5px solid var(--color-primary)', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '500' }}>
-                  💬 Add Feedback
-                </button>
-                <button onClick={handleApprove} disabled={approving}
-                  style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: approving ? 0.7 : 1 }}>
-                  {approving ? 'Approving...' : '✓ Approve Menu'}
-                </button>
-              </div>
-              {showFeedback && (
-                <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-                  <input type="text" value={feedback} onChange={e => setFeedback(e.target.value)}
-                    placeholder="e.g. more Italian, less chicken..."
-                    style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid #DDCDBB', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', outline: 'none' }} />
-                  {onRegenerate && (
-                    <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }}
-                      style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                      ✨ Regenerate
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            <button onClick={handleApprove} disabled={approving} className="btn-primary" style={{ padding: '0.7rem 1.1rem' }}>
+              {approving ? 'Saving plan…' : 'Finish plan & review shopping →'}
+            </button>
           )}
         </div>
       </div>
+      {slotError && <p role="alert" style={{ color: '#B42318', margin: '0 0 1rem' }}>{slotError}</p>}
 
-      {/* Just approved banner */}
-      {justApproved && onGoShopping && (
-        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ margin: 0, color: '#16a34a', fontWeight: '500' }}>🎉 Menu approved! Ready to build your shopping list?</p>
-          <button
-            onClick={onGoShopping}
-            style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '1rem' }}
-          >
-            Build Shopping List →
+      <div aria-label="Days this week" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.4rem', marginBottom: '1.25rem' }}>
+        {Array.from({ length: 7 }, (_, day) => {
+          const date = new Date(`${menu.week_start_date}T12:00:00`)
+          date.setDate(date.getDate() + day)
+          const count = MEALS.filter(({ key }) => menu.menu_data.days[String(day)]?.[key]).length
+          const active = selectedDay === day
+          return <button key={day} type="button" onClick={() => setSelectedDay(day)} aria-pressed={active}
+            style={{ minWidth: 0, minHeight: '66px', padding: '0.5rem 0.2rem', borderRadius: '10px', border: `1.5px solid ${active ? 'var(--color-primary)' : '#DDCDBB'}`, background: active ? 'var(--color-primary)' : 'white', color: active ? 'white' : '#1F3B30', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+            <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700 }}>{FULL_DAY_NAMES[day].slice(0, 3)}</span>
+            <span style={{ display: 'block', fontSize: '1.05rem', fontWeight: 700 }}>{date.getDate()}</span>
+            <span style={{ display: 'block', fontSize: '0.65rem', opacity: 0.85 }}>{count ? `${count} meal${count === 1 ? '' : 's'}` : 'Open'}</span>
           </button>
-        </div>
-      )}
-
-      {!isApproved && (
-        <div style={{ background: '#FAF3E8', border: '1px solid #DDCDBB', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
-          <strong style={{ color: '#1F3B30' }}>Adjust this week’s meals</strong>
-          <p style={{ color: '#52645A', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>Add a meal or remove one below before approving. Your regular weekly schedule will not change.</p>
-          {slotError && <p role="alert" style={{ color: '#dc2626', margin: '0.5rem 0 0' }}>{slotError}</p>}
-        </div>
-      )}
-
-      {/* Mobile-first vertical menu scroll */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-        {Array.from({ length: 7 }, (_, i) => {
-          const dayData = menu.menu_data.days[String(i)] || {}
-          const meals = MEALS
-          const hasMeals = meals.some(m => dayData[m.key])
-          const dayDate = new Date(`${menu.week_start_date}T12:00:00`)
-          dayDate.setDate(dayDate.getDate() + i)
-          const isToday = dayDate.toDateString() === new Date().toDateString()
-
-          return (
-            <div key={i}>
-              {/* Day header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <span style={{
-                  fontSize: '0.75rem', fontWeight: '700', padding: '0.2rem 0.75rem',
-                  borderRadius: '20px', letterSpacing: '0.05em',
-                  background: isToday ? 'var(--color-primary)' : '#F5E8D7',
-                  color: isToday ? 'white' : '#687A70',
-                }}>
-                  {FULL_DAY_NAMES[i]}{isToday ? ' · Today' : ''}
-                </span>
-                {!hasMeals && (
-                  <span style={{ fontSize: '0.75rem', color: '#8A9A8F', fontStyle: 'italic' }}>Rest day</span>
-                )}
-              </div>
-
-              {!isApproved && (
-                <div aria-label={`Meals for ${FULL_DAY_NAMES[i]}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                  {meals.map(({ key, label }) => {
-                    const planned = !!dayData[key]
-                    return (
-                      <button key={key} type="button" disabled={savingSlot}
-                        aria-label={`${planned ? 'Remove' : 'Add'} ${label} on ${FULL_DAY_NAMES[i]}`}
-                        aria-pressed={planned}
-                        onClick={() => {
-                          if (planned) void saveSlot(String(i), key, null)
-                          else { setSlotError(null); setSwapDay({ day: String(i), meal: key }) }
-                        }}
-                        style={{ minHeight: '40px', borderRadius: '20px', padding: '0.4rem 0.75rem', cursor: savingSlot ? 'wait' : 'pointer', border: `1.5px solid ${planned ? 'var(--color-primary)' : '#DDCDBB'}`, background: planned ? 'var(--color-primary)' : 'white', color: planned ? 'white' : '#52645A', fontSize: '0.78rem', fontWeight: '600' }}>
-                        {planned ? '✓' : '+'} {label}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Meal cards for this day */}
-              {hasMeals && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {meals.map(({ key, label }) => {
-                    const recipeId = dayData[key]
-                    if (!recipeId) return null
-                    const recipe = recipes[recipeId]
-                    const locked = recipe ? isLocked(recipe) : false
-                    const pack = recipe?.recipe_pack_id ? packs[recipe.recipe_pack_id] : null
-
-                    if (locked && pack) {
-                      return (
-                        <div key={key}
-                          onClick={() => handleUnlockClick(pack, recipe?.title || '')}
-                          style={{ background: '#F0EAEA', borderRadius: '12px', border: '1px dashed #D4B0B0', padding: '0.875rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', opacity: 0.85 }}
-                        >
-                          <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#DDCDBB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <span style={{ fontSize: '1.25rem' }}>🔒</span>
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#687A70', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-                            <p style={{ margin: '0 0 0.15rem', fontSize: '0.9rem', fontWeight: '600', color: '#687A70', filter: 'blur(3px)', userSelect: 'none' }}>{recipe?.title || 'Premium Recipe'}</p>
-                            <span style={{ fontSize: '0.75rem', color: '#C9471F' }}>🔒 ${(pack.price_cents / 100).toFixed(0)} to unlock</span>
-                          </div>
-                        </div>
-                      )
-                    }
-
-                    return (
-                      <div key={key}
-                        onClick={() => !isApproved && !locked && setSwapDay({ day: String(i), meal: key })}
-                        style={{ background: 'white', borderRadius: '12px', border: isToday ? '1.5px solid var(--color-primary)' : '1px solid #DDCDBB', padding: '0.875rem 1rem', cursor: isApproved ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.875rem', boxShadow: '0 1px 4px rgba(44,24,16,0.06)' }}
-                      >
-                        {(recipe as any)?.image_url ? (
-                          <img src={(recipe as any).image_url} alt={recipe?.title} style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                        ) : (
-                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#F5E8D7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <span style={{ fontSize: '1.5rem' }}>🍽️</span>
-                          </div>
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: '0 0 0.15rem', fontSize: '0.7rem', fontWeight: '600', color: '#687A70', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-                          <p style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: '600', color: '#1F3B30', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {recipe?.title || 'Recipe Not Found'}
-                          </p>
-                          {recipe?.cook_time_minutes && (
-                            <span style={{ fontSize: '0.75rem', color: '#687A70' }}>🕐 {recipe.cook_time_minutes} min</span>
-                          )}
-                        </div>
-                        {!isApproved && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '500', flexShrink: 0 }}>swap →</span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
         })}
       </div>
+
+      <div style={{ background: '#F5E8D7', border: '1px solid #DDCDBB', borderRadius: '16px', padding: '1rem', marginBottom: '1rem' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', fontSize: '1.3rem', margin: '0 0 0.25rem' }}>{FULL_DAY_NAMES[selectedDay]}</h3>
+        <p style={{ margin: 0, color: '#52645A', fontSize: '0.84rem' }}>Open a recipe, swap a meal, or leave a slot empty. Changes save to this week.</p>
+      </div>
+
+      <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        {MEALS.map(({ key, label }) => {
+          const recipeId = menu.menu_data.days[String(selectedDay)]?.[key]
+          const recipe = recipeId ? recipes[recipeId] : null
+          const locked = recipe ? isLocked(recipe) : false
+          const pack = recipe?.recipe_pack_id ? packs[recipe.recipe_pack_id] : null
+          return <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', background: 'white', border: '1px solid #DDCDBB', borderRadius: '14px', padding: '0.9rem', flexWrap: 'wrap' }}>
+            {recipe?.image_url ? <img src={recipe.image_url} alt="" style={{ width: '64px', height: '64px', borderRadius: '9px', objectFit: 'cover' }} />
+              : <span aria-hidden="true" style={{ width: '64px', height: '64px', borderRadius: '9px', background: '#F5E8D7', display: 'grid', placeItems: 'center', fontSize: '1.5rem' }}>{recipe ? '🍽️' : '＋'}</span>}
+            <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+              <span style={{ color: '#687A70', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700 }}>{label}</span>
+              <h4 style={{ color: '#1F3B30', fontSize: '1rem', margin: '0.15rem 0' }}>{recipe?.title || (recipeId ? 'Recipe unavailable' : 'No meal planned')}</h4>
+              {recipe?.cook_time_minutes && <span style={{ color: '#687A70', fontSize: '0.78rem' }}>{recipe.cook_time_minutes} min cook time</span>}
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {locked && pack ? <button onClick={() => handleUnlockClick(pack, recipe?.title || '')} className="btn-secondary">Unlock recipe</button> : <>
+                {recipe && onViewRecipe && <button onClick={() => onViewRecipe(recipe.id)} className="btn-secondary">View recipe</button>}
+                <button onClick={() => { setSlotError(null); setSwapDay({ day: String(selectedDay), meal: key }) }} disabled={savingSlot} className="btn-secondary">{recipeId ? 'Swap' : 'Add meal'}</button>
+                {recipeId && <button onClick={() => void saveSlot(String(selectedDay), key, null)} disabled={savingSlot} className="btn-secondary" aria-label={`Remove ${label} on ${FULL_DAY_NAMES[selectedDay]}`}>Remove</button>}
+              </>}
+            </div>
+          </div>
+        })}
+      </div>
+
+      {onRegenerate && <div style={{ borderTop: '1px solid #DDCDBB', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+        <button onClick={() => setShowFeedback(!showFeedback)} className="btn-secondary">{showFeedback ? 'Cancel replan' : 'Replan this week…'}</button>
+        {showFeedback && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
+          <input value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would you like to change?" aria-label="Replan feedback"
+            style={{ flex: '1 1 220px', padding: '0.7rem', border: '1px solid #DDCDBB', borderRadius: '8px' }} />
+          <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }} className="btn-primary">Generate a new plan</button>
+        </div>}
+      </div>}
 
       {/* Swap modal */}
       {swapDay && (

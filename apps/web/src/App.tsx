@@ -117,7 +117,11 @@ export default function App() {
   useEffect(() => {
     if (!user) return
     checkOnboarding()
-  }, [user])
+  }, [user?.id])
+
+  useEffect(() => {
+    if (user && appMode === 'user') sessionStorage.setItem(`createry:household-view:${user.id}`, view)
+  }, [user?.id, appMode, view])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -228,8 +232,9 @@ export default function App() {
       }
 
       setUserSubStatus(subData.status)
+      const savedView = sessionStorage.getItem(`createry:household-view:${user!.id}`)
+      setView(savedView === 'menu' || savedView === 'shopping' || savedView === 'settings' || savedView === 'recipes' ? savedView : 'dashboard')
       setAppMode('user')
-      setView('dashboard')
       // Use the tenant from their family profile, not the URL
       if (data.tenant_id) {
         const { data: tenantData } = await supabase

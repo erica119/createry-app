@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { parseShoppingIngredient } from '../../lib/ingredientReadiness'
+import { canonicalYouTubeUrl, getYouTubeVideoId } from '../../lib/youtube'
 
 interface Ingredient {
   name: string
@@ -22,6 +23,7 @@ interface Recipe {
   meal_type: string[]
   dietary_tags: string[]
   source?: string
+  video_url?: string | null
 }
 
 interface Props {
@@ -52,9 +54,11 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [videoPlaying, setVideoPlaying] = useState(false)
 
   const [title, setTitle] = useState(recipe.title || '')
   const [description, setDescription] = useState(recipe.description || '')
+  const [videoUrl, setVideoUrl] = useState(recipe.video_url || '')
   const [ingredients, setIngredients] = useState(ingredientsToText(recipe.ingredients))
   const [instructions, setInstructions] = useState(recipe.instructions || '')
   const [prepTime, setPrepTime] = useState(recipe.prep_time_minutes?.toString() || '')
@@ -69,6 +73,7 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
     ...recipe,
     title,
     description,
+    video_url: videoUrl,
     ingredients: ingredients.split('\n').filter(line => line.trim()).map(line => ({ name: line.trim(), quantity: '', unit: '' })),
     instructions,
     prep_time_minutes: prepTime ? parseInt(prepTime) : null,
@@ -78,7 +83,7 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
     cuisine_tags: cuisineTags,
     meal_type: mealType,
     dietary_tags: dietaryTags,
-  }), [recipe, title, description, ingredients, instructions, prepTime, cookTime, servings, complexity, cuisineTags, mealType, dietaryTags])
+  }), [recipe, title, description, videoUrl, ingredients, instructions, prepTime, cookTime, servings, complexity, cuisineTags, mealType, dietaryTags])
 
   const toggleTag = (value: string, current: string[], setter: (next: string[]) => void) => {
     setter(current.includes(value) ? current.filter(item => item !== value) : [...current, value])
@@ -87,6 +92,7 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
   const handleCancelEdit = () => {
     setTitle(recipe.title || '')
     setDescription(recipe.description || '')
+    setVideoUrl(recipe.video_url || '')
     setIngredients(ingredientsToText(recipe.ingredients))
     setInstructions(recipe.instructions || '')
     setPrepTime(recipe.prep_time_minutes?.toString() || '')
@@ -106,6 +112,9 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
     if (!ingredients.trim()) { setError('Ingredients are required.'); return }
     if (!instructions.trim()) { setError('Instructions are required.'); return }
     if (!COMPLEXITIES.includes(complexity)) { setError('Complexity must be simple, moderate, or complex.'); return }
+    const canEditVideo = !familyId && recipe.source === 'creator'
+    const normalizedVideoUrl = videoUrl.trim() ? canonicalYouTubeUrl(videoUrl) : null
+    if (canEditVideo && videoUrl.trim() && !normalizedVideoUrl) { setError('Enter a valid YouTube video link.'); return }
 
     const parsedPrep = prepTime ? parseInt(prepTime) : null
     const parsedCook = cookTime ? parseInt(cookTime) : null
@@ -136,6 +145,7 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
       cuisine_tags: cuisineTags,
       meal_type: mealType,
       dietary_tags: dietaryTags,
+      ...(canEditVideo ? { video_url: normalizedVideoUrl } : {}),
     }
 
     setSaving(true)
@@ -178,6 +188,8 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
       // Updating it in place ensures the card reflects saved changes as soon as
       // this modal closes, without requiring a full page refresh.
       Object.assign(recipe, updates)
+      if (canEditVideo) setVideoUrl(normalizedVideoUrl || '')
+      setVideoPlaying(false)
       setSaved(true)
       setIsEditing(false)
       onSaved?.()
@@ -199,6 +211,8 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
     display: 'block', fontWeight: '600', color: '#1F3B30',
     marginBottom: '0.4rem', fontSize: '0.82rem',
   }
+  const videoId = getYouTubeVideoId(displayedRecipe.video_url || '')
+  const canEditVideo = !familyId && recipe.source === 'creator'
 
   const ChipGroup = ({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (id: string) => void }) => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -266,6 +280,12 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
                 <label style={labelStyle}>Short description</label>
                 <input value={description} onChange={e => setDescription(e.target.value)} style={inputStyle} />
               </div>
+
+              {canEditVideo && <div>
+                <label htmlFor="edit-recipe-video-url" style={labelStyle}>YouTube cooking video (optional)</label>
+                <input id="edit-recipe-video-url" type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" style={inputStyle} />
+                <p style={{ color: '#687A70', fontSize: '0.78rem', margin: '0.35rem 0 0' }}>Your audience will see this video with the recipe.</p>
+              </div>}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
                 <div>
@@ -369,6 +389,18 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
                   ))}
                 </div>
               )}
+
+              {videoId && <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Watch the recipe</h3>
+                {videoPlaying ? <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: '12px', overflow: 'hidden', background: '#1F3B30' }}>
+                  <iframe title={`Cooking video for ${displayedRecipe.title}`} src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" style={{ border: 0, width: '100%', height: '100%' }} />
+                </div> : <button type="button" onClick={() => setVideoPlaying(true)} aria-label={`Watch video for ${displayedRecipe.title}`}
+                  style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', border: 0, borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', background: '#1F3B30', backgroundImage: `linear-gradient(0deg, rgba(31,59,48,.72), rgba(31,59,48,.08)), url(https://i.ytimg.com/vi/${videoId}/hqdefault.jpg)`, backgroundPosition: 'center', backgroundSize: 'cover', color: 'white', fontFamily: 'var(--font-sans)' }}>
+                  <span aria-hidden="true" style={{ display: 'inline-grid', placeItems: 'center', width: '64px', height: '64px', borderRadius: '50%', background: '#C9471F', fontSize: '1.7rem', boxShadow: '0 5px 20px #0005' }}>▶</span>
+                  <span style={{ display: 'block', marginTop: '0.75rem', fontWeight: 700 }}>Watch the cooking video</span>
+                </button>}
+                <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', color: '#52645A', fontSize: '0.8rem', marginTop: '0.5rem' }}>Open on YouTube ↗</a>
+              </div>}
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Ingredients</h3>

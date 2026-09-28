@@ -1,6 +1,8 @@
 import './App.css'
 import BrandMark from './components/shared/BrandMark'
-import { useState, useEffect, useRef } from 'react'
+import WorkspaceFrame from './components/shared/WorkspaceFrame'
+import HouseholdHero from './components/shared/HouseholdHero'
+import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { resolveTenant, clearCreatorSession } from './lib/tenant'
 import type { TenantConfig } from './lib/tenant'
@@ -65,9 +67,7 @@ export default function App() {
   const [unlockedPackIds, setUnlockedPackIds] = useState<Set<string>>(new Set())
   const [unlockModal, setUnlockModal] = useState<{ pack: { id: string; name: string; price_cents: number }; recipeTitles: string[] } | null>(null)
   const [showSupport, setShowSupport] = useState(false)
-  const [navOpen, setNavOpen] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
-  const navRef = useRef<HTMLDivElement>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [purchaseSuccess, setPurchaseSuccess] = useState(false)
   const [userSubStatus, setUserSubStatus] = useState<string | null>(null)
@@ -77,6 +77,7 @@ export default function App() {
   const [currentMenuStatus, setCurrentMenuStatus] = useState<string | null>(null)
   const [shoppingListBuilt, setShoppingListBuilt] = useState(false)
   const [shoppingComplete, setShoppingComplete] = useState(false)
+  const [instacartLive, setInstacartLive] = useState(false)
 
   useEffect(() => {
     const color = tenant?.primary_color || '#C9471F'
@@ -135,15 +136,6 @@ export default function App() {
       checkOnboarding()
     }
   }, [user, tenant])
-
-  useEffect(() => {
-    if (!navOpen) return
-    const handler = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) setNavOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [navOpen])
 
   const checkOnboarding = async () => {
     // Check if platform admin first
@@ -347,12 +339,16 @@ export default function App() {
       setCurrentMenuStatus(data.status || null)
       const { data: shoppingData } = await supabase
         .from('grocery_lists')
-        .select('id, status')
+        .select('id, status, instacart_cart_url')
         .eq('weekly_menu_id', data.id)
         .limit(1)
         .maybeSingle()
       setShoppingListBuilt(!!shoppingData?.id)
       setShoppingComplete(shoppingData?.status === 'complete')
+      try {
+        const host = new URL(shoppingData?.instacart_cart_url || '').hostname
+        setInstacartLive(host === 'instacart.com' || host.endsWith('.instacart.com'))
+      } catch { setInstacartLive(false) }
 
       // Current week is handled — see whether next week has already been planned ahead.
       const nextWeekDate = new Date(currentWeekStart)
@@ -375,6 +371,7 @@ export default function App() {
       setCurrentMenuStatus(null)
       setShoppingListBuilt(false)
       setShoppingComplete(false)
+      setInstacartLive(false)
       setNextWeekMenuId(null)
       setNextWeekStart(null)
       generateMenu(undefined, undefined, true)
@@ -628,54 +625,25 @@ export default function App() {
     }
   }
 
-  const NAV_LABELS: { view: typeof view; label: string; enabled: boolean }[] = [
-    { view: 'dashboard', label: 'Home', enabled: true },
-    { view: 'recipes', label: 'My Recipes', enabled: true },
-    { view: 'menu', label: 'This Week', enabled: !!currentMenuId },
-    { view: 'shopping', label: 'Shopping', enabled: !!currentMenuId },
-    { view: 'settings', label: 'Settings', enabled: true },
-  ]
-  const activeLabel = NAV_LABELS.find(n => n.view === view)?.label || 'Home'
   const brandColor = tenant?.id !== FALLBACK_TENANT_ID ? (tenant?.primary_color || '#C9471F') : '#1F3B30'
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8' }}>
-      <div ref={navRef} style={{ position: 'relative' }}>
-        <div className="nav-bar" style={{ padding: '0 2rem', background: brandColor, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0' }}>
-            <BrandMark tenant={tenant} onDark />
-            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {activeLabel}</span>
-          </span>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
-            <button onClick={signOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Sign out</button>
-            <button onClick={() => setNavOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: '0.25rem' }}>☰</button>
-          </div>
-        </div>
-        {navOpen && (
-          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #DDCDBB', minWidth: '180px', zIndex: 50, overflow: 'hidden' }}>
-            {NAV_LABELS.map(({ view: v, label, enabled }, i, arr) => (
-              <button
-                key={v}
-                onClick={() => { if (enabled) { setView(v); setNavOpen(false) } }}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '0.8rem 1.25rem',
-                  background: view === v ? '#FAF3E8' : 'white',
-                  color: view === v ? brandColor : enabled ? '#1F3B30' : '#8A9A8F',
-                  fontWeight: view === v ? '700' : '400',
-                  fontSize: '0.95rem', border: 'none',
-                  borderBottom: i < arr.length - 1 ? '1px solid #F5E8D7' : 'none',
-                  cursor: enabled ? 'pointer' : 'not-allowed',
-                  fontFamily: 'var(--font-sans)',
-                }}
-              >{label}</button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem', paddingBottom: '5rem' }}>
+      <WorkspaceFrame
+        tenant={activeTenant}
+        role="Household"
+        greeting={activeTenant?.brand_name || 'Createry'}
+        groups={[{ label: 'YOUR KITCHEN', items: [
+          { id: 'dashboard', label: 'Overview' },
+          { id: 'recipes', label: 'My Recipes' },
+          { id: 'menu', label: 'My Meal Plan', disabled: !currentMenuId },
+          { id: 'shopping', label: 'Shopping', disabled: !currentMenuId },
+        ] }, { label: 'ACCOUNT', items: [{ id: 'settings', label: 'Settings' }] }]}
+        active={view}
+        onNavigate={id => setView(id as typeof view)}
+        onSignOut={signOut}
+        foot={activeTenant?.brand_name || 'Createry'}
+      >
         {view === 'menu' && generatingMenu && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✨</div>
@@ -739,7 +707,7 @@ export default function App() {
               onChange={e => setRecipeSearch(e.target.value)}
               style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.95rem', borderRadius: '10px', border: '2px solid #DDCDBB', background: '#FAF3E8', color: '#1F3B30', fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
             />
-            <div className="recipe-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
+            <div className="recipe-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
               {recipes.filter(r => r.title.toLowerCase().includes(recipeSearch.toLowerCase()) || r.description?.toLowerCase().includes(recipeSearch.toLowerCase()) || r.cuisine_tags?.some((t: string) => t.toLowerCase().includes(recipeSearch.toLowerCase()))).sort((a, b) => (a.is_premium === b.is_premium ? 0 : a.is_premium ? 1 : -1)).map(recipe => {
                 const isLocked = recipe.is_premium && recipe.recipe_pack_id && !unlockedPackIds.has(recipe.recipe_pack_id)
                 const pack = recipe.recipe_pack_id ? recipePacks[recipe.recipe_pack_id] : null
@@ -800,6 +768,7 @@ export default function App() {
 
         {view === 'dashboard' && (
           <>
+            <HouseholdHero tenant={activeTenant} recipeCount={recipes.length} hasMenu={!!currentMenuId} instacartLive={instacartLive} onNavigate={setView} />
             {/* Context-aware status card */}
             {!currentMenuId ? (
               <div style={{ background: '#F5E8D7', borderRadius: '16px', border: '1px solid #DDCDBB', padding: '2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -857,35 +826,6 @@ export default function App() {
                 )}
               </div>
             )}
-
-            {/* Quick stats row */}
-            {(() => {
-              const mealCount = menuData?.days
-                ? (Object.values(menuData.days) as any[]).reduce((acc: number, day: any) =>
-                    acc + ['breakfast', 'lunch', 'dinner'].filter(m => day[m]).length, 0)
-                : 0
-              const shoppingLabel = !currentMenuId ? 'No menu' : shoppingComplete ? 'Complete' : shoppingListBuilt ? 'Ready' : currentMenuStatus === 'approved' ? 'Not built' : 'Pending'
-              const shoppingColor = shoppingComplete ? '#16a34a' : shoppingListBuilt ? '#2563eb' : currentMenuStatus === 'approved' ? '#d97706' : '#687A70'
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>in your library</p>
-                  </div>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meals Planned</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{mealCount}</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>this week</p>
-                  </div>
-                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
-                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
-                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>{shoppingLabel}</p>
-                  </div>
-                </div>
-              )
-            })()}
 
             {/* Tonight's Recipe Hero Card */}
             {menuData?.days && currentMenuStatus === 'approved' && (() => {
@@ -980,9 +920,40 @@ export default function App() {
                 </>
               )
             })()}
+
+            {/* Quick stats row */}
+            {(() => {
+              const mealCount = menuData?.days
+                ? (Object.values(menuData.days) as any[]).reduce((acc: number, day: any) =>
+                    acc + ['breakfast', 'lunch', 'dinner'].filter(m => day[m]).length, 0)
+                : 0
+              const shoppingLabel = !currentMenuId ? 'No menu' : shoppingComplete ? 'Complete' : shoppingListBuilt ? 'Ready' : currentMenuStatus === 'approved' ? 'Not built' : 'Pending'
+              const shoppingColor = shoppingComplete ? '#16a34a' : shoppingListBuilt ? '#2563eb' : currentMenuStatus === 'approved' ? '#d97706' : '#687A70'
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipes</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{recipes.length}</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>in your library</p>
+                  </div>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meals Planned</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#1F3B30', fontWeight: '700', lineHeight: 1 }}>{mealCount}</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>this week</p>
+                  </div>
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #DDCDBB', padding: '1.25rem 1.5rem' }}>
+                    <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#687A70', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping List</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: shoppingColor, fontWeight: '700', lineHeight: 1 }}>●</p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#687A70' }}>{shoppingLabel}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+
           </>
         )}
-      </div>
+      </WorkspaceFrame>
       {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
 
       <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C9471F'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -1085,4 +1056,3 @@ export default function App() {
     </div>
   )
 }
-

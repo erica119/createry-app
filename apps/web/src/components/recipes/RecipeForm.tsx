@@ -7,6 +7,7 @@ import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingre
 interface Props {
   user: User
   tenantId: string
+  source?: 'creator' | 'user'
   onSaved: () => void
   onCancel: () => void
 }
@@ -15,7 +16,7 @@ const CUISINES = ['italian', 'mexican', 'asian', 'american', 'mediterranean', 'i
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert']
 const DIETARY_TAGS = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'keto', 'paleo', 'nut-free']
 
-export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props) {
+export default function RecipeForm({ user, tenantId, source = 'user', onSaved, onCancel }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [ingredients, setIngredients] = useState('')
@@ -88,7 +89,7 @@ export default function RecipeForm({ user, tenantId, onSaved, onCancel }: Props)
         dietary_tags: dietaryTags,
         is_premium: false,
         is_active: true,
-        source: 'user',
+        source,
         image_url: imageUrl || null,
       })
       if (error) throw error

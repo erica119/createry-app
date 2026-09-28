@@ -75,6 +75,7 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     const today = new Date().getDay()
     return today
   })
+  const [showFullWeek, setShowFullWeek] = useState(false)
 
   useEffect(() => {
     fetchMenu()
@@ -281,10 +282,11 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
 
   const isApproved = menu.status === 'approved'
   const weekDate = new Date(`${menu.week_start_date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const visibleDays = showFullWeek ? [0, 1, 2, 3, 4, 5, 6] : [Math.min(selectedDay, 5), Math.min(selectedDay, 5) + 1]
 
   return (
     <div>
-      {/* One week, one selected day: the same controls work before and after approval. */}
+      {/* The same two-day and full-week controls work before and after approval. */}
       <div className="plan-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -309,13 +311,20 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       </div>
       {slotError && <p role="alert" style={{ color: '#B42318', margin: '0 0 1rem' }}>{slotError}</p>}
 
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <strong style={{ color: '#1F3B30' }}>{showFullWeek ? 'Full week' : 'Two-day view'}</strong>
+        <button type="button" onClick={() => setShowFullWeek(value => !value)} className="btn-secondary" aria-pressed={showFullWeek}>
+          {showFullWeek ? 'Show two days' : 'See whole week'}
+        </button>
+      </div>
+
       <div aria-label="Days this week" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.4rem', marginBottom: '1.25rem' }}>
         {Array.from({ length: 7 }, (_, day) => {
           const date = new Date(`${menu.week_start_date}T12:00:00`)
           date.setDate(date.getDate() + day)
           const count = MEALS.filter(({ key }) => menu.menu_data.days[String(day)]?.[key]).length
-          const active = selectedDay === day
-          return <button key={day} type="button" onClick={() => setSelectedDay(day)} aria-pressed={active}
+          const active = visibleDays.includes(day)
+          return <button key={day} type="button" onClick={() => { setSelectedDay(day); setShowFullWeek(false) }} aria-pressed={active}
             style={{ minWidth: 0, minHeight: '66px', padding: '0.5rem 0.2rem', borderRadius: '10px', border: `1.5px solid ${active ? 'var(--color-primary)' : '#DDCDBB'}`, background: active ? 'var(--color-primary)' : 'white', color: active ? 'white' : '#1F3B30', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
             <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700 }}>{FULL_DAY_NAMES[day].slice(0, 3)}</span>
             <span style={{ display: 'block', fontSize: '1.05rem', fontWeight: 700 }}>{date.getDate()}</span>
@@ -324,14 +333,14 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         })}
       </div>
 
-      <div style={{ background: '#F5E8D7', border: '1px solid #DDCDBB', borderRadius: '16px', padding: '1rem', marginBottom: '1rem' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', fontSize: '1.3rem', margin: '0 0 0.25rem' }}>{FULL_DAY_NAMES[selectedDay]}</h3>
-        <p style={{ margin: 0, color: '#52645A', fontSize: '0.84rem' }}>Open a recipe, swap a meal, or leave a slot empty. Changes save to this week.</p>
-      </div>
-
-      <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem' }}>
+      <p style={{ margin: '0 0 1rem', color: '#52645A', fontSize: '0.84rem' }}>Open a recipe, swap a meal, or leave a slot empty. Changes save to this week.</p>
+      {visibleDays.map(day => <section key={day} aria-label={`${FULL_DAY_NAMES[day]} meals`} style={{ marginBottom: '1.5rem' }}>
+        <div style={{ background: '#F5E8D7', border: '1px solid #DDCDBB', borderRadius: '16px', padding: '0.85rem 1rem', marginBottom: '0.75rem' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', fontSize: '1.3rem', margin: 0 }}>{FULL_DAY_NAMES[day]}</h3>
+        </div>
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
         {MEALS.map(({ key, label }) => {
-          const recipeId = menu.menu_data.days[String(selectedDay)]?.[key]
+          const recipeId = menu.menu_data.days[String(day)]?.[key]
           const recipe = recipeId ? recipes[recipeId] : null
           const locked = recipe ? isLocked(recipe) : false
           const pack = recipe?.recipe_pack_id ? packs[recipe.recipe_pack_id] : null
@@ -346,13 +355,14 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               {locked && pack ? <button onClick={() => handleUnlockClick(pack, recipe?.title || '')} className="btn-secondary">Unlock recipe</button> : <>
                 {recipe && onViewRecipe && <button onClick={() => onViewRecipe(recipe.id)} className="btn-secondary">View recipe</button>}
-                <button onClick={() => { setSlotError(null); setSwapDay({ day: String(selectedDay), meal: key }) }} disabled={savingSlot} className="btn-secondary">{recipeId ? 'Swap' : 'Add meal'}</button>
-                {recipeId && <button onClick={() => void saveSlot(String(selectedDay), key, null)} disabled={savingSlot} className="btn-secondary" aria-label={`Remove ${label} on ${FULL_DAY_NAMES[selectedDay]}`}>Remove</button>}
+                <button onClick={() => { setSlotError(null); setSwapDay({ day: String(day), meal: key }) }} disabled={savingSlot} className="btn-secondary">{recipeId ? 'Swap' : 'Add meal'}</button>
+                {recipeId && <button onClick={() => void saveSlot(String(day), key, null)} disabled={savingSlot} className="btn-secondary" aria-label={`Remove ${label} on ${FULL_DAY_NAMES[day]}`}>Remove</button>}
               </>}
             </div>
           </div>
         })}
-      </div>
+        </div>
+      </section>)}
 
       {onRegenerate && <div style={{ borderTop: '1px solid #DDCDBB', paddingTop: '1rem', marginBottom: '1.5rem' }}>
         <button onClick={() => setShowFeedback(!showFeedback)} className="btn-secondary">{showFeedback ? 'Cancel replan' : 'Replan this week…'}</button>

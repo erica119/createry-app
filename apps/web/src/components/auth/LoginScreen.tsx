@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { takeAuthNotice } from '../../lib/verifiedSession'
 import type { User } from '@supabase/supabase-js'
 import type { TenantConfig } from '../../lib/tenant'
 import BrandMark from '../shared/BrandMark'
@@ -28,6 +29,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [authNotice] = useState(takeAuthNotice)
   const [confirmationSent, setConfirmationSent] = useState(false)
   const [tosAccepted, setTosAccepted] = useState(false)
   const TOS_VERSION = '2025-07-01'
@@ -119,6 +121,7 @@ export default function LoginScreen({ onGoogleSignIn, onSignIn, tenant }: Props)
             <h2>{mode === 'login' ? 'Welcome back.' : 'Come on in.'}</h2>
             <p>{mode === 'login' ? 'Sign in and pick up where you left off.' : 'Start with the recipes you love.'}</p>
           </div>
+          {authNotice && <p className="login-error" role="alert">{authNotice}</p>}
 
           <div className="login-tabs" role="tablist" aria-label="Account action">
             {(['login', 'signup'] as const).map(m => (

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './CreatorEnablementHub.css'
 
 type Destination = 'branding' | 'recipes' | 'mealplan' | 'analytics'
@@ -49,6 +49,7 @@ export default function CreatorEnablementHub({ creatorId, brandName, subdomain, 
   })
   const [openLesson, setOpenLesson] = useState<number | null>(0)
   const [copied, setCopied] = useState<string | null>(null)
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false)
   const appUrl = subdomain ? `https://createry.app/?creator=${encodeURIComponent(subdomain)}` : ''
   const steps = [
     { id: 'brand', title: 'Make the app yours', detail: 'Add your logo and check your branding.', done: hasLogo, action: 'Open branding', destination: 'branding' as const },
@@ -58,6 +59,10 @@ export default function CreatorEnablementHub({ creatorId, brandName, subdomain, 
     { id: 'share', title: 'Make your first invitation', detail: 'Explain why you built this and invite feedback from your audience.', done: completed.includes('share'), action: 'Use sharing tools', destination: null },
   ]
   const doneCount = steps.filter(step => step.done).length
+  const allComplete = doneCount === steps.length
+  useEffect(() => {
+    if (allComplete) setChecklistCollapsed(true)
+  }, [allComplete])
   const captions = [
     { key: 'instagram', platform: 'Instagram', text: `Your saved recipes deserve a place in your real week. With ${brandName}, you can plan meals around your household, swap meals, and take a shopping list with you.\n\nExplore my meal planning app: ${appUrl}\n\nAudience subscription: $9/month.\n\n#mealplanning #familymeals #weeknightdinners` },
     { key: 'tiktok', platform: 'TikTok', text: `What if dinner ideas became an actual plan? My recipes are now in ${brandName}: weekly meal plans, easy swaps, and a shopping list for the week. Explore it at ${appUrl}. Audience subscription: $9/month.` },
@@ -86,8 +91,11 @@ export default function CreatorEnablementHub({ creatorId, brandName, subdomain, 
     </header>
 
     <section className="creator-enable-section" aria-labelledby="launch-heading">
-      <div className="creator-enable-section-head"><span>01 / GET READY</span><h3 id="launch-heading">Your launch checklist</h3><p>The first three steps reflect your app. Mark the last two when you’ve done them.</p></div>
-      <div className="creator-enable-checklist">
+      <div className="creator-enable-checklist-heading">
+        <div className="creator-enable-section-head"><span>01 / GET READY</span><h3 id="launch-heading">Your launch checklist</h3><p>{allComplete ? 'All five steps complete. Reopen the checklist whenever you want to review it.' : 'The first three steps reflect your app. Mark the last two when you’ve done them.'}</p></div>
+        <button type="button" className="btn-secondary" aria-expanded={!checklistCollapsed} aria-controls="creator-launch-checklist" onClick={() => setChecklistCollapsed(value => !value)}>{checklistCollapsed ? 'Show checklist' : 'Hide checklist'}</button>
+      </div>
+      {!checklistCollapsed && <div id="creator-launch-checklist" className="creator-enable-checklist">
         {steps.map((step, index) => <article key={step.id} className={`creator-enable-step ${step.done ? 'is-done' : ''}`}>
           <span className="creator-enable-step-number">{step.done ? '✓' : String(index + 1).padStart(2, '0')}</span>
           <div><h4>{step.title}</h4><p>{step.detail}</p></div>
@@ -95,7 +103,7 @@ export default function CreatorEnablementHub({ creatorId, brandName, subdomain, 
             : step.id === 'preview' ? <div className="creator-enable-step-actions">{appUrl && <a className="btn-secondary" href={appUrl} target="_blank" rel="noopener noreferrer">Open link ↗</a>}<button className="btn-secondary" onClick={() => markDone(step.id)}>{step.done ? 'Mark incomplete' : 'Mark done'}</button></div>
             : <button className="btn-secondary" onClick={() => markDone(step.id)}>{step.done ? 'Mark incomplete' : 'Mark done'}</button>}
         </article>)}
-      </div>
+      </div>}
     </section>
 
     <section className="creator-enable-section" aria-labelledby="learn-heading">

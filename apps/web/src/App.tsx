@@ -48,6 +48,7 @@ export default function App() {
   const [menuError, setMenuError] = useState<string | null>(null)
   const [view, setView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings' | 'recipes'>('dashboard')
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
+  useEffect(() => { setSelectedRecipe(null) }, [view])
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorTenantId, setCreatorTenantId] = useState<string | null>(null)
   const [appMode, setAppMode] = useState<'unknown' | 'user' | 'creator'>('unknown')

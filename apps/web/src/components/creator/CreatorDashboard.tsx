@@ -112,23 +112,6 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [savingBranding, setSavingBranding] = useState(false)
   const [brandingSaved, setBrandingSaved] = useState(false)
   const [connectingStripe, setConnectingStripe] = useState(false)
-  const handleStripeConnect = async () => {
-    setConnectingStripe(true)
-    setStripeError(null)
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-connect-onboard`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
-        body: JSON.stringify({ tenant_id: tenantId, return_url: window.location.href })
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to start Stripe onboarding')
-      window.location.href = result.url
-    } catch (err: any) {
-      setStripeError(err.message)
-      setConnectingStripe(false)
-    }
-  }
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [packs, setPacks] = useState<any[]>([])
   const [showPackForm, setShowPackForm] = useState(false)
@@ -923,28 +906,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 { done: !!tenant?.primary_color && tenant.primary_color !== '#C9471F', label: 'Customize your brand color' },
               ]
               const allDone = checks.every(c => c.done)
-              return allDone ? (
-                <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.1rem' }}>🎉 You're all set up!</h3>
-                  <p style={{ color: '#52645A', fontSize: '0.85rem', margin: '0 0 1.25rem' }}>Here's what to do next to grow your audience.</p>
-                  {[
-                    { icon: '📣', label: `Share ${tenant?.brand_name || 'your page'} with your audience`, action: () => { navigator.clipboard.writeText(`${window.location.origin}?creator=${tenant?.subdomain}`); alert('Link copied!') }, btn: 'Copy Link' },
-                    { icon: '💎', label: 'Create a Premium Recipe Pack to earn revenue', action: () => setView('packs'), btn: 'Create Pack' },
-                    { icon: '💳', label: tenant?.stripe_onboarded ? "Stripe connected — you're ready to earn!" : 'Connect Stripe to receive payouts', action: tenant?.stripe_onboarded ? undefined : handleStripeConnect, btn: tenant?.stripe_onboarded ? undefined : 'Connect Stripe' },
-                    { icon: '🖼️', label: 'Upload a logo to complete your brand', action: () => setView('branding'), btn: 'Go to Branding' },
-                  ].map((item, i, arr) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < arr.length - 1 ? '1px solid #F5E8D7' : 'none' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
-                        <span style={{ color: '#1F3B30', fontSize: '0.9rem' }}>{item.label}</span>
-                      </div>
-                      {item.btn && item.action && (
-                        <button onClick={item.action} style={{ background: color, color: 'white', border: 'none', padding: '0.4rem 0.9rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>{item.btn}</button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
+              return !allDone && (
                 <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #DDCDBB' }}>
                   <h3 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 1rem', fontSize: '1.1rem' }}>Getting started</h3>
                   {checks.map((item, i) => (

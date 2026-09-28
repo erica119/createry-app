@@ -335,7 +335,7 @@ export default function App() {
     const currentWeekStart = getWeekStartString()
     const { data } = await supabase
       .from('weekly_menus')
-      .select('id, menu_data, status')
+      .select('id, menu_data, status, updated_at')
       .eq('family_id', fid)
       .eq('week_start_date', currentWeekStart)
       .maybeSingle()
@@ -345,11 +345,11 @@ export default function App() {
       setCurrentMenuStatus(data.status || null)
       const { data: shoppingData } = await supabase
         .from('grocery_lists')
-        .select('id, status, instacart_cart_url')
+        .select('id, status, instacart_cart_url, created_at')
         .eq('weekly_menu_id', data.id)
         .limit(1)
         .maybeSingle()
-      setShoppingListBuilt(!!shoppingData?.id)
+      setShoppingListBuilt(!!shoppingData?.id && new Date(shoppingData.created_at).getTime() >= new Date(data.updated_at).getTime())
       try {
         const host = new URL(shoppingData?.instacart_cart_url || '').hostname
         setInstacartLive(host === 'instacart.com' || host.endsWith('.instacart.com'))
@@ -666,6 +666,8 @@ export default function App() {
             familyId={familyId}
             onApproved={() => fetchCurrentMenu(familyId!)}
             onGoShopping={() => setView('shopping')}
+            onViewRecipe={recipeId => { const recipe = recipes.find(r => r.id === recipeId); if (recipe) setSelectedRecipe(recipe) }}
+            onPlanChanged={() => { setShoppingListBuilt(false); fetchCurrentMenu(familyId!) }}
             onWeekChange={(newMenuId, _weekDate) => {
               if (newMenuId) {
                 setCurrentMenuId(newMenuId)
@@ -680,7 +682,7 @@ export default function App() {
         )}
 
         {view === 'shopping' && currentMenuId && familyId && (
-          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onShoppingComplete={() => setShoppingListBuilt(true)} />
+          <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenant?.id || FALLBACK_TENANT_ID} onListReady={() => setShoppingListBuilt(true)} onShoppingComplete={() => setShoppingListBuilt(true)} />
         )}
 
         {view === 'settings' && familyId && (

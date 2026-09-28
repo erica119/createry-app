@@ -2,6 +2,7 @@ import BrandMark from '../shared/BrandMark'
 import './CreatorDashboard.css'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { getVerifiedAccessToken, handleMenuAuthError } from '../../lib/verifiedSession'
 import type { User } from '@supabase/supabase-js'
 import RecipeForm from '../recipes/RecipeForm'
 import OnboardingWizard from '../onboarding/OnboardingWizard'
@@ -434,21 +435,21 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         weekStartDate.setDate(weekStartDate.getDate() - day)
         weekStr = weekStartDate.toISOString().split('T')[0]
       }
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) throw new Error('Please sign in again to generate your menu.')
+      const accessToken = await getVerifiedAccessToken()
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-weekly-menu`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({ family_id: familyId, tenant_id: tenantId, week_start_date: weekStr, feedback: feedback || undefined }),
         }
       )
       const result = await response.json()
+      await handleMenuAuthError(response.status)
       if (!response.ok) throw new Error(result.error || 'Generation failed')
       setCurrentMenuId(result.menu.id)
       setMenuView('menu')

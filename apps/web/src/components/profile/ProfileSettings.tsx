@@ -145,7 +145,7 @@ export default function ProfileSettings({ user, familyId, tenantId, isCreator = 
       return
     }
     // Sign out locally — auth user is already deleted on server
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
   }
 
   const sectionBtn = (label: string, s: Section, icon: string) => (

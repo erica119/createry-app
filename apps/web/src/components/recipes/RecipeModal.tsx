@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { parseShoppingIngredient } from '../../lib/ingredientReadiness'
 import { canonicalYouTubeUrl, getYouTubeVideoId } from '../../lib/youtube'
@@ -50,6 +50,14 @@ function ingredientsToText(ingredients: Recipe['ingredients']) {
 }
 
 export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Props) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -241,10 +249,14 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
   return (
     <div
       onClick={onClose}
+      role="presentation"
       style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}
     >
       <div
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEditing ? 'Edit recipe' : displayedRecipe.title}
         style={{ background: 'white', borderRadius: '20px', maxWidth: isEditing ? '720px' : '580px', width: '100%', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(44,24,16,0.2)' }}
       >
         <div style={{ background: '#1F3B30', borderRadius: '20px 20px 0 0', padding: '1.5rem 2rem', position: 'relative' }}>

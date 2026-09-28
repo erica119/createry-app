@@ -106,6 +106,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [showRecipeImport, setShowRecipeImport] = useState(false)
   const [creatorFavorites, setCreatorFavorites] = useState<Set<string>>(new Set())
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null)
+  useEffect(() => { setSelectedRecipe(null) }, [view])
   const [recipeSearch, setRecipeSearch] = useState('')
   const [loading, setLoading] = useState(true)
 

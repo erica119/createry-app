@@ -1,5 +1,5 @@
-import BrandMark from '../shared/BrandMark'
-import { useState, useEffect, useRef } from 'react'
+import WorkspaceFrame from '../shared/WorkspaceFrame'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
@@ -30,8 +30,6 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
   const [scraperError, setScraperError] = useState<string | null>(null)
   const [scraperSuccess, setScraperSuccess] = useState<string | null>(null)
   const [view, setView] = useState<'overview' | 'revenue' | 'tenants' | 'payouts' | 'scraper'>('overview')
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchAllEarnings()
@@ -243,62 +241,32 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
     }
   }
 
-  useEffect(() => {
-    if (!menuOpen) return
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [menuOpen])
-
-  const OP_TABS: { view: typeof view; label: string }[] = [
-    { view: 'overview', label: '📊 Overview' },
-    { view: 'tenants', label: `🏪 Tenants${tenants.length ? ` (${tenants.length})` : ''}` },
-    { view: 'revenue', label: '💵 Revenue' },
-    { view: 'payouts', label: '💸 Payouts' },
-    { view: 'scraper', label: '🔍 Scraper' },
-  ]
-
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', minHeight: '100vh', background: '#FAF3E8' }}>
-      <div ref={menuRef} style={{ position: 'relative' }}>
-        <div className="op-nav-bar" style={{ padding: '0 2rem', background: '#1F3B30', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-display)', color: 'white', fontWeight: '600', fontSize: '1.1rem', padding: '1rem 0', whiteSpace: 'nowrap' }}>
-            <BrandMark onDark /> <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '400' }}>Operator</span>
-            <span style={{ fontWeight: '400', color: 'rgba(255,255,255,0.7)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>· {{ overview: 'Overview', revenue: 'Revenue', tenants: 'Tenants', payouts: 'Payouts', scraper: 'Scraper' }[view]}</span>
-          </span>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <span className="nav-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>{user.email}</span>
-            <button onClick={onSignOut} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Sign out</button>
-            <button onClick={() => setMenuOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: '0.25rem' }}>☰</button>
-          </div>
-        </div>
-        {menuOpen && (
-          <div style={{ position: 'absolute', top: '100%', right: '1rem', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(44,24,16,0.18)', border: '1px solid #DDCDBB', minWidth: '180px', zIndex: 50, overflow: 'hidden' }}>
-            {OP_TABS.map(({ view: v, label }, i, arr) => (
-              <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                padding: '0.8rem 1.25rem',
-                background: view === v ? '#FAF3E8' : 'white',
-                color: view === v ? '#C9471F' : '#1F3B30',
-                fontWeight: view === v ? '700' : '400',
-                fontSize: '0.95rem', border: 'none',
-                borderBottom: i < arr.length - 1 ? '1px solid #F5E8D7' : 'none',
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
-              }}>{label}</button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem' }}>
+    <WorkspaceFrame
+      role="Operator"
+      greeting="Createry"
+      groups={[{ label: 'PLATFORM', items: [
+        { id: 'overview', label: 'Overview' },
+        { id: 'tenants', label: `Tenants${tenants.length ? ` (${tenants.length})` : ''}` },
+        { id: 'revenue', label: 'Revenue' },
+        { id: 'payouts', label: 'Payouts' },
+        { id: 'scraper', label: 'Recipe Scraper' },
+      ] }]}
+      active={view}
+      onNavigate={id => setView(id as typeof view)}
+      onSignOut={onSignOut}
+      foot="Platform operations"
+    >
         {loading ? (
           <p style={{ color: '#52645A' }}>Loading...</p>
         ) : (
           <>
             {view === 'overview' && (
               <>
+                <section className="creator-welcome">
+                  <div><span className="eyebrow">PLATFORM OPERATIONS</span><h1>Every creator, one clear view.</h1><p>Track tenant activity, payouts, and the work that needs your attention across Createry.</p><button onClick={() => setView('tenants')}>Review tenants ↗</button></div>
+                  <div className="preview-card" aria-hidden="true"><span>CREATERY PLATFORM</span><strong>{tenants.length} creator spaces</strong><small>{totalUsers} users across the platform</small></div>
+                </section>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h2 style={{ fontFamily: 'var(--font-display)', color: '#1F3B30', margin: '0 0 0.25rem', fontSize: '1.5rem' }}>Platform Overview</h2>
                   <p style={{ color: '#52645A', margin: 0, fontSize: '0.9rem' }}>Health and activity across all creator tenants.</p>
@@ -734,7 +702,6 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
             )}
           </>
         )}
-      </div>
-    </div>
+    </WorkspaceFrame>
   )
 }

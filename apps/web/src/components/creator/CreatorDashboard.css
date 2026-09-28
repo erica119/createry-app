@@ -2,6 +2,7 @@
 .creator-topbar { position: sticky; top: 0; z-index: 120; background: #1F3B30; color: #FAF3E8; box-shadow: 0 2px 14px rgba(31,59,48,.12); }
 .creator-topbar .creator-nav-bar { min-height: 68px; padding: 0 clamp(20px, 3vw, 48px); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .creator-topbar-brand { min-width: 0; display: flex; align-items: center; color: white; }
+.workspace-role { margin-left: 8px; color: #C8D2CB; font: 400 .72rem var(--font-body); }
 .creator-topbar-right { display: flex; align-items: center; gap: 20px; }
 .creator-topbar .nav-email { color: #C8D2CB; font-size: .79rem; }
 .creator-topbar .nav-greeting { color: #FAF3E8; font-size: .86rem; font-weight: 600; }
@@ -15,6 +16,16 @@
 .creator-sidebar > button { width: 100%; text-align: left; padding: 10px 13px; border: 0; border-radius: 8px; background: transparent; color: #40564A; font: 600 .85rem var(--font-body); cursor: pointer; transition: background .16s, color .16s; }
 .creator-sidebar > button:hover { background: #F4EBDE; }
 .creator-sidebar > button.active { background: #E7EEE8; color: #1F3B30; box-shadow: inset 3px 0 var(--creator-accent); font-weight: 700; }
+.workspace-nav-group { display: grid; gap: 3px; }
+.workspace-nav-group > button { width: 100%; text-align: left; padding: 10px 13px; border: 0; border-radius: 8px; background: transparent; color: #40564A; font: 600 .85rem var(--font-body); cursor: pointer; }
+.workspace-nav-group > button:hover { background: #F4EBDE; }
+.workspace-nav-group > button.active { background: #E7EEE8; color: #1F3B30; box-shadow: inset 3px 0 var(--creator-accent); font-weight: 700; }
+.workspace-nav-group > button:disabled { color: #9AA59A; cursor: not-allowed; }
+.workspace-frame .creator-mobile-menu button { display: block; width: 100%; text-align: left; padding: 12px 18px; border: 0; border-bottom: 1px solid #F4EBDE; background: #FFFDF9; color: #1F3B30; font: 600 .86rem var(--font-body); }
+.workspace-frame .creator-mobile-menu button.active { background: #E7EEE8; }
+.workspace-frame .creator-mobile-menu button:disabled { color: #9AA59A; }
+.workspace-frame .creator-layout { min-height: 0; }
+.workspace-frame .creator-main { min-height: calc(100vh - 125px); }
 .creator-side-foot { margin: auto 8px 10px; padding: 16px 11px 0; border-top: 1px solid #E2D7C9; display: grid; gap: 5px; }
 .creator-side-foot span { color: #748176; font-size: .64rem; font-weight: 700; letter-spacing: .12em; }
 .creator-side-foot strong { font-size: .86rem; overflow-wrap: anywhere; }

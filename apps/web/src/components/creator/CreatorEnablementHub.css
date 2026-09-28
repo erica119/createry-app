@@ -9,6 +9,8 @@
 .creator-enable-progress > div span { display: block; height: 100%; background: #F3BD86; border-radius: inherit; transition: width .2s ease; }
 .creator-enable-section { margin-bottom: 2.6rem; }
 .creator-enable-section-head { margin-bottom: 1rem; }
+.creator-enable-checklist-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.creator-enable-checklist-heading > button { flex-shrink: 0; }
 .creator-enable-section-head > span { color: #9C4C2B; }
 .creator-enable-section-head h3 { font-family: var(--font-display); font-size: 1.6rem; margin: .25rem 0; }
 .creator-enable-section-head p { color: #52645A; margin: 0; line-height: 1.5; }
@@ -46,4 +48,4 @@
 .creator-enable-help { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: #EAF0EA; padding: 1.2rem 1.4rem; border-radius: 13px; margin-bottom: 1.5rem; }
 .creator-enable-help p { margin: .2rem 0 0; color: #52645A; }
 @media (max-width: 800px) { .creator-enable-captions { grid-template-columns: 1fr; } }
-@media (max-width: 600px) { .creator-enable-step { align-items: flex-start; flex-wrap: wrap; } .creator-enable-step > button, .creator-enable-step-actions { margin-left: 52px; } .creator-enable-lesson-toggle { gap: .5rem; } .creator-enable-lesson-toggle small { display: none; } .creator-enable-lesson-body { padding-left: 1.2rem; } .creator-enable-link, .creator-enable-help { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 600px) { .creator-enable-checklist-heading { align-items: flex-start; flex-direction: column; margin-bottom: 1rem; } .creator-enable-checklist-heading .creator-enable-section-head { margin-bottom: 0; } .creator-enable-step { align-items: flex-start; flex-wrap: wrap; } .creator-enable-step > button, .creator-enable-step-actions { margin-left: 52px; } .creator-enable-lesson-toggle { gap: .5rem; } .creator-enable-lesson-toggle small { display: none; } .creator-enable-lesson-body { padding-left: 1.2rem; } .creator-enable-link, .creator-enable-help { align-items: flex-start; flex-direction: column; } }

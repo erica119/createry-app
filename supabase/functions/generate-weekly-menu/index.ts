@@ -67,7 +67,7 @@ serve(async (req) => {
 
     const { data: familyMembers } = await supabase
       .from("family_members")
-      .select("name, age_range, dietary_restrictions, notes")
+      .select("dietary_restrictions")
       .eq("family_id", family_id)
       .order("created_at");
 
@@ -246,17 +246,8 @@ serve(async (req) => {
 
 FAMILY INFO:
 - Adults: ${family.adults}, Children: ${family.children}
-- Family name: ${family.family_name}
-${familyMembers && familyMembers.length > 0 ? `
-INDIVIDUAL FAMILY MEMBERS (personalize meals to suit everyone):
-${familyMembers.map(m => {
-  const restrictions = m.dietary_restrictions && m.dietary_restrictions.length > 0
-    ? ` | Dietary restrictions: ${m.dietary_restrictions.join(", ")}`
-    : "";
-  const notes = m.notes ? ` | Notes: ${m.notes}` : "";
-  return `- ${m.name} (${m.age_range})${restrictions}${notes}`;
-}).join("\n")}
-` : ""}
+
+Family-member dietary restrictions (without names or notes): ${[...new Set((familyMembers || []).flatMap(m => m.dietary_restrictions || []))].join(", ") || "None"}
 
 COOKING SCHEDULE (days and meals that need planning):
 ${scheduleDescription || "Dinner every day"}
@@ -309,7 +300,7 @@ Use actual recipe IDs from the list, not titles.`;
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 1024,
+        max_tokens: 4096,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -320,7 +311,8 @@ Use actual recipe IDs from the list, not titles.`;
     }
 
     const anthropicData = await anthropicResponse.json();
-    const menuText = anthropicData.content[0].text;
+    const menuText = anthropicData.content?.[0]?.text || "";
+    if (anthropicData.stop_reason === "max_tokens") throw new Error("AI response was incomplete");
 
     let menuData;
     try {
@@ -405,8 +397,9 @@ Use actual recipe IDs from the list, not titles.`;
     );
 
   } catch (error: any) {
+    console.error("generate-weekly-menu error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "We could not generate your menu. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

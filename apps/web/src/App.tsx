@@ -664,6 +664,9 @@ export default function App() {
         {view === 'menu' && currentMenuId && !generatingMenu && (
           <div>
           <p style={{ fontSize: '0.78rem', color: '#687A70', margin: '0 0 0.75rem', textAlign: 'center' }}>AI-generated plan based on your preferences</p>
+          {menuError && <div role="alert" style={{ margin: '0 auto 1rem', maxWidth: '720px', padding: '0.9rem 1rem', background: '#FFF0E8', border: '1px solid #C9471F', borderRadius: '10px', color: '#8D321D' }}>
+            {menuError} Your existing plan is still here. Please try replan again.
+          </div>}
           <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}

@@ -662,7 +662,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
         </div>
         {menuOpen && (
           <div className="creator-mobile-menu">
-            {(['overview', 'mealplan', 'shopping', 'recipes', 'packs', 'earnings', 'analytics', 'branding', 'sharing', 'settings'] as const).map((v, i, arr) => (
+            {(['overview', 'mealplan', 'shopping', 'recipes', 'sharing', 'packs', 'earnings', 'analytics', 'branding', 'settings'] as const).map((v, i, arr) => (
               <button key={v} onClick={() => { setView(v); setMenuOpen(false) }} style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '0.8rem 1.25rem',
@@ -682,7 +682,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
           <div className="creator-side-label">WORKSPACE</div>
           {(['overview', 'recipes', 'mealplan', 'shopping'] as const).map(v => <button key={v} className={view === v ? 'active' : ''} onClick={() => setView(v)} aria-current={view === v ? 'page' : undefined}>{TAB_LABELS[v]}</button>)}
           <div className="creator-side-label">GROWTH</div>
-          {(['packs', 'earnings', 'analytics', 'sharing'] as const).map(v => <button key={v} className={view === v ? 'active' : ''} onClick={() => setView(v)} aria-current={view === v ? 'page' : undefined}>{TAB_LABELS[v]}</button>)}
+          {(['sharing', 'packs', 'earnings', 'analytics'] as const).map(v => <button key={v} className={view === v ? 'active' : ''} onClick={() => setView(v)} aria-current={view === v ? 'page' : undefined}>{TAB_LABELS[v]}</button>)}
           <div className="creator-side-label">ACCOUNT</div>
           {(['branding', 'settings'] as const).map(v => <button key={v} className={view === v ? 'active' : ''} onClick={() => setView(v)} aria-current={view === v ? 'page' : undefined}>{TAB_LABELS[v]}</button>)}
           <div className="creator-side-foot"><span>YOUR APP</span><strong>{tenant?.brand_name || 'Createry'}</strong><small>{tenant?.subdomain ? `createry.app/?creator=${tenant.subdomain}` : 'Ready to share'}</small></div>

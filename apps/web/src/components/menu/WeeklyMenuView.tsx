@@ -16,6 +16,7 @@ interface Props {
   onPlanChanged?: () => void
   onWeekChange?: (menuId: string | null, weekDate: string) => void
   onRegenerate?: (feedback: string, weekStartDate: string) => void
+  regenerating?: boolean
 }
 
 interface Recipe {
@@ -54,7 +55,7 @@ const MEALS: { key: Meal; label: string }[] = [
   { key: 'breakfast', label: 'Breakfast' }, { key: 'lunch', label: 'Lunch' }, { key: 'dinner', label: 'Dinner' },
 ]
 
-export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onViewRecipe, onPlanChanged, onWeekChange, onRegenerate }: Props) {
+export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onViewRecipe, onPlanChanged, onWeekChange, onRegenerate, regenerating = false }: Props) {
   const [menu, setMenu] = useState<WeeklyMenu | null>(null)
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({})
   const [packs, setPacks] = useState<Record<string, RecipePack>>({})
@@ -362,12 +363,12 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
           <button type="button" onClick={() => setShowFullWeek(value => !value)} className="btn-secondary" aria-pressed={showFullWeek}>
             {showFullWeek ? 'Show two days' : 'See whole week'}
           </button>
-          {onRegenerate && <button onClick={() => setShowFeedback(!showFeedback)} className="btn-secondary">{showFeedback ? 'Cancel replan' : 'Replan this week…'}</button>}
+          {onRegenerate && <button onClick={() => setShowFeedback(!showFeedback)} disabled={regenerating} className="btn-secondary">{showFeedback ? 'Cancel replan' : 'Replan this week…'}</button>}
         </div>
         {showFeedback && onRegenerate && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
-          <input value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would you like to change?" aria-label="Replan feedback"
+          <input value={feedback} onChange={e => setFeedback(e.target.value)} disabled={regenerating} placeholder="What would you like to change?" aria-label="Replan feedback"
             style={{ flex: '1 1 220px', padding: '0.7rem', border: '1px solid #DDCDBB', borderRadius: '8px' }} />
-          <button onClick={() => { onRegenerate(feedback, menu.week_start_date); setShowFeedback(false); setFeedback('') }} className="btn-primary">Generate a new plan</button>
+          <button onClick={() => { onRegenerate(feedback, menu.week_start_date); setShowFeedback(false); setFeedback('') }} disabled={regenerating} className="btn-primary">{regenerating ? 'Replanning…' : 'Generate a new plan'}</button>
         </div>}
       </div>
 

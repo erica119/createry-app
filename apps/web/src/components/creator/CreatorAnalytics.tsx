@@ -51,7 +51,7 @@ export default function CreatorAnalytics({ tenantId, primaryColor }: Props) {
       supabase.from('family_profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
       supabase.from('weekly_menus').select('menu_data, created_at').eq('tenant_id', tenantId),
       supabase.from('user_purchases').select('amount_cents, created_at, status').eq('tenant_id', tenantId).eq('status', 'paid'),
-      supabase.from('recipes').select('id, title, meal_type, complexity, image_url').eq('tenant_id', tenantId).eq('is_active', true),
+      supabase.from('recipes').select('id, title, meal_type, complexity, image_url').eq('tenant_id', tenantId).eq('source', 'creator').eq('is_active', true),
     ])
 
     const recipeMap: Record<string, number> = {}

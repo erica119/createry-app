@@ -26,7 +26,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { user_id, tenant_id, plan, success_url, cancel_url } = body
+    const { tenant_id, plan } = body
+    const token = req.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1]
+    if (!token) throw new Error('Sign in required')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user || !user.email) throw new Error('Invalid session')
+    const user_id = user.id
 
     if (!user_id || !tenant_id || !plan) {
       throw new Error('Missing required fields: user_id, tenant_id, plan')
@@ -59,20 +64,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get user email for Stripe customer
-    const { data: userProfile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('email')
-      .eq('user_id', user_id)
-      .single()
-
-    if (profileError || !userProfile) throw new Error('User profile not found')
+    const { data: userProfile } = await supabase.from('user_profiles')
+      .select('tenant_id').eq('user_id', user_id).eq('tenant_id', tenant_id).maybeSingle()
+    const { data: familyProfile } = !userProfile ? await supabase.from('family_profiles')
+      .select('id').eq('user_id', user_id).eq('tenant_id', tenant_id).maybeSingle() : { data: null }
+    if (!userProfile && !familyProfile) throw new Error('This creator is not available to your account')
 
     const platformFeeCents = plan === 'monthly' ? Math.round(900 * 0.20) : Math.round(9000 * 0.20)
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      customer_email: userProfile.email,
+      customer_email: user.email,
       line_items: [{
         price: PRICE_IDS[plan as keyof typeof PRICE_IDS],
         quantity: 1,
@@ -86,8 +88,8 @@ Deno.serve(async (req) => {
         metadata: { user_id, tenant_id, plan },
       },
       metadata: { user_id, tenant_id, plan },
-      success_url: success_url || 'https://easymealplanning.netlify.app/?user_subscription=success',
-      cancel_url: cancel_url || 'https://easymealplanning.netlify.app/',
+      success_url: 'https://createry.app/?user_subscription=success',
+      cancel_url: 'https://createry.app/',
     })
 
     return new Response(

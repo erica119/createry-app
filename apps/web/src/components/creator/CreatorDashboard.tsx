@@ -88,7 +88,10 @@ function RecipeCard({ recipe, tenantId, onSelect, onDelete, onImageUpdated, isFa
 export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [recipes, setRecipes] = useState<any[]>([])
-  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings' | 'sharing'>('overview')
+  const [view, setView] = useState<'overview' | 'recipes' | 'branding' | 'mealplan' | 'packs' | 'earnings' | 'analytics' | 'shopping' | 'settings' | 'sharing'>(() => {
+    const saved = sessionStorage.getItem(`createry:creator-view:${user.id}`)
+    return saved === 'recipes' || saved === 'branding' || saved === 'mealplan' || saved === 'packs' || saved === 'earnings' || saved === 'analytics' || saved === 'shopping' || saved === 'settings' || saved === 'sharing' ? saved : 'overview'
+  })
   const [menuOpen, setMenuOpen] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -143,6 +146,10 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly')
   const [startingCheckout, setStartingCheckout] = useState(false)
   const [subError, setSubError] = useState<string | null>(null)
+
+  useEffect(() => {
+    sessionStorage.setItem(`createry:creator-view:${user.id}`, view)
+  }, [user.id, view])
 
   useEffect(() => {
     if (view !== 'overview' || heroPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return

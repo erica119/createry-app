@@ -614,3 +614,10 @@ a.btn-link {
 .creator-mark small { display: inline-block; margin-left: .55rem; font-size: .7rem; font-weight: 400; opacity: .7; }
 .creator-logo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: white; }
 :focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.plan-replan-status { margin-top: 14px; padding: 16px 18px; background: #E8EFE9; border: 1px solid #B9CDBE; border-radius: 12px; color: #1F3B30; }
+.plan-replan-heading { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.plan-replan-spinner { width: 18px; height: 18px; flex: none; border: 2px solid #B9CDBE; border-top-color: #C9471F; border-radius: 50%; animation: plan-replan-spin .8s linear infinite; }
+.plan-replan-status p { margin: 7px 0 0 28px; color: #52645A; font-size: .88rem; line-height: 1.45; }
+.plan-replan-error { margin: 12px 0 0; padding: 12px 14px; background: #FFF0E8; border: 1px solid #C9471F; border-radius: 10px; color: #8D321D; font-size: .88rem; }
+@keyframes plan-replan-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .plan-replan-spinner { animation: none; } }

@@ -17,6 +17,7 @@ interface Props {
   onWeekChange?: (menuId: string | null, weekDate: string) => void
   onRegenerate?: (feedback: string, weekStartDate: string) => void
   regenerating?: boolean
+  regenerationError?: string | null
 }
 
 interface Recipe {
@@ -55,7 +56,7 @@ const MEALS: { key: Meal; label: string }[] = [
   { key: 'breakfast', label: 'Breakfast' }, { key: 'lunch', label: 'Lunch' }, { key: 'dinner', label: 'Dinner' },
 ]
 
-export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onViewRecipe, onPlanChanged, onWeekChange, onRegenerate, regenerating = false }: Props) {
+export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onApproved, onGoShopping, onViewRecipe, onPlanChanged, onWeekChange, onRegenerate, regenerating = false, regenerationError = null }: Props) {
   const [menu, setMenu] = useState<WeeklyMenu | null>(null)
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({})
   const [packs, setPacks] = useState<Record<string, RecipePack>>({})
@@ -77,6 +78,13 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
     return today
   })
   const [showFullWeek, setShowFullWeek] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+
+  useEffect(() => {
+    if (!regenerating) { setElapsedSeconds(0); return }
+    const interval = window.setInterval(() => setElapsedSeconds(seconds => seconds + 1), 1000)
+    return () => window.clearInterval(interval)
+  }, [regenerating])
 
   useEffect(() => {
     fetchMenu()
@@ -368,8 +376,13 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         {showFeedback && onRegenerate && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
           <input value={feedback} onChange={e => setFeedback(e.target.value)} disabled={regenerating} placeholder="What would you like to change?" aria-label="Replan feedback"
             style={{ flex: '1 1 220px', padding: '0.7rem', border: '1px solid #DDCDBB', borderRadius: '8px' }} />
-          <button onClick={() => { onRegenerate(feedback, menu.week_start_date); setShowFeedback(false); setFeedback('') }} disabled={regenerating} className="btn-primary">{regenerating ? 'Replanning…' : 'Generate a new plan'}</button>
+          <button onClick={() => onRegenerate(feedback, menu.week_start_date)} disabled={regenerating} className="btn-primary">{regenerating ? 'Replanning…' : 'Generate a new plan'}</button>
         </div>}
+        {regenerating && <div role="status" aria-live="polite" className="plan-replan-status">
+          <div className="plan-replan-heading"><span className="plan-replan-spinner" aria-hidden="true" />Building your new plan…</div>
+          <p>Your current meals will stay here until the new plan is ready. This can take about a minute. <span aria-hidden="true">{elapsedSeconds}s elapsed</span></p>
+        </div>}
+        {!regenerating && regenerationError && <p role="alert" className="plan-replan-error">{regenerationError} Your current plan is still here. You can try again.</p>}
       </div>
 
       {/* Swap modal */}

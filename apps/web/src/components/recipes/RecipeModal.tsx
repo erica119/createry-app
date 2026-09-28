@@ -21,6 +21,7 @@ interface Recipe {
   cuisine_tags: string[]
   meal_type: string[]
   dietary_tags: string[]
+  source?: string
 }
 
 interface Props {
@@ -142,12 +143,30 @@ export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Prop
     setSaved(false)
 
     try {
-      if (familyId) {
-        const { data, error: updateError } = await supabase.from('recipe_overrides')
-          .upsert({ family_id: familyId, recipe_id: recipe.id, edits: updates, updated_at: new Date().toISOString() }, { onConflict: 'family_id,recipe_id' })
-          .select('recipe_id').single()
-        if (updateError) throw updateError
-        if (data?.recipe_id !== recipe.id) throw new Error('The household recipe edit was not saved.')
+      if (familyId && recipe.source !== 'user') {
+        const [{ data: original, error: originalError }, { data: prior, error: priorError }] = await Promise.all([
+          supabase.from('recipes').select(Object.keys(updates).join(',')).eq('id', recipe.id).single(),
+          supabase.from('recipe_overrides').select('edits').eq('family_id', familyId).eq('recipe_id', recipe.id).maybeSingle(),
+        ])
+        if (originalError || !original) throw originalError || new Error('Could not load the creator recipe.')
+        if (priorError) throw priorError
+        const edits: Record<string, unknown> = { ...(prior?.edits || {}) }
+        for (const [field, value] of Object.entries(updates)) {
+          if (JSON.stringify(value) === JSON.stringify((recipe as any)[field])) continue
+          if (JSON.stringify(value) === JSON.stringify((original as any)[field])) delete edits[field]
+          else edits[field] = value
+        }
+        if (Object.keys(edits).length) {
+          const { data, error: updateError } = await supabase.from('recipe_overrides')
+            .upsert({ family_id: familyId, recipe_id: recipe.id, edits, updated_at: new Date().toISOString() }, { onConflict: 'family_id,recipe_id' })
+            .select('recipe_id').single()
+          if (updateError) throw updateError
+          if (data?.recipe_id !== recipe.id) throw new Error('The household recipe edit was not saved.')
+        } else if (prior) {
+          const { error: deleteError } = await supabase.from('recipe_overrides')
+            .delete().eq('family_id', familyId).eq('recipe_id', recipe.id)
+          if (deleteError) throw deleteError
+        }
       } else {
         const { data, error: updateError } = await supabase.from('recipes')
           .update(updates).eq('id', recipe.id).select('id').single()

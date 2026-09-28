@@ -100,7 +100,7 @@ export default function OperatorDashboard({ user, onSignOut, accessToken }: Prop
     if (data) {
       const enriched = await Promise.all(data.map(async t => {
         const [{ count: recipeCount }, { count: packCount }, { data: purchases }] = await Promise.all([
-          supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
+          supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id).eq('source', 'creator'),
           supabase.from('recipe_packs').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id),
           supabase.from('user_purchases').select('amount_cents').eq('tenant_id', t.id).eq('status', 'paid'),
         ])

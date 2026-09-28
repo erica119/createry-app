@@ -124,13 +124,26 @@ serve(async (req) => {
       .select("id, title, description, ingredients, cook_time_minutes, prep_time_minutes, cuisine_tags, meal_type, dietary_tags, complexity, servings")
       .eq("tenant_id", tenant_id)
       .eq("is_active", true)
-      .eq("is_premium", false);
+      .eq("is_premium", false)
+      .or(`source.eq.creator,created_by.eq.${family.user_id}`);
 
-    if (maxCookTime < 999) {
-      recipeQuery = recipeQuery.lte("cook_time_minutes", maxCookTime);
-    }
-
-    const { data: allRecipes } = await recipeQuery.limit(60);
+    const { data: baseRecipes, error: recipeError } = await recipeQuery.limit(60);
+    if (recipeError) throw recipeError;
+    const recipeIds = (baseRecipes || []).map((recipe: any) => recipe.id);
+    const { data: householdEdits, error: editsError } = recipeIds.length
+      ? await supabase.from("recipe_overrides").select("recipe_id, edits")
+          .eq("family_id", family_id).in("recipe_id", recipeIds)
+      : { data: [], error: null };
+    if (editsError) throw editsError;
+    const editsByRecipe = Object.fromEntries((householdEdits || []).map((row: any) => [row.recipe_id, row.edits]));
+    const editableFields = ["title", "description", "ingredients", "instructions", "prep_time_minutes",
+      "cook_time_minutes", "servings", "complexity", "cuisine_tags", "meal_type", "dietary_tags"];
+    const allRecipes = (baseRecipes || []).map((recipe: any) => {
+      const edits = editsByRecipe[recipe.id] || {};
+      const safeEdits = Object.fromEntries(editableFields.filter(field => Object.hasOwn(edits, field))
+        .map(field => [field, edits[field]]));
+      return { ...recipe, ...safeEdits };
+    }).filter((recipe: any) => maxCookTime >= 999 || !recipe.cook_time_minutes || recipe.cook_time_minutes <= maxCookTime);
 
     const dietTagMap: Record<string, string> = {
       vegetarian: "vegetarian",

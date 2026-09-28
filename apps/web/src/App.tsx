@@ -4,6 +4,7 @@ import WorkspaceFrame from './components/shared/WorkspaceFrame'
 import HouseholdHero from './components/shared/HouseholdHero'
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
+import { getVerifiedAccessToken, handleMenuAuthError } from './lib/verifiedSession'
 import { applyRecipeOverrides, getRecipeOverrides } from './lib/recipeOverrides'
 import { resolveTenant, clearCreatorSession } from './lib/tenant'
 import type { TenantConfig } from './lib/tenant'
@@ -111,6 +112,13 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       setAccessToken(session?.access_token ?? null)
+      if (!session) {
+        setIsOperator(false)
+        setCreatorTenantId(null)
+        setAppMode('unknown')
+        setFamilyId(null)
+        setCurrentMenuId(null)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -396,21 +404,21 @@ export default function App() {
     setMenuError(null)
     try {
       const weekStr = weekStartDateOverride || getWeekStartString()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) throw new Error('Please sign in again to generate your menu.')
+      const accessToken = await getVerifiedAccessToken()
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-weekly-menu`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({ family_id: familyId, tenant_id: tenant?.id || FALLBACK_TENANT_ID, week_start_date: weekStr, feedback: feedback || undefined }),
         }
       )
       const result = await response.json()
+      await handleMenuAuthError(response.status)
       if (!response.ok) throw new Error(result.error || 'Generation failed')
       // Only reflect the freshly generated menu as "current" if it's for the
       // current week — a "plan ahead" generation for next week shouldn't

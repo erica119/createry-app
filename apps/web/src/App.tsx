@@ -677,6 +677,7 @@ export default function App() {
             {menuError} Your existing plan is still here. Please try replan again.
           </div>}
           <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
+            regenerating={generatingMenu}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}
             userId={user?.id}

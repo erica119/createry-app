@@ -1010,6 +1010,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   {menuError && <p role="alert" style={{ color: '#B42318' }}>{menuError} Your existing plan is still here.</p>}
                   <WeeklyMenuView
                     key={`${currentMenuId}-${menuRefreshKey}`}
+                    regenerating={generatingMenu}
                     menuId={currentMenuId}
                     tenantId={tenantId}
                     familyId={familyId}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { parseShoppingIngredient } from '../../lib/ingredientReadiness'
 
 interface Ingredient {
   name: string
@@ -25,6 +26,8 @@ interface Recipe {
 interface Props {
   recipe: Recipe
   onClose: () => void
+  familyId?: string | null
+  onSaved?: () => void
 }
 
 const CUISINES = ['italian', 'mexican', 'asian', 'american', 'mediterranean', 'indian', 'thai', 'greek', 'french', 'japanese', 'southern', 'middle_eastern']
@@ -43,7 +46,7 @@ function ingredientsToText(ingredients: Recipe['ingredients']) {
   return ingredients.map(ingredientToLine).join('\n')
 }
 
-export default function RecipeModal({ recipe, onClose }: Props) {
+export default function RecipeModal({ recipe, onClose, familyId, onSaved }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,7 +116,12 @@ export default function RecipeModal({ recipe, onClose }: Props) {
 
     const parsedIngredients = ingredients.split('\n')
       .filter(line => line.trim())
-      .map(line => ({ name: line.trim(), quantity: '', unit: '' }))
+      .map(line => {
+        const original = Array.isArray(recipe.ingredients)
+          ? recipe.ingredients.find(item => ingredientToLine(item) === line.trim())
+          : null
+        return original && typeof original !== 'string' ? original : parseShoppingIngredient(line.trim())
+      })
 
     const updates = {
       title: title.trim(),
@@ -134,12 +142,18 @@ export default function RecipeModal({ recipe, onClose }: Props) {
     setSaved(false)
 
     try {
-      const { error: updateError } = await supabase
-        .from('recipes')
-        .update(updates)
-        .eq('id', recipe.id)
-
-      if (updateError) throw updateError
+      if (familyId) {
+        const { data, error: updateError } = await supabase.from('recipe_overrides')
+          .upsert({ family_id: familyId, recipe_id: recipe.id, edits: updates, updated_at: new Date().toISOString() }, { onConflict: 'family_id,recipe_id' })
+          .select('recipe_id').single()
+        if (updateError) throw updateError
+        if (data?.recipe_id !== recipe.id) throw new Error('The household recipe edit was not saved.')
+      } else {
+        const { data, error: updateError } = await supabase.from('recipes')
+          .update(updates).eq('id', recipe.id).select('id').single()
+        if (updateError) throw updateError
+        if (data?.id !== recipe.id) throw new Error('The recipe was not saved.')
+      }
 
       // The dashboard keeps the selected recipe object from its recipes array.
       // Updating it in place ensures the card reflects saved changes as soon as
@@ -147,6 +161,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
       Object.assign(recipe, updates)
       setSaved(true)
       setIsEditing(false)
+      onSaved?.()
     } catch (err: any) {
       setError(err?.message || 'Could not save this recipe.')
     } finally {

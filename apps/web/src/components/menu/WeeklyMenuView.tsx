@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { applyRecipeOverrides, getRecipeOverrides } from '../../lib/recipeOverrides'
 import WeekCalendarPicker from './WeekCalendarPicker'
 
 type Meal = 'breakfast' | 'lunch' | 'dinner'
@@ -100,8 +101,13 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id, meal_type, is_active')
       .in('id', ids)
     if (data) {
+      let householdRecipes = data
+      if (familyId) {
+        try { householdRecipes = applyRecipeOverrides(data, await getRecipeOverrides(familyId, ids)) }
+        catch (error) { console.error('Could not load household recipe edits:', error) }
+      }
       const map: Record<string, Recipe> = {}
-      data.forEach(r => { map[r.id] = r })
+      householdRecipes.forEach(r => { map[r.id] = r })
       setRecipes(map)
       await fetchPacksForRecipes(data)
     }
@@ -126,7 +132,12 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       .from('recipes')
       .select('id, title, complexity, prep_time_minutes, cook_time_minutes, image_url, is_premium, recipe_pack_id, meal_type, is_active')
       .eq('tenant_id', tenantId)
-    if (data) setAllRecipes(data)
+    if (data) {
+      if (familyId) {
+        try { setAllRecipes(applyRecipeOverrides(data, await getRecipeOverrides(familyId, data.map(r => r.id)))) }
+        catch (error) { console.error('Could not load household recipe edits:', error); setAllRecipes(data) }
+      } else setAllRecipes(data)
+    }
   }
 
   const fetchUnlockedPacks = async () => {

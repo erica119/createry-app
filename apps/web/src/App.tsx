@@ -4,6 +4,7 @@ import WorkspaceFrame from './components/shared/WorkspaceFrame'
 import HouseholdHero from './components/shared/HouseholdHero'
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
+import { applyRecipeOverrides, getRecipeOverrides } from './lib/recipeOverrides'
 import { resolveTenant, clearCreatorSession } from './lib/tenant'
 import type { TenantConfig } from './lib/tenant'
 import type { User } from '@supabase/supabase-js'
@@ -250,7 +251,7 @@ export default function App() {
           localStorage.setItem('creator_subdomain', tenantData.subdomain)
         }
       }
-      fetchRecipes(data.tenant_id)
+      fetchRecipes(data.tenant_id, data.id)
       fetchUnlockedPacks(user!.id, data.tenant_id)
       fetchCurrentMenu(data.id)
       // fetchMenuHistory(data.id)
@@ -270,7 +271,7 @@ export default function App() {
     if (data) setFavorites(new Set(data.map((f: any) => f.recipe_id)))
   }
 
-  const fetchRecipes = async (overrideTenantId?: string) => {
+  const fetchRecipes = async (overrideTenantId?: string, overrideFamilyId?: string) => {
     const tid = overrideTenantId || tenant?.id || FALLBACK_TENANT_ID
     const { data } = await supabase
       .from('recipes')
@@ -278,7 +279,13 @@ export default function App() {
       .eq('tenant_id', tid)
       .order('created_at', { ascending: false })
     if (data) {
-      setRecipes(data)
+      try {
+        const householdId = overrideFamilyId || familyId
+        setRecipes(householdId ? applyRecipeOverrides(data, await getRecipeOverrides(householdId, data.map(r => r.id))) : data)
+      } catch (error) {
+        console.error('Could not load household recipe edits:', error)
+        setRecipes(data)
+      }
       const packIds = [...new Set(data.map((r: any) => r.recipe_pack_id).filter(Boolean))]
       if (packIds.length > 0) {
         const { data: packs } = await supabase.from('recipe_packs').select('id, name, price_cents').in('id', packIds)
@@ -921,7 +928,7 @@ export default function App() {
           </>
         )}
       </WorkspaceFrame>
-      {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
+      {selectedRecipe && <RecipeModal recipe={selectedRecipe} familyId={familyId} onSaved={() => fetchRecipes()} onClose={() => setSelectedRecipe(null)} />}
 
       <footer style={{ padding: '0.6rem 2rem', background: 'var(--color-primary-light)', borderTop: `1px solid ${tenant?.primary_color || '#C9471F'}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '500' }}>Powered by <strong>Createry</strong></span>

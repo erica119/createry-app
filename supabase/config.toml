@@ -417,4 +417,10 @@ entrypoint = "./functions/create-gmail-draft/index.ts"
 # static_files = [ "./functions/create-gmail-draft/*.html" ]
 
 [functions.stripe-checkout]
+verify_jwt = true
+
+[functions.scrape-recipe]
+verify_jwt = true
+
+[functions.stripe-webhook]
 verify_jwt = false

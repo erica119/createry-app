@@ -49,13 +49,19 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     if (menuError || listError) setError('Could not load the current shopping list. Please retry.')
     const recipeIds = [...new Set(Object.values((menu?.menu_data as any)?.days || {})
       .flatMap((day: any) => [day.breakfast, day.lunch, day.dinner]).filter(Boolean))] as string[]
-    const { data: edits, error: editsError } = recipeIds.length
-      ? await supabase.from('recipe_overrides').select('updated_at').eq('family_id', familyId).in('recipe_id', recipeIds)
-      : { data: [], error: null }
-    if (editsError) setError('Could not check whether your recipe edits changed this list. Please retry.')
+    const [{ data: edits, error: editsError }, { data: plannedRecipes, error: recipesError }] = await Promise.all([
+      recipeIds.length
+        ? supabase.from('recipe_overrides').select('updated_at').eq('family_id', familyId).in('recipe_id', recipeIds)
+        : Promise.resolve({ data: [], error: null }),
+      recipeIds.length
+        ? supabase.from('recipes').select('updated_at').in('id', recipeIds)
+        : Promise.resolve({ data: [], error: null }),
+    ])
+    if (editsError || recipesError) setError('Could not check whether the recipes changed this list. Please retry.')
     const latestEdit = Math.max(0, ...(edits || []).map(edit => new Date(edit.updated_at).getTime()))
+    const latestRecipe = Math.max(0, ...(plannedRecipes || []).map(recipe => new Date(recipe.updated_at).getTime()))
     const listIsStale = !!(data?.created_at && (new Date(menu?.updated_at || 0).getTime() > new Date(data.created_at).getTime() ||
-      latestEdit > new Date(data.created_at).getTime()))
+      latestEdit > new Date(data.created_at).getTime() || latestRecipe > new Date(data.created_at).getTime()))
     setStale(listIsStale)
     setList(listIsStale ? null : data)
     setLoading(false)

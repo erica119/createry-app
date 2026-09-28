@@ -20,7 +20,9 @@ Supabase's migration history contains these five versioned migrations, whose SQL
 
 The last migration granted `service_role` SELECT on `family_profiles`, `user_profiles`, `recipes`, `recipe_overrides`, and `weekly_menus`. The shopping-list API had returned a 500 because its service-role reads of recipe overrides lacked table privileges. A subsequent real retry created a 66-item list and Instacart link.
 
-Production currently has 22 public tables. | In initial schema | Added or maintained outside initial schema |
+Production currently has 22 public tables.
+
+| In initial schema | Added or maintained outside initial schema |
 | --- | --- |
 | tenants, user_profiles, family_profiles, dietary_constraints, meal_preferences, weekly_schedule, grocery_schedule, recipes, premium_content, user_purchases, weekly_menus, grocery_lists | creator_payouts, creator_subscriptions, family_members, platform_admins, push_subscriptions, recipe_favorites, recipe_overrides, recipe_packs, recurring_meal_anchors, user_subscriptions |
 

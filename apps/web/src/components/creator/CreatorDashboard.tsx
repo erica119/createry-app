@@ -1006,11 +1006,10 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                 </div>}
                 {menuView === 'menu' && currentMenuId && (
                   <>
-                  {generatingMenu && <p role="status" style={{ color: '#52645A' }}>Replanning this week…</p>}
-                  {menuError && <p role="alert" style={{ color: '#B42318' }}>{menuError} Your existing plan is still here.</p>}
                   <WeeklyMenuView
                     key={`${currentMenuId}-${menuRefreshKey}`}
                     regenerating={generatingMenu}
+                    regenerationError={menuError}
                     menuId={currentMenuId}
                     tenantId={tenantId}
                     familyId={familyId}

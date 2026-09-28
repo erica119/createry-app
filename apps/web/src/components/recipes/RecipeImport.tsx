@@ -7,6 +7,7 @@ import { parseShoppingIngredient, recipeIngredientIssues } from '../../lib/ingre
 interface Props {
   user: User
   tenantId: string
+  source?: 'creator' | 'user'
   onComplete: () => void
   onCancel: () => void
 }
@@ -216,7 +217,7 @@ function validateAndParseRows(rows: string[][]): ParsedRecipe[] {
   })
 }
 
-export default function RecipeImport({ user, tenantId, onComplete, onCancel }: Props) {
+export default function RecipeImport({ user, tenantId, source = 'creator', onComplete, onCancel }: Props) {
   const [stage, setStage] = useState<'upload' | 'preview' | 'importing' | 'images'>('upload')
   const [dragging, setDragging] = useState(false)
   const [recipes, setRecipes] = useState<ParsedRecipe[]>([])
@@ -297,11 +298,11 @@ export default function RecipeImport({ user, tenantId, onComplete, onCancel }: P
         meal_type: recipe.meal_type,
         dietary_tags: recipe.dietary_tags,
         complexity: recipe.complexity,
-        is_premium: recipe.is_premium,
+        is_premium: source === 'creator' && recipe.is_premium,
         source_url: recipe.source_url || null,
         image_url: recipe.image_url || null,
         is_active: recipe.is_active,
-        source: 'creator',
+        source,
       }))
 
       const { data, error } = await supabase

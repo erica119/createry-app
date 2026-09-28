@@ -129,6 +129,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
   const [packSaveError, setPackSaveError] = useState<string | null>(null)
   const [familyId, setFamilyId] = useState<string | null>(null)
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(null)
+  const [menuRefreshKey, setMenuRefreshKey] = useState(0)
   const [menuView, setMenuView] = useState<'dashboard' | 'menu' | 'shopping' | 'settings'>('menu')
   const [generatingMenu, setGeneratingMenu] = useState(false)
   const [menuError, setMenuError] = useState<string | null>(null)
@@ -423,12 +424,12 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
     setCurrentMenuId(previous?.id || null)
   }
 
-  const generateMenu = async (feedback?: string) => {
+  const generateMenu = async (feedback?: string, weekStartDateOverride?: string) => {
     if (!familyId) return
     setGeneratingMenu(true)
     setMenuError(null)
     try {
-      let weekStr = targetWeekDate
+      let weekStr = weekStartDateOverride || targetWeekDate
       if (!weekStr) {
         const weekStartDate = new Date()
         const day = weekStartDate.getDay()
@@ -452,6 +453,7 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
       await handleMenuAuthError(response.status)
       if (!response.ok) throw new Error(result.error || 'Generation failed')
       setCurrentMenuId(result.menu.id)
+      setMenuRefreshKey(key => key + 1)
       setMenuView('menu')
     } catch (err: any) {
       setMenuError(err.message)
@@ -1003,7 +1005,11 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                   {menuError && <p role="alert" style={{ color: '#B42318', marginTop: '12px' }}>{menuError}</p>}
                 </div>}
                 {menuView === 'menu' && currentMenuId && (
+                  <>
+                  {generatingMenu && <p role="status" style={{ color: '#52645A' }}>Replanning this week…</p>}
+                  {menuError && <p role="alert" style={{ color: '#B42318' }}>{menuError} Your existing plan is still here.</p>}
                   <WeeklyMenuView
+                    key={`${currentMenuId}-${menuRefreshKey}`}
                     menuId={currentMenuId}
                     tenantId={tenantId}
                     familyId={familyId}
@@ -1021,8 +1027,9 @@ export default function CreatorDashboard({ user, tenantId, onSignOut }: Props) {
                         setMenuView('dashboard')
                       }
                     }}
-                    onRegenerate={(feedback) => generateMenu(feedback)}
+                    onRegenerate={(feedback, weekStartDate) => generateMenu(feedback, weekStartDate)}
                   />
+                  </>
                 )}
                 {menuView === 'shopping' && currentMenuId && familyId && (
                   <ShoppingList menuId={currentMenuId} familyId={familyId} tenantId={tenantId} creatorPreview />

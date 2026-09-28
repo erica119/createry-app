@@ -70,6 +70,7 @@ function RecipeCard({ recipe, tenantId, onSelect, onDelete, onImageUpdated, isFa
       </button>
       <div className="creator-recipe-content">
         <h3><button onClick={onSelect}>{recipe.title}</button></h3>
+        {recipe.video_url && <span style={{ display: 'inline-block', color: '#9C4C2B', background: '#FFF3EA', borderRadius: '20px', padding: '0.2rem 0.55rem', fontSize: '0.72rem', fontWeight: 700, marginBottom: '0.35rem' }}>▶ Cooking video</span>}
         {recipe.description && <p>{recipe.description}</p>}
         <div className="creator-recipe-meta">
           {[recipe.prep_time_minutes && `${recipe.prep_time_minutes}m prep`, recipe.cook_time_minutes && `${recipe.cook_time_minutes}m cook`, recipe.servings && `${recipe.servings} servings`].filter(Boolean).join(' · ')}

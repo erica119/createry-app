@@ -423,7 +423,7 @@ export default function App() {
       // Only reflect the freshly generated menu as "current" if it's for the
       // current week — a "plan ahead" generation for next week shouldn't
       // hijack what the dashboard is showing right now.
-      if (!weekStartDateOverride || weekStartDateOverride === getWeekStartString()) {
+      if (!skipNavigate || !weekStartDateOverride || weekStartDateOverride === getWeekStartString()) {
         setCurrentMenuId(result.menu.id)
       } else {
         setNextWeekMenuId(result.menu.id)
@@ -677,6 +677,7 @@ export default function App() {
             {menuError} Your existing plan is still here. Please try replan again.
           </div>}
           <WeeklyMenuView key={`${currentMenuId}-${menuRefreshKey}`}
+            regenerating={generatingMenu}
             menuId={currentMenuId}
             tenantId={tenant?.id || FALLBACK_TENANT_ID}
             userId={user?.id}
@@ -693,7 +694,7 @@ export default function App() {
                 setView('dashboard')
               }
             }}
-            onRegenerate={(feedback) => generateMenu(feedback)}
+            onRegenerate={(feedback, weekStartDate) => generateMenu(feedback, weekStartDate)}
           />
           </div>
         )}

@@ -265,14 +265,18 @@ PREFERENCES:
 AVAILABLE RECIPES (${compactRecipes.length} total):
 ${JSON.stringify(compactRecipes)}
 
+EXISTING PLAN FOR THIS WEEK (empty on first generation):
+${JSON.stringify(existingMenu?.menu_data?.days || {})}
+
 INSTRUCTIONS:
 1. Create a meal plan for the week starting ${week_start_date}${feedback ? `\n\nUSER FEEDBACK FOR THIS REGENERATION: ${feedback}\nPlease take this feedback into account when selecting recipes.` : ''}
 2. Only use recipes from the AVAILABLE RECIPES list
-3. Prefer recipes NOT marked as "recent: true" to avoid repetition
-4. Prioritize recipes marked as "favorite: true" — these are the user's favorites and should appear more often when not recent
-5. Match meal_type appropriately (breakfast recipes for breakfast slots, etc)
-6. Consider family preferences for cuisine and complexity
-7. Return ONLY valid JSON, no prose
+3. If an EXISTING PLAN is present, this is a replan: choose different recipes for at least two planned, non-anchored meals when suitable alternatives exist. Keep the cooking schedule and dietary rules.
+4. Prefer recipes NOT marked as "recent: true" to avoid repetition
+5. Prioritize recipes marked as "favorite: true" — these are the user's favorites and should appear more often when not recent
+6. Match meal_type appropriately (breakfast recipes for breakfast slots, etc)
+7. Consider family preferences for cuisine and complexity
+8. Return ONLY valid JSON, no prose
 
 Return this exact JSON structure:
 {

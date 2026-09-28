@@ -311,13 +311,6 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
       </div>
       {slotError && <p role="alert" style={{ color: '#B42318', margin: '0 0 1rem' }}>{slotError}</p>}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-        <strong style={{ color: '#1F3B30' }}>{showFullWeek ? 'Full week' : 'Two-day view'}</strong>
-        <button type="button" onClick={() => setShowFullWeek(value => !value)} className="btn-secondary" aria-pressed={showFullWeek}>
-          {showFullWeek ? 'Show two days' : 'See whole week'}
-        </button>
-      </div>
-
       <div aria-label="Days this week" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.4rem', marginBottom: '1.25rem' }}>
         {Array.from({ length: 7 }, (_, day) => {
           const date = new Date(`${menu.week_start_date}T12:00:00`)
@@ -364,14 +357,19 @@ export default function WeeklyMenuView({ menuId, tenantId, userId, familyId, onA
         </div>
       </section>)}
 
-      {onRegenerate && <div style={{ borderTop: '1px solid #DDCDBB', paddingTop: '1rem', marginBottom: '1.5rem' }}>
-        <button onClick={() => setShowFeedback(!showFeedback)} className="btn-secondary">{showFeedback ? 'Cancel replan' : 'Replan this week…'}</button>
-        {showFeedback && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
+      <div style={{ borderTop: '1px solid #DDCDBB', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button type="button" onClick={() => setShowFullWeek(value => !value)} className="btn-secondary" aria-pressed={showFullWeek}>
+            {showFullWeek ? 'Show two days' : 'See whole week'}
+          </button>
+          {onRegenerate && <button onClick={() => setShowFeedback(!showFeedback)} className="btn-secondary">{showFeedback ? 'Cancel replan' : 'Replan this week…'}</button>}
+        </div>
+        {showFeedback && onRegenerate && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
           <input value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would you like to change?" aria-label="Replan feedback"
             style={{ flex: '1 1 220px', padding: '0.7rem', border: '1px solid #DDCDBB', borderRadius: '8px' }} />
           <button onClick={() => { onRegenerate(feedback); setShowFeedback(false); setFeedback('') }} className="btn-primary">Generate a new plan</button>
         </div>}
-      </div>}
+      </div>
 
       {/* Swap modal */}
       {swapDay && (

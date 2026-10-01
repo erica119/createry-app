@@ -227,6 +227,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           {showInstacartLink ? (
             // Instacart-approved CTA: Dark theme spec (exact text, colors, sizing required for IDP review)
             <a
+              className="shopping-instacart"
               href={list.instacart_cart_url!}
               target="_blank"
               rel="noopener noreferrer"
@@ -235,7 +236,18 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />
               Shop on Instacart
             </a>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="shopping-instacart"
+              aria-describedby="instacart-availability"
+              style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '29.5px', fontSize: '0.875rem', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif', opacity: 0.65, cursor: 'not-allowed' }}
+            >
+              <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />
+              Shop on Instacart
+            </button>
+          )}
           <button onClick={() => window.print()} style={{ background: "#C9471F", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
 
           <button
@@ -254,12 +266,14 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
         </p>
       )}
       {isTestLink && !creatorPreview && (
-        <p role="status" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
+        <p id="instacart-availability" role="status" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
           Your shopping list is ready to use here or print. Instacart ordering is coming October 2026.
         </p>
       )}
-      {!showInstacartLink && !isTestLink && !creatorPreview && (
-        <p role="status" style={{ color: '#52645A', fontSize: '0.84rem' }}>Instacart ordering is coming October 2026. This list is ready to use or print now.</p>
+      {!list.instacart_cart_url && (
+        <p id="instacart-availability" role="status" style={{ color: '#52645A', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          Rebuild your list to refresh the Instacart link. If a link cannot be created yet, you can still use or print your list.
+        </p>
       )}
       {showInstacartLink && (
         <div role="note" style={{ background: '#f0f7f3', border: '1px solid #c9dfd1', borderRadius: '10px', padding: '1rem', marginBottom: '1rem', color: '#244438' }}>

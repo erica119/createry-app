@@ -564,6 +564,12 @@ a.btn-link {
   .shopping-actions button {
     flex: 1 !important;
     text-align: center !important;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .shopping-actions .shopping-instacart {
+    flex: 0 0 100% !important;
+    white-space: nowrap;
   }
 
   /* Onboarding card */

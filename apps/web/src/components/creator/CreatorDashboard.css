@@ -99,3 +99,21 @@
 .creator-revenue-note p { font-size: .82rem; margin: 5px 0 0; line-height: 1.5; color: #40564A; }
 @media (max-width: 900px) { .creator-layout { display: block; } .creator-sidebar { display: none; } .creator-topbar .creator-nav-bar { min-height: 60px; } .creator-menu-toggle { display: block; } .creator-mobile-menu { display: block; position: absolute; top: 100%; right: 10px; min-width: 220px; max-height: 70vh; overflow-y: auto; background: #FFFDF9; border: 1px solid #E2D7C9; border-radius: 12px; box-shadow: 0 10px 32px rgba(31,59,48,.22); } .creator-main { padding: 22px 20px 90px; } }
 @media (max-width: 600px) { .creator-topbar .nav-greeting { font-size: .75rem; } .creator-signout { display: none; } .creator-app .creator-welcome { grid-template-columns: 1fr; min-height: 300px; } .creator-welcome .preview-card { display: none; } .creator-app .instacart-announcement { min-height: 0; } .instacart-art { grid-column: 1; grid-row: 1; min-height: 180px; padding: 25px; } .instacart-copy { grid-column: 1; grid-row: 2; padding: 30px 25px 52px; } .creator-app .instacart-announcement .creator-hero-controls { left: 25px; } .cart-illustration { display: none; } .creator-recipe-grid { grid-template-columns: 1fr; } .creator-meal-toolbar { align-items: flex-start; } .creator-meal-tabs { width: 100%; } .creator-meal-tabs button { flex: 1; } }
+
+/* Keep the mobile navigation within the viewport, including long brand names. */
+@media (max-width: 600px) {
+  .creator-topbar .creator-nav-bar { gap: 8px; width: 100%; }
+  .creator-topbar-brand { flex: 1 1 0; min-width: 0; }
+  .creator-topbar-brand .brand-mark { min-width: 0; max-width: 100%; gap: 8px; }
+  .creator-topbar-brand .creator-logo { width: 32px; height: 32px; flex: none; }
+  .creator-topbar-brand .creator-mark > span { min-width: 0; overflow-wrap: anywhere; font-size: .9rem; }
+  .creator-topbar-brand .createry-wordmark { min-width: 0; max-width: 100%; }
+  .creator-topbar-right { min-width: 0; max-width: 46%; gap: 8px; }
+  .creator-topbar .nav-greeting { min-width: 0; overflow-wrap: anywhere; }
+  .creator-menu-toggle { flex: none; width: 44px; height: 44px; padding: 0; }
+  .creator-mobile-menu { min-width: 0; width: min(280px, calc(100vw - 20px)); }
+  .workspace-role { flex-shrink: 0; }
+}
+@media (max-width: 380px) {
+  .creator-topbar-brand .creator-mark small, .workspace-role { display: none; }
+}

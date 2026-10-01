@@ -335,6 +335,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
               {items.map((item, i) => (
                 <div
                   key={i}
+                  className="shopping-item-row"
                   style={{
                     display: 'flex', alignItems: 'center', padding: '0.875rem 1rem',
                     borderBottom: i < items.length - 1 ? '1px solid #F5E8D7' : 'none',
@@ -352,7 +353,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
                   }}>
                     {item.checked && '✓'}
                   </button>
-                  <div style={{ flex: 1 }}>
+                  <div className="shopping-item-details" style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontSize: '0.95rem', color: item.checked ? '#687A70' : '#1F3B30', textDecoration: item.checked ? 'line-through' : 'none', fontWeight: '500' }}>
                       {item.name}
                     </span>
@@ -363,7 +364,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
                     )}
                     {item.recipe_sources.length > 0 && <div style={{ color: '#8A9A8F', fontSize: '0.7rem', marginTop: '0.15rem' }}>{item.recipe_sources.slice(0, 2).join(', ')}</div>}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <div className="shopping-item-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     {editingItem === item.index ? <>
                       <input type="number" min="0.01" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} aria-label={`Quantity for ${item.name}`} style={{ width: '64px', padding: '0.35rem' }} />
                       <button onClick={() => saveQuantity(item.index)} disabled={savingItems} className="btn-secondary">Save</button>

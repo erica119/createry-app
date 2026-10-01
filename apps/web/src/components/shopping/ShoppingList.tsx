@@ -45,6 +45,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
   const [editQuantity, setEditQuantity] = useState('')
   const [savingItems, setSavingItems] = useState(false)
   const [showPantry, setShowPantry] = useState(false)
+  const [instacartFailed, setInstacartFailed] = useState(false)
   const autoBuildAttempted = useRef<string | null>(null)
 
   useEffect(() => { fetchList() }, [menuId])
@@ -75,14 +76,18 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     setStale(listIsStale)
     setList(listIsStale ? null : data)
     setLoading(false)
-    if (!data && menu?.status === 'approved' && autoBuildAttempted.current !== menuId) {
+    if (!menuError && !listError && !editsError && !recipesError &&
+        (!data || (!listIsStale && !data.instacart_cart_url)) &&
+        menu?.status === 'approved' && autoBuildAttempted.current !== menuId) {
       autoBuildAttempted.current = menuId
       void generateList()
     }
   }
 
   const generateList = async () => {
+    if (generating) return
     setGenerating(true)
+    setInstacartFailed(false)
     setError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -99,6 +104,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to generate list')
       setList(result.grocery_list)
+      setInstacartFailed(!result.grocery_list?.instacart_cart_url)
       setStale(false)
       onListReady?.()
     } catch (err: any) {
@@ -132,8 +138,14 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
     if (error || !data) {
       setList(previous)
       setError('Could not save your shopping change. Please try again.')
-    } else setError(null)
+    } else {
+      setError(null)
+    }
     setSavingItems(false)
+    if (!error && data && contentsChanged) {
+      // Regenerate from the saved changes, preserving pantry and quantity decisions.
+      await generateList()
+    }
   }
 
   const toggleItem = (index: number) => {
@@ -239,13 +251,14 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           ) : (
             <button
               type="button"
-              disabled
+              onClick={generateList}
+              disabled={generating || savingItems || isTestLink || totalCount === 0}
               className="shopping-instacart"
               aria-describedby="instacart-availability"
-              style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '29.5px', fontSize: '0.875rem', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif', opacity: 0.65, cursor: 'not-allowed' }}
+              style={{ background: '#003D29', color: '#FAF1E5', border: 'none', height: '46px', padding: '0 18px', borderRadius: '29.5px', fontSize: '0.875rem', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: 'sans-serif', opacity: generating || savingItems || isTestLink || totalCount === 0 ? 0.65 : 1, cursor: generating || savingItems || isTestLink || totalCount === 0 ? 'not-allowed' : 'pointer' }}
             >
               <img src="/instacart-logo.svg" alt="" style={{ width: '22px', height: '22px', display: 'block' }} />
-              Shop on Instacart
+              {generating ? 'Preparing Instacart…' : 'Shop on Instacart'}
             </button>
           )}
           <button onClick={() => window.print()} style={{ background: "#C9471F", color: "white", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" }}>🖨️ Print List</button>
@@ -272,7 +285,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
       )}
       {!list.instacart_cart_url && (
         <p id="instacart-availability" role="status" style={{ color: '#52645A', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          Rebuild your list to refresh the Instacart link. If a link cannot be created yet, you can still use or print your list.
+          {generating ? 'Updating your Instacart list with your latest changes…' : instacartFailed ? 'An Instacart link could not be created. Tap Shop on Instacart to try again.' : 'Tap Shop on Instacart to prepare your current list.'}
         </p>
       )}
       {showInstacartLink && (
@@ -283,7 +296,7 @@ export default function ShoppingList({ menuId, familyId, tenantId, onShoppingCom
           </p>
         </div>
       )}
-      {!list.instacart_cart_url && reviewItems.length === 0 && creatorPreview && (
+      {!list.instacart_cart_url && instacartFailed && !generating && reviewItems.length === 0 && creatorPreview && (
         <p role="status" style={{ color: '#8a4b20', background: '#fff4e6', padding: '0.75rem 1rem', borderRadius: '8px' }}>
           Instacart could not create a link. You can still use or print this list; try Rebuild later.
         </p>

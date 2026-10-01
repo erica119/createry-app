@@ -627,3 +627,10 @@ a.btn-link {
 .plan-replan-error { margin: 12px 0 0; padding: 12px 14px; background: #FFF0E8; border: 1px solid #C9471F; border-radius: 10px; color: #8D321D; font-size: .88rem; }
 @keyframes plan-replan-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .plan-replan-spinner { animation: none; } }
+
+@media (max-width: 600px) {
+  .shopping-item-row { flex-wrap: wrap; gap: .5rem; }
+  .shopping-item-details { overflow-wrap: anywhere; }
+  .shopping-item-controls { flex: 0 0 100%; min-width: 0; }
+  .shopping-item-controls .btn-secondary { padding: .6rem .75rem; font-size: .875rem; min-height: 44px; }
+}
